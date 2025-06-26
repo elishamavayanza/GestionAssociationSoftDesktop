@@ -3,10 +3,7 @@ package com.association.view;
 import com.association.manager.SecurityManager;
 import com.association.manager.dto.LoginRequest;
 import com.association.security.model.Utilisateur;
-import com.association.util.utils.ValidationUtil;
 import com.association.view.components.*;
-import com.association.view.interfaces.InterfaceFactory;
-import com.association.view.interfaces.RoleInterface;
 import com.association.view.styles.Colors;
 
 import javax.swing.*;
@@ -14,32 +11,28 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Date;
-
-import javax.swing.JLabel;              // pour forgotPasswordLabel
-import java.awt.event.MouseAdapter;    // pour MouseAdapter
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class AuthFrame extends JFrame {
+public class AuthPanel extends JPanel {
     private final SecurityManager securityManager;
+    private final MainFrame mainFrame;
 
-    private JPanel mainPanel;
     private CustomTextField usernameField;
     private CustomPasswordField passwordField;
     private CustomButton loginButton;
     private JCheckBox rememberMeCheckbox;
     private JLabel forgotPasswordLabel;
 
-
-    public AuthFrame(SecurityManager securityManager) {
+    public AuthPanel(MainFrame mainFrame, SecurityManager securityManager) {
+        this.mainFrame = mainFrame;
         this.securityManager = securityManager;
         initComponents();
-        setupFrame();
     }
 
     private void initComponents() {
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new GridBagLayout());
-        mainPanel.setBackground(Colors.BACKGROUND);
+        setLayout(new GridBagLayout());
+        setBackground(Colors.BACKGROUND);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
@@ -52,7 +45,7 @@ public class AuthFrame extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-        mainPanel.add(titleLabel, gbc);
+        add(titleLabel, gbc);
 
         // Champ username
         JLabel usernameLabel = new JLabel("Nom d'utilisateur(email) :");
@@ -60,24 +53,24 @@ public class AuthFrame extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
-        mainPanel.add(usernameLabel, gbc);
+        add(usernameLabel, gbc);
 
         usernameField = new CustomTextField();
         gbc.gridx = 1;
         gbc.gridy = 1;
-        mainPanel.add(usernameField, gbc);
+        add(usernameField, gbc);
 
         // Champ password
         JLabel passwordLabel = new JLabel("Mot de passe:");
         passwordLabel.setForeground(Colors.TEXT);
         gbc.gridx = 0;
         gbc.gridy = 2;
-        mainPanel.add(passwordLabel, gbc);
+        add(passwordLabel, gbc);
 
         passwordField = new CustomPasswordField();
         gbc.gridx = 1;
         gbc.gridy = 2;
-        mainPanel.add(passwordField, gbc);
+        add(passwordField, gbc);
 
         // Case "Se souvenir de moi"
         rememberMeCheckbox = new JCheckBox("Se souvenir de moi");
@@ -86,7 +79,7 @@ public class AuthFrame extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
-        mainPanel.add(rememberMeCheckbox, gbc);
+        add(rememberMeCheckbox, gbc);
 
         // Bouton de connexion
         loginButton = new CustomButton("Se connecter");
@@ -95,8 +88,7 @@ public class AuthFrame extends JFrame {
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
-        mainPanel.add(loginButton, gbc);
-
+        add(loginButton, gbc);
 
         // Lien "Mot de passe oublié"
         forgotPasswordLabel = new JLabel("<html><u>Mot de passe oublié ?</u></html>", SwingConstants.CENTER);
@@ -110,7 +102,7 @@ public class AuthFrame extends JFrame {
         });
         gbc.gridx = 0;
         gbc.gridy = 5;
-        mainPanel.add(forgotPasswordLabel, gbc);
+        add(forgotPasswordLabel, gbc);
 
         // Gestionnaire d'événements
         loginButton.addActionListener(new LoginAction());
@@ -123,23 +115,13 @@ public class AuthFrame extends JFrame {
         panel.add(new JLabel("Entrez votre email:"));
         panel.add(emailField);
 
-        int result = JOptionPane.showConfirmDialog(this, panel, "Mot de passe oublié",
+        int result = JOptionPane.showConfirmDialog(mainFrame, panel, "Mot de passe oublié",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
-            // Ici vous pouvez implémenter la logique de réinitialisation
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(mainFrame,
                     "Un lien de réinitialisation a été envoyé à " + emailField.getText(),
                     "Email envoyé", JOptionPane.INFORMATION_MESSAGE);
         }
-    }
-
-    private void setupFrame() {
-        setContentPane(mainPanel);
-        setTitle("Authentification");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 350);
-        setLocationRelativeTo(null);
-        setResizable(false);
     }
 
     private class LoginAction implements ActionListener {
@@ -148,34 +130,22 @@ public class AuthFrame extends JFrame {
             String username = usernameField.getText().trim();
             String password = new String(passwordField.getPassword());
 
-            // Validation
             if (username.isEmpty() || password.isEmpty()) {
                 showError("Veuillez remplir tous les champs");
                 return;
             }
 
             try {
-                // Création de la requête de connexion
                 LoginRequest loginRequest = new LoginRequest();
                 loginRequest.setUsername(username);
                 loginRequest.setPassword(password);
 
-                // Authentification via SecurityManager
                 Utilisateur utilisateur = securityManager.authenticate(loginRequest);
 
                 if (utilisateur != null) {
-                 //Mise à jour du dernier login
                     utilisateur.setLastLogin(new Date());
-
-                    // Afficher d'abord le profil utilisateur
-                    UserProfileFrame profileFrame = new UserProfileFrame(utilisateur, securityManager );
-                    profileFrame.setVisible(true);
-                    // Création de l'interface appropriée
-//                    RoleInterface roleInterface = InterfaceFactory.createInterface(utilisateur);
-//                    JFrame userFrame = roleInterface.createInterface();
-//                    userFrame.setVisible(true);
-
-                    dispose();
+                    UserProfilePanel profilePanel = new UserProfilePanel(mainFrame, utilisateur, securityManager);
+                    mainFrame.switchView(profilePanel, "Profil Utilisateur");
                 } else {
                     showError("Identifiants incorrects");
                 }
@@ -186,19 +156,11 @@ public class AuthFrame extends JFrame {
         }
 
         private void showError(String message) {
-            JOptionPane.showMessageDialog(AuthFrame.this,
+            JOptionPane.showMessageDialog(mainFrame,
                     message,
                     "Erreur",
                     JOptionPane.ERROR_MESSAGE);
             passwordField.setText("");
         }
-
-        private void showSuccess(String message) {
-            JOptionPane.showMessageDialog(AuthFrame.this,
-                    message,
-                    "Succès",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
     }
-
 }

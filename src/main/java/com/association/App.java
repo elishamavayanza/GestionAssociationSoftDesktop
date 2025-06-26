@@ -4,7 +4,8 @@ import com.association.dao.UtilisateurDao;
 import com.association.dao.impl.UtilisateurDaoImpl;
 import com.association.manager.SecurityManager;
 import com.association.util.file.FileStorageService;
-import com.association.view.AuthFrame;
+import com.association.view.AuthPanel;
+import com.association.view.MainFrame;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.swing.*;
@@ -44,9 +45,11 @@ public class App {
         SecurityManager securityManager = new SecurityManager(utilisateurDao, fileStorageService);
 
         // Afficher l'interface de connexion
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            AuthFrame authFrame = new AuthFrame(securityManager);
-            authFrame.setVisible(true);
+        SwingUtilities.invokeLater(() -> {
+            MainFrame mainFrame = new MainFrame();
+            AuthPanel authPanel = new AuthPanel(mainFrame, securityManager);
+            mainFrame.switchView(authPanel, "Authentification");
+            mainFrame.setVisible(true);
         });
 
 

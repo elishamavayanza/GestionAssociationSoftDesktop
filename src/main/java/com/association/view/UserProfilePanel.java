@@ -6,30 +6,29 @@ import com.association.view.interfaces.RoleInterface;
 import com.association.view.styles.Colors;
 import com.association.view.components.*;
 import com.association.manager.SecurityManager;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 
-public class UserProfileFrame extends JFrame {
-    private Utilisateur utilisateur;
-    private SecurityManager securityManager;
+public class UserProfilePanel extends JPanel {
+    private final MainFrame mainFrame;
+    private final Utilisateur utilisateur;
+    private final SecurityManager securityManager;
 
-    public UserProfileFrame(Utilisateur utilisateur, SecurityManager securityManager) {
+    public UserProfilePanel(MainFrame mainFrame, Utilisateur utilisateur, SecurityManager securityManager) {
+        this.mainFrame = mainFrame;
         this.utilisateur = utilisateur;
         this.securityManager = securityManager;
         initComponents();
-        setupFrame();
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout());
+        setBackground(Colors.CURRENT_BACKGROUND);
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Panel principal pour centrer le contenu
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.setBackground(Colors.CURRENT_BACKGROUND);
@@ -50,14 +49,12 @@ public class UserProfileFrame extends JFrame {
             }
         }
 
-        // Redimensionner et créer le panel d'image
         Image scaledImage = originalIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
         RoundedImagePanel imagePanel = new RoundedImagePanel(new ImageIcon(scaledImage));
         imagePanel.setPreferredSize(new Dimension(120, 120));
         imagePanel.setMaximumSize(new Dimension(120, 120));
         imagePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Conteneur pour centrer l'image
         JPanel imageWrapper = new JPanel();
         imageWrapper.setLayout(new FlowLayout(FlowLayout.CENTER));
         imageWrapper.setBackground(Colors.CURRENT_BACKGROUND);
@@ -74,7 +71,6 @@ public class UserProfileFrame extends JFrame {
         emailLabel.setForeground(Colors.CURRENT_TEXT_SECONDARY);
         emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Ajout des composants avec des espacements
         centerPanel.add(Box.createVerticalGlue());
         centerPanel.add(imageWrapper);
         centerPanel.add(Box.createRigidArea(new Dimension(0, 15)));
@@ -95,30 +91,21 @@ public class UserProfileFrame extends JFrame {
         logoutButton.setBackground(Colors.CURRENT_DANGER);
         logoutButton.setHoverBackground(new Color(Colors.CURRENT_DANGER.getRGB()).darker());
         logoutButton.addActionListener(e -> {
-            dispose();
-            EventQueue.invokeLater(() -> new AuthFrame(securityManager).setVisible(true));
+            AuthPanel authPanel = new AuthPanel(mainFrame, securityManager);
+            mainFrame.switchView(authPanel, "Authentification");
         });
 
         buttonPanel.add(continueButton);
         buttonPanel.add(logoutButton);
 
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        setContentPane(mainPanel);
-    }
-    private void setupFrame() {
-        setTitle("Profil Utilisateur");
-        setSize(400, 350);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
+        add(centerPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void openRoleInterface() {
         RoleInterface roleInterface = InterfaceFactory.createInterface(utilisateur);
         JFrame userFrame = roleInterface.createInterface();
         userFrame.setVisible(true);
-        dispose();
+        mainFrame.dispose();
     }
 }
