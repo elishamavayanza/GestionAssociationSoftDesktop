@@ -3,17 +3,45 @@ package com.association;
 import com.association.dao.UtilisateurDao;
 import com.association.dao.impl.UtilisateurDaoImpl;
 import com.association.manager.SecurityManager;
+import com.association.util.file.FileStorageService;
 import com.association.view.AuthFrame;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.swing.*;
+import java.io.InputStream;
 
 public class App {
     public static void main(String[] args) {
         // Initialisation des dépendances
 
         UtilisateurDao utilisateurDao = new UtilisateurDaoImpl();
-        SecurityManager securityManager = new SecurityManager(utilisateurDao);
+        FileStorageService fileStorageService = new FileStorageService() {
+            @Override
+            public String storeFile(byte[] file, String directory) {
+                return "";
+            }
+
+            @Override
+            public InputStream loadFile(String filePath) {
+                return null;
+            }
+
+            @Override
+            public boolean deleteFile(String filePath) {
+                return false;
+            }
+
+            @Override
+            public String getFileExtension(String filename) {
+                return "";
+            }
+
+            @Override
+            public String generateUniqueFilename(String originalName) {
+                return "";
+            }
+        };
+        SecurityManager securityManager = new SecurityManager(utilisateurDao, fileStorageService);
 
         // Afficher l'interface de connexion
         javax.swing.SwingUtilities.invokeLater(() -> {

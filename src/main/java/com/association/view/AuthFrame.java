@@ -15,6 +15,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Date;
 
+import javax.swing.JLabel;              // pour forgotPasswordLabel
+import java.awt.event.MouseAdapter;    // pour MouseAdapter
+import java.awt.event.MouseEvent;
+
 public class AuthFrame extends JFrame {
     private final SecurityManager securityManager;
 
@@ -23,6 +27,8 @@ public class AuthFrame extends JFrame {
     private CustomPasswordField passwordField;
     private CustomButton loginButton;
     private JCheckBox rememberMeCheckbox;
+    private JLabel forgotPasswordLabel;
+
 
     public AuthFrame(SecurityManager securityManager) {
         this.securityManager = securityManager;
@@ -91,9 +97,40 @@ public class AuthFrame extends JFrame {
         gbc.anchor = GridBagConstraints.CENTER;
         mainPanel.add(loginButton, gbc);
 
+
+        // Lien "Mot de passe oublié"
+        forgotPasswordLabel = new JLabel("<html><u>Mot de passe oublié ?</u></html>", SwingConstants.CENTER);
+        forgotPasswordLabel.setForeground(Colors.CURRENT_PRIMARY);
+        forgotPasswordLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        forgotPasswordLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                showForgotPasswordDialog();
+            }
+        });
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        mainPanel.add(forgotPasswordLabel, gbc);
+
         // Gestionnaire d'événements
         loginButton.addActionListener(new LoginAction());
         passwordField.addActionListener(new LoginAction());
+    }
+
+    private void showForgotPasswordDialog() {
+        JTextField emailField = new JTextField(20);
+        JPanel panel = new JPanel(new GridLayout(0, 1));
+        panel.add(new JLabel("Entrez votre email:"));
+        panel.add(emailField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, "Mot de passe oublié",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            // Ici vous pouvez implémenter la logique de réinitialisation
+            JOptionPane.showMessageDialog(this,
+                    "Un lien de réinitialisation a été envoyé à " + emailField.getText(),
+                    "Email envoyé", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     private void setupFrame() {
@@ -130,12 +167,13 @@ public class AuthFrame extends JFrame {
                  //Mise à jour du dernier login
                     utilisateur.setLastLogin(new Date());
 
-                    showSuccess("Connexion réussie! Bienvenue " + utilisateur.getUsername());
-
+                    // Afficher d'abord le profil utilisateur
+                    UserProfileFrame profileFrame = new UserProfileFrame(utilisateur, securityManager );
+                    profileFrame.setVisible(true);
                     // Création de l'interface appropriée
-                    RoleInterface roleInterface = InterfaceFactory.createInterface(utilisateur);
-                    JFrame userFrame = roleInterface.createInterface();
-                    userFrame.setVisible(true);
+//                    RoleInterface roleInterface = InterfaceFactory.createInterface(utilisateur);
+//                    JFrame userFrame = roleInterface.createInterface();
+//                    userFrame.setVisible(true);
 
                     dispose();
                 } else {
@@ -162,7 +200,5 @@ public class AuthFrame extends JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
         }
     }
-
-
 
 }

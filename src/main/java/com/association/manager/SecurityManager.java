@@ -17,11 +17,11 @@ public class SecurityManager {
     private final UtilisateurDao utilisateurDao;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-//    private final FileStorageService fileStorageService;
+    private final FileStorageService fileStorageService;
 
-    public SecurityManager(UtilisateurDao utilisateurDao) {
+    public SecurityManager(UtilisateurDao utilisateurDao, FileStorageService fileStorageService) {
         this.utilisateurDao = utilisateurDao;
-//        this.fileStorageService = fileStorageService;
+        this.fileStorageService = fileStorageService;
 
     }
 
@@ -80,6 +80,10 @@ public class SecurityManager {
     }
     public boolean uploadUserAvatar(Long userId, byte[] avatarFile) {
         // Implémentation du stockage de l'avatar
+        Optional<Utilisateur> userOpt = utilisateurDao.findById(userId);
+        if (userOpt.isPresent() && userOpt.get().getAvatar() != null) {
+//            return fileStorageService.load(userOpt.get().getAvatar());
+        }
         return true;
     }
 
