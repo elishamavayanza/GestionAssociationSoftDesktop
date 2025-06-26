@@ -1,39 +1,42 @@
 package com.association;
 
-import com.association.config.DatabaseConfig;
-import java.sql.Connection;
-import java.sql.SQLException;
+import com.association.dao.UtilisateurDao;
+import com.association.dao.impl.UtilisateurDaoImpl;
+import com.association.manager.SecurityManager;
+import com.association.view.AuthFrame;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import javax.swing.*;
 
 public class App {
     public static void main(String[] args) {
-        // Obtenir l'instance singleton de DatabaseConfig
-        DatabaseConfig dbConfig = DatabaseConfig.getInstance();
+        // Initialisation des dépendances
+
+        UtilisateurDao utilisateurDao = new UtilisateurDaoImpl();
+        SecurityManager securityManager = new SecurityManager(utilisateurDao);
+
+        // Afficher l'interface de connexion
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            AuthFrame authFrame = new AuthFrame(securityManager);
+            authFrame.setVisible(true);
+        });
 
 
-        try {
-            // Obtenir une connexion depuis le pool
-            Connection connection = dbConfig.getConnection();
-
-            if (connection != null) {
-                System.out.println("Connexion à la base de données réussie !");
-
-                // Utilisation try-with-resources pour fermer automatiquement la connexion
-                try (connection) {
-                    // Ici vous pouvez exécuter vos requêtes SQL
-                    System.out.println("Exécution des opérations sur la base de données...");
-
-                    // Exemple: vérifier que la connexion est valide
-                    if (connection.isValid(2)) {
-                        System.out.println("La connexion est valide");
-                    }
-                } // La connexion sera automatiquement fermée ici
-            }
-        } catch (SQLException e) {
-            System.err.println("Erreur de connexion à la base de données:");
-            e.printStackTrace();
-        } finally {
-            // Fermer proprement le pool de connexions à la fin de l'application
-            dbConfig.shutdown();
-        }
+//        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+//
+//        String rawPassword = "Membre#456";
+//        String hashedPassword = encoder.encode(rawPassword);
+//
+//        System.out.println("Mot de passe brut : " + rawPassword);
+//        System.out.println("Mot de passe haché : " + hashedPassword);
     }
+
+    //    Mot de passe brut : Admin@1234
+    //    Mot de passe haché : $2a$10$IIAmiiRLr5XJfJO9rgK.7O3Sac7hReajHOrdKWFhMmlf7oFfRncTq
+
+  //    Mot de passe brut : Gest@2023!
+  //    Mot de passe haché : $2a$10$.crHETh9Vh0z87earkzaaO2vYP1SqlUaWbUlngEeZTu6E/miGCBum
+
+//    Mot de passe brut : Membre#456
+//    Mot de passe haché : $2a$10$tJJJyX5JPDA.9evwsjY2RuZYZj8LtVlHTMdMxc44CFiMujHTWOBBi
 }

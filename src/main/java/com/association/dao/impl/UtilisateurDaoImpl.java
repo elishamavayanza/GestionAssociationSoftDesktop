@@ -14,7 +14,11 @@ public class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements U
     protected Utilisateur mapResultSetToEntity(ResultSet rs) throws SQLException {
         Utilisateur utilisateur = new Utilisateur();
         utilisateur.setId(rs.getLong("id"));
-        // Remplir les autres propriétés
+        utilisateur.setUsername(rs.getString("username"));
+        utilisateur.setPassword(rs.getString("password"));
+        utilisateur.setEmail(rs.getString("email"));
+        utilisateur.setActive(rs.getBoolean("is_active"));
+
         return utilisateur;
     }
 
@@ -47,12 +51,41 @@ public class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements U
         }
         return Optional.empty();
     }
+    @Override
+    public Optional<Utilisateur> findByUsername(String username) {
+        String sql = "SELECT * FROM utilisateurs WHERE username = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
+    }
 
     // Implémentations des autres méthodes de GenericDao
     @Override
     public boolean create(Utilisateur t) { return false; }
     @Override
-    public boolean update(Utilisateur t) { return false; }
+    public boolean update(Utilisateur utilisateur) {
+        String sql = "UPDATE utilisateurs SET username = ?, password = ?, email = ?, is_active = ? WHERE id = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, utilisateur.getUsername());
+            stmt.setString(2, utilisateur.getPassword());
+            stmt.setString(3, utilisateur.getEmail());
+            stmt.setBoolean(4, utilisateur.isActive());
+            stmt.setLong(5, utilisateur.getId());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     @Override
     public boolean delete(Long id) { return false; }
     @Override
