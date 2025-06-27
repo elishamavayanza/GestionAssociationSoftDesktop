@@ -8,6 +8,5 @@ public interface UtilisateurDao extends GenericDao<Utilisateur> {
     Optional<Utilisateur> findByEmail(String email);
     Optional<Utilisateur> findByUsername(String username); // Ajouté
     boolean update(Utilisateur utilisateur); // Pour mettre à jour les tentatives de connexion
-
-
+    String getAvatarPath(Long userId);
 }

@@ -1,6 +1,7 @@
 package com.association.view;
 
 import com.association.model.access.Utilisateur;
+import com.association.util.file.RealFileStorageService;
 import com.association.view.interfaces.InterfaceFactory;
 import com.association.view.interfaces.RoleInterface;
 import com.association.view.styles.Colors;
@@ -21,6 +22,8 @@ public class UserProfilePanel extends JPanel {
     public UserProfilePanel(LoginFrame loginFrame, Utilisateur utilisateur) {
         this.loginFrame = loginFrame;
         this.utilisateur = utilisateur;
+        this.utilisateur.setFileStorageService(new RealFileStorageService());
+
         initComponents();
         startLoadingProcess();
     }
@@ -36,23 +39,9 @@ public class UserProfilePanel extends JPanel {
         centerPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Photo de profil
-        ImageIcon originalIcon;
-        byte[] avatarData = utilisateur.loadAvatarData();
+        ImageIcon avatarIcon = loadAvatarImage();
+        Image scaledImage = avatarIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
 
-        if (avatarData != null && avatarData.length > 0) {
-            originalIcon = new ImageIcon(avatarData);
-        } else {
-            try {
-                URL defaultAvatarUrl = getClass().getResource("/images/avantarm.jpg");
-                originalIcon = defaultAvatarUrl != null ? new ImageIcon(defaultAvatarUrl)
-                        : new ImageIcon(new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB));
-            } catch (Exception e) {
-                e.printStackTrace();
-                originalIcon = new ImageIcon(new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB));
-            }
-        }
-
-        Image scaledImage = originalIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
         RoundedImagePanel imagePanel = new RoundedImagePanel(new ImageIcon(scaledImage));
         imagePanel.setPreferredSize(new Dimension(120, 120));
         imagePanel.setMaximumSize(new Dimension(120, 120));
@@ -92,10 +81,67 @@ public class UserProfilePanel extends JPanel {
         add(centerPanel, BorderLayout.CENTER);
     }
 
+    private ImageIcon loadAvatarImage() {
+        try {
+            // Essayer de charger l'avatar personnalisé
+            byte[] avatarData = utilisateur.loadAvatarData();
+            if (avatarData != null && avatarData.length > 0) {
+                return new ImageIcon(avatarData);
+            }
+
+            // Fallback 1: Image par défaut du package
+            URL defaultAvatarUrl = getClass().getResource("/images/avantar.jpg");
+            if (defaultAvatarUrl != null) {
+                return new ImageIcon(defaultAvatarUrl);
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors du chargement de l'avatar: " + e.getMessage());
+        }
+
+        // Fallback 2: Avatar généré
+        return generateDefaultAvatar();
+    }
+
+    private ImageIcon generateDefaultAvatar() {
+        BufferedImage image = new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+
+        // Fond
+        g.setColor(new Color(240, 240, 240));
+        g.fillRect(0, 0, 120, 120);
+
+        // Cercle
+        g.setColor(new Color(200, 200, 200));
+        g.fillOval(10, 10, 100, 100);
+
+        // Initiales
+        String initials = getInitials(utilisateur.getUsername());
+        g.setColor(new Color(100, 100, 100));
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+        FontMetrics fm = g.getFontMetrics();
+        int x = (120 - fm.stringWidth(initials)) / 2;
+        int y = ((120 - fm.getHeight()) / 2) + fm.getAscent();
+        g.drawString(initials, x, y);
+
+        g.dispose();
+        return new ImageIcon(image);
+    }
+
+    private String getInitials(String username) {
+        if (username == null || username.isEmpty()) {
+            return "??";
+        }
+
+        String[] parts = username.split(" ");
+        if (parts.length == 0) return "??";
+        if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
+
+        return (parts[0].substring(0, 1) + parts[parts.length-1].substring(0, 1)).toUpperCase();
+    }
+
     private void startLoadingProcess() {
         loadingSpinner.setVisible(true);
 
-        // Simulation d'un temps de chargement
         Timer loadingTimer = new Timer(3000, e -> {
             openRoleInterface();
             loadingSpinner.setVisible(false);

@@ -2,7 +2,7 @@ package com.association.util.file;
 
 import java.io.InputStream;
 
-public abstract class FileStorageServiceAdapter implements FileStorageService {
+public class FileStorageServiceAdapter implements FileStorageService {
     @Override
     public String storeFile(byte[] file, String directory) {
         return "";

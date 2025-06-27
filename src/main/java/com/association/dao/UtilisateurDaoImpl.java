@@ -87,6 +87,22 @@ class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements Utilisat
         }
     }
     @Override
+    public String getAvatarPath(Long userId) {
+        String sql = "SELECT avatar_path FROM utilisateurs WHERE id = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("avatar_path");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
     public boolean delete(Long id) { return false; }
     @Override
     public boolean saveAll(Iterable<Utilisateur> entities) { return false; }

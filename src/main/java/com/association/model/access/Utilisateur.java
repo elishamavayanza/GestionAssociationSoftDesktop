@@ -5,6 +5,7 @@ import com.association.model.enums.UserRole;
 import com.association.util.file.FileStorageService;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -159,15 +160,29 @@ public class Utilisateur extends Entity {
         return null;
     }
     public byte[] loadAvatarData() {
-        if (this.avatar == null || this.avatar.isEmpty() || fileStorageService == null) {
+        if (this.avatar == null || this.avatar.isEmpty()) {
             return null;
         }
 
-        try (InputStream inputStream = fileStorageService.loadFile(this.avatar)) {
-            return inputStream != null ? inputStream.readAllBytes() : null;
+        try {
+            // Si c'est une URL
+            if (avatar.startsWith("http")) {
+                URL url = new URL(avatar);
+                try (InputStream in = url.openStream()) {
+                    return in.readAllBytes();
+                }
+            }
+            // Si c'est un chemin local
+            else {
+                if (fileStorageService != null) {
+                    try (InputStream in = fileStorageService.loadFile(avatar)) {
+                        return in != null ? in.readAllBytes() : null;
+                    }
+                }
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            System.err.println("Erreur chargement avatar: " + e.getMessage());
         }
+        return null;
     }
 }

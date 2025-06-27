@@ -6,6 +6,7 @@ import com.association.util.file.FileStorageService;
 import com.association.util.file.FileStorageServiceAdapter;
 import com.association.view.AuthPanel;
 import com.association.view.LoginFrame;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.swing.*;
 
@@ -28,19 +29,17 @@ public class App {
 
 //        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 //
-//        String rawPassword = "Membre#456";
+//        String rawPassword = "Isaac@1234";
 //        String hashedPassword = encoder.encode(rawPassword);
 //
 //        System.out.println("Mot de passe brut : " + rawPassword);
 //        System.out.println("Mot de passe haché : " + hashedPassword);
     }
 
-    //    Mot de passe brut : Admin@1234
-    //    Mot de passe haché : $2a$10$IIAmiiRLr5XJfJO9rgK.7O3Sac7hReajHOrdKWFhMmlf7oFfRncTq
+    //    Isaac : Isaac@1234 = admin
+    //    Eli :  Eli@1234 = gestionnaire
+    //    Elisahama : Eli@2004 = membre
+    //    Exaucee  : Ex@12345 = visiteur
 
-  //    Mot de passe brut : Gest@2023!
-  //    Mot de passe haché : $2a$10$.crHETh9Vh0z87earkzaaO2vYP1SqlUaWbUlngEeZTu6E/miGCBum
 
-//    Mot de passe brut : Membre#456
-//    Mot de passe haché : $2a$10$tJJJyX5JPDA.9evwsjY2RuZYZj8LtVlHTMdMxc44CFiMujHTWOBBi
 }
