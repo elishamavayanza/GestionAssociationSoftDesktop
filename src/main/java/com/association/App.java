@@ -3,42 +3,18 @@ package com.association;
 import com.association.dao.DAOFactory;
 import com.association.dao.UtilisateurDao;
 import com.association.util.file.FileStorageService;
+import com.association.util.file.FileStorageServiceAdapter;
 import com.association.view.AuthPanel;
 import com.association.view.LoginFrame;
 
 import javax.swing.*;
-import java.io.InputStream;
 
 public class App {
     public static void main(String[] args) {
         // Initialisation des dépendances
 
         UtilisateurDao utilisateurDao = DAOFactory.getInstance(UtilisateurDao.class);
-        FileStorageService fileStorageService = new FileStorageService() {
-            @Override
-            public String storeFile(byte[] file, String directory) {
-                return "";
-            }
-
-            @Override
-            public InputStream loadFile(String filePath) {
-                return null;
-            }
-
-            @Override
-            public boolean deleteFile(String filePath) {
-                return false;
-            }
-
-            @Override
-            public String getFileExtension(String filename) {
-                return "";
-            }
-
-            @Override
-            public String generateUniqueFilename(String originalName) {
-                return "";
-            }
+        FileStorageService fileStorageService = new FileStorageServiceAdapter() {
         };
 
         // Afficher l'interface de connexion
