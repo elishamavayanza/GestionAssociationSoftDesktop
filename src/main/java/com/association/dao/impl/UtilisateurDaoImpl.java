@@ -18,6 +18,7 @@ public class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements U
         utilisateur.setPassword(rs.getString("password"));
         utilisateur.setEmail(rs.getString("email"));
         utilisateur.setActive(rs.getBoolean("is_active"));
+        utilisateur.setAvatar(rs.getString("avatar_path")); // Ajout de l'avatar
 
         return utilisateur;
     }

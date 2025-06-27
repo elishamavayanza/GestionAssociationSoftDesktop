@@ -1,6 +1,7 @@
 package com.association.view;
 
 import com.association.security.model.Utilisateur;
+import com.association.util.file.FileStorageService;
 import com.association.view.interfaces.InterfaceFactory;
 import com.association.view.interfaces.RoleInterface;
 import com.association.view.styles.Colors;
@@ -17,12 +18,14 @@ public class UserProfilePanel extends JPanel {
     private final Utilisateur utilisateur;
     private final SecurityManager securityManager;
 
-    public UserProfilePanel(MainFrame mainFrame, Utilisateur utilisateur, SecurityManager securityManager) {
+    public UserProfilePanel(MainFrame mainFrame, Utilisateur utilisateur,
+                            SecurityManager securityManager) {
         this.mainFrame = mainFrame;
         this.utilisateur = utilisateur;
         this.securityManager = securityManager;
         initComponents();
     }
+
 
     private void initComponents() {
         setLayout(new BorderLayout());
@@ -36,11 +39,13 @@ public class UserProfilePanel extends JPanel {
 
         // Photo de profil
         ImageIcon originalIcon;
-        if (utilisateur.getAvatar() != null && !utilisateur.getAvatar().isEmpty()) {
-            originalIcon = new ImageIcon(utilisateur.getAvatar());
+        byte[] avatarData = utilisateur.loadAvatarData();
+
+        if (avatarData != null && avatarData.length > 0) {
+            originalIcon = new ImageIcon(avatarData);
         } else {
             try {
-                URL defaultAvatarUrl = getClass().getResource("/images/avantar.jpg");
+                URL defaultAvatarUrl = getClass().getResource("/images/avantarm.jpg");
                 originalIcon = defaultAvatarUrl != null ? new ImageIcon(defaultAvatarUrl)
                         : new ImageIcon(new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB));
             } catch (Exception e) {
@@ -48,6 +53,7 @@ public class UserProfilePanel extends JPanel {
                 originalIcon = new ImageIcon(new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB));
             }
         }
+
 
         Image scaledImage = originalIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
         RoundedImagePanel imagePanel = new RoundedImagePanel(new ImageIcon(scaledImage));

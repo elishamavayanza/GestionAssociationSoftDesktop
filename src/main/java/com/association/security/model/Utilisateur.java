@@ -1,7 +1,9 @@
 package com.association.security.model;
 
 import com.association.model.Entity;
+import com.association.util.file.FileStorageService;
 
+import java.io.InputStream;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +17,7 @@ public class Utilisateur extends Entity {
     private int failedLoginAttempts = 0;
     private Set<Role> roles = new HashSet<>();
     private String avatar; // chemin/URL de l'image
+    private transient FileStorageService fileStorageService; // transient pour éviter la sérialisation
 
     // Constructeur par défaut
     public Utilisateur() {
@@ -94,7 +97,11 @@ public class Utilisateur extends Entity {
         this.avatar = avatar;
     }
 
-    // Méthodes métier à compléter
+    public void setFileStorageService(FileStorageService fileStorageService) {
+        this.fileStorageService = fileStorageService;
+    }
+
+    // Méthodes métier
     public boolean changePassword(String oldPassword, String newPassword) {
         // Implémentation à faire dans un service avec vérification du hash
         return false;
@@ -112,12 +119,54 @@ public class Utilisateur extends Entity {
         return this.roles.contains(role);
     }
 
-    public boolean uploadAvatar(byte[] file) {
-        // Implémentation à faire via un service de stockage
+    public boolean uploadAvatar(byte[] file, FileStorageService storageService) {
+        if (file == null || storageService == null) {
+            return false;
+        }
+
+        try {
+            String fileName = storageService.generateUniqueFilename("avatar");
+            String filePath = storageService.storeFile(file, "avatars");
+            if (filePath != null) {
+                this.avatar = filePath;
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return false;
     }
 
     public String getAvatarUrl() {
         return this.avatar != null ? "/avatars/" + this.avatar : "/default-avatar.png";
+    }
+
+    public byte[] getAvatarData() {
+        if (this.avatar == null || this.avatar.isEmpty()) {
+            return null;
+        }
+
+        try {
+            // Utilisez votre FileStorageService pour charger les données
+            InputStream inputStream = fileStorageService.loadFile(this.avatar);
+            if (inputStream != null) {
+                return inputStream.readAllBytes();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public byte[] loadAvatarData() {
+        if (this.avatar == null || this.avatar.isEmpty() || fileStorageService == null) {
+            return null;
+        }
+
+        try (InputStream inputStream = fileStorageService.loadFile(this.avatar)) {
+            return inputStream != null ? inputStream.readAllBytes() : null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
