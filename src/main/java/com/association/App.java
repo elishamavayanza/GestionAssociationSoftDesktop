@@ -38,7 +38,7 @@ public class App {
 
     //    Isaac : Isaac@1234 = admin
     //    Eli :  Eli@1234 = gestionnaire
-    //    Elisahama : Eli@2004 = membre
+    //    Elishama : Eli@2004 = membre
     //    Exaucee  : Ex@12345 = visiteur
 
 

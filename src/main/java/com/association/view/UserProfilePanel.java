@@ -1,6 +1,7 @@
 package com.association.view;
 
 import com.association.model.access.Utilisateur;
+import com.association.model.enums.UserRole;
 import com.association.util.file.RealFileStorageService;
 import com.association.view.interfaces.InterfaceFactory;
 import com.association.view.interfaces.RoleInterface;
@@ -42,6 +43,13 @@ public class UserProfilePanel extends JPanel {
         ImageIcon avatarIcon = loadAvatarImage();
         Image scaledImage = avatarIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
 
+        // Badge de rôle
+        JLabel roleLabel = new JLabel(getHighestRoleName(), SwingConstants.CENTER);
+        roleLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        roleLabel.setForeground(getRoleColor());
+        roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        roleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
         RoundedImagePanel imagePanel = new RoundedImagePanel(new ImageIcon(scaledImage));
         imagePanel.setPreferredSize(new Dimension(120, 120));
         imagePanel.setMaximumSize(new Dimension(120, 120));
@@ -69,6 +77,7 @@ public class UserProfilePanel extends JPanel {
         loadingSpinner.setVisible(false);
 
         centerPanel.add(Box.createVerticalGlue());
+        centerPanel.add(roleLabel); // Ajout du rôle ici
         centerPanel.add(imageWrapper);
         centerPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         centerPanel.add(nameLabel);
@@ -81,15 +90,37 @@ public class UserProfilePanel extends JPanel {
         add(centerPanel, BorderLayout.CENTER);
     }
 
+    private String getHighestRoleName() {
+        if (utilisateur.getRoles().contains(UserRole.ADMIN)) {
+            return "Administrateur";
+        } else if (utilisateur.getRoles().contains(UserRole.GESTIONNAIRE)) {
+            return "Gestionnaire";
+        } else if (utilisateur.getRoles().contains(UserRole.MEMBRE)) {
+            return "Membre";
+        } else {
+            return "Visiteur";
+        }
+    }
+
+    private Color getRoleColor() {
+        if (utilisateur.getRoles().contains(UserRole.ADMIN)) {
+            return Colors.PRIMARY; // Rouge (DANGER)
+        } else if (utilisateur.getRoles().contains(UserRole.GESTIONNAIRE)) {
+            return Colors.PRIMARY; // Bleu (PRIMARY)
+        } else if (utilisateur.getRoles().contains(UserRole.MEMBRE)) {
+            return Colors.PRIMARY; // Vert (SUCCESS)
+        } else {
+            return Colors.PRIMARY; // Gris (SECONDARY)
+        }
+    }
+    // ... (le reste des méthodes reste inchangé)
     private ImageIcon loadAvatarImage() {
         try {
-            // Essayer de charger l'avatar personnalisé
             byte[] avatarData = utilisateur.loadAvatarData();
             if (avatarData != null && avatarData.length > 0) {
                 return new ImageIcon(avatarData);
             }
 
-            // Fallback 1: Image par défaut du package
             URL defaultAvatarUrl = getClass().getResource("/images/avantar.jpg");
             if (defaultAvatarUrl != null) {
                 return new ImageIcon(defaultAvatarUrl);
@@ -98,7 +129,6 @@ public class UserProfilePanel extends JPanel {
             System.err.println("Erreur lors du chargement de l'avatar: " + e.getMessage());
         }
 
-        // Fallback 2: Avatar généré
         return generateDefaultAvatar();
     }
 
@@ -106,17 +136,15 @@ public class UserProfilePanel extends JPanel {
         BufferedImage image = new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
 
-        // Fond
-        g.setColor(new Color(240, 240, 240));
+        // Utilisation des couleurs du thème
+        g.setColor(Colors.CURRENT_CARD_BACKGROUND);
         g.fillRect(0, 0, 120, 120);
 
-        // Cercle
-        g.setColor(new Color(200, 200, 200));
+        g.setColor(Colors.CURRENT_INPUT_BACKGROUND);
         g.fillOval(10, 10, 100, 100);
 
-        // Initiales
         String initials = getInitials(utilisateur.getUsername());
-        g.setColor(new Color(100, 100, 100));
+        g.setColor(Colors.CURRENT_TEXT_SECONDARY);
         g.setFont(new Font("Arial", Font.BOLD, 40));
         FontMetrics fm = g.getFontMetrics();
         int x = (120 - fm.stringWidth(initials)) / 2;

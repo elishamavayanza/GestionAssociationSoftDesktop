@@ -1,8 +1,12 @@
 package com.association.dao;
 
 import com.association.model.access.Utilisateur;
+import com.association.model.enums.UserRole;
+
 import java.sql.*;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements UtilisateurDao {
     public UtilisateurDaoImpl() {
@@ -19,7 +23,32 @@ class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements Utilisat
         utilisateur.setActive(rs.getBoolean("is_active"));
         utilisateur.setAvatar(rs.getString("avatar_path")); // Ajout de l'avatar
 
+        Set<UserRole> roles = loadUserRoles(utilisateur.getId());
+        utilisateur.setRoles(roles);
+
         return utilisateur;
+    }
+    private Set<UserRole> loadUserRoles(Long userId) throws SQLException {
+        Set<UserRole> roles = new HashSet<>();
+        String sql = "SELECT r.name FROM utilisateur_roles ur " +
+                "JOIN roles r ON ur.role_id = r.id " +
+                "WHERE ur.utilisateur_id = ?";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, userId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String roleName = rs.getString("name");
+                try {
+                    roles.add(UserRole.valueOf(roleName));
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Rôle inconnu: " + roleName);
+                }
+            }
+        }
+        return roles;
     }
 
     @Override

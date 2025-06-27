@@ -78,7 +78,7 @@ public class AdminInterface implements RoleInterface {
         contentPanel.setBackground(Color.WHITE);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel welcomeLabel = new JLabel("Bienvenue dans l'interface d'administration", SwingConstants.CENTER);
+        JLabel welcomeLabel = new JLabel("Bienvenue dans l'interface d'administration "+utilisateur.getUsername(), SwingConstants.CENTER);
         welcomeLabel.setFont(new Font("Arial", Font.BOLD, 18));
         contentPanel.add(welcomeLabel, BorderLayout.CENTER);
 
