@@ -16,13 +16,14 @@ public class UserProfilePanel extends JPanel {
     private final LoginFrame loginFrame;
     private final Utilisateur utilisateur;
     private final SecurityManager securityManager = SecurityManager.getInstance();
+    private LoadingSpinner loadingSpinner;
 
     public UserProfilePanel(LoginFrame loginFrame, Utilisateur utilisateur) {
         this.loginFrame = loginFrame;
         this.utilisateur = utilisateur;
         initComponents();
+        startLoadingProcess();
     }
-
 
     private void initComponents() {
         setLayout(new BorderLayout());
@@ -51,7 +52,6 @@ public class UserProfilePanel extends JPanel {
             }
         }
 
-
         Image scaledImage = originalIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
         RoundedImagePanel imagePanel = new RoundedImagePanel(new ImageIcon(scaledImage));
         imagePanel.setPreferredSize(new Dimension(120, 120));
@@ -74,35 +74,34 @@ public class UserProfilePanel extends JPanel {
         emailLabel.setForeground(Colors.CURRENT_TEXT_SECONDARY);
         emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Spinner de chargement
+        loadingSpinner = new LoadingSpinner();
+        loadingSpinner.setAlignmentX(Component.CENTER_ALIGNMENT);
+        loadingSpinner.setVisible(false);
+
         centerPanel.add(Box.createVerticalGlue());
         centerPanel.add(imageWrapper);
         centerPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         centerPanel.add(nameLabel);
         centerPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         centerPanel.add(emailLabel);
+        centerPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        centerPanel.add(loadingSpinner);
         centerPanel.add(Box.createVerticalGlue());
 
-        // Boutons
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 0));
-        buttonPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 0, 20));
-
-        CustomButton continueButton = new CustomButton("Continuer");
-        continueButton.addActionListener(e -> openRoleInterface());
-
-        CustomButton logoutButton = new CustomButton("Déconnexion");
-        logoutButton.setBackground(Colors.CURRENT_DANGER);
-        logoutButton.setHoverBackground(new Color(Colors.CURRENT_DANGER.getRGB()).darker());
-        logoutButton.addActionListener(e -> {
-            AuthPanel authPanel = new AuthPanel(loginFrame);
-            loginFrame.switchView(authPanel, "Authentification");
-        });
-
-        buttonPanel.add(continueButton);
-        buttonPanel.add(logoutButton);
-
         add(centerPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private void startLoadingProcess() {
+        loadingSpinner.setVisible(true);
+
+        // Simulation d'un temps de chargement
+        Timer loadingTimer = new Timer(3000, e -> {
+            openRoleInterface();
+            loadingSpinner.setVisible(false);
+        });
+        loadingTimer.setRepeats(false);
+        loadingTimer.start();
     }
 
     private void openRoleInterface() {
