@@ -1,8 +1,8 @@
 package com.association.security.service.impl;
 
 import com.association.dao.UtilisateurDao;
-import com.association.security.model.Session;
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Session;
+import com.association.model.access.Utilisateur;
 import com.association.security.service.AuthenticationService;
 import com.association.security.config.LoginPolicy;
 import com.association.security.service.PasswordService;

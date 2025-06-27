@@ -1,7 +1,6 @@
 package com.association.util.utils;
 
-import com.association.security.model.Utilisateur;
-import com.association.security.model.Role;
+import com.association.model.access.Utilisateur;
 import com.association.view.interfaces.InterfaceFactory;
 import com.association.view.interfaces.RoleInterface;
 

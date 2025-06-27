@@ -1,6 +1,6 @@
 package com.association.dao;
 
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Utilisateur;
 import java.util.Optional;
 
 public interface UtilisateurDao extends GenericDao<Utilisateur> {

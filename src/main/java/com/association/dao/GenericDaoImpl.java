@@ -1,8 +1,8 @@
-package com.association.dao.impl;
+package com.association.dao;
 
 import com.association.config.DatabaseConfig;
-import com.association.dao.GenericDao;
-import com.association.dao.ObservableDao;
+import com.association.model.Entity;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Optional;
 
-public abstract class GenericDaoImpl<T> extends Observable implements GenericDao<T>, ObservableDao<T> {
+abstract class GenericDaoImpl<T extends Entity> extends Observable implements GenericDao<T> {
     protected final DatabaseConfig databaseConfig;
     protected final String tableName;
 

@@ -1,6 +1,5 @@
-package com.association.dao.impl;
+package com.association.dao;
 
-import com.association.dao.ContributionDao;
 import com.association.model.Membre;
 import com.association.model.transaction.Contribution;
 import java.math.BigDecimal;
@@ -9,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements ContributionDao {
+class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements ContributionDao {
     public ContributionDaoImpl() {
         super("contributions");
     }

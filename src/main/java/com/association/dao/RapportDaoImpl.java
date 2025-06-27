@@ -1,6 +1,5 @@
-package com.association.dao.impl;
+package com.association.dao;
 
-import com.association.dao.RapportDao;
 import com.association.model.Rapport;
 import com.association.model.enums.TypeRapport;
 import java.sql.*;
@@ -8,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class RapportDaoImpl extends GenericDaoImpl<Rapport> implements RapportDao {
+class RapportDaoImpl extends GenericDaoImpl<Rapport> implements RapportDao {
     public RapportDaoImpl() {
         super("rapports");
     }

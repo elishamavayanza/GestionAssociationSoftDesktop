@@ -1,28 +1,26 @@
-package com.association.manager;
+package com.association.security;
 
 import com.association.dao.UtilisateurDao;
 import com.association.manager.dto.LoginRequest;
-import com.association.security.model.Utilisateur;
-import com.association.util.file.FileStorageService;
-import com.association.util.utils.ValidationUtil;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
+import com.association.model.access.Utilisateur;
 
 import java.io.InputStream;
 import java.util.Optional;
 
 public class SecurityManager {
-    private final UtilisateurDao utilisateurDao;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private UtilisateurDao utilisateurDao;
+    private final UserPasswordHasher userPasswordHasher = UserPasswordHasher.getInstance();
 
-    private final FileStorageService fileStorageService;
+    private static SecurityManager instance;
 
-    public SecurityManager(UtilisateurDao utilisateurDao, FileStorageService fileStorageService) {
-        this.utilisateurDao = utilisateurDao;
-        this.fileStorageService = fileStorageService;
+    private SecurityManager() {
+    }
 
+    public static SecurityManager getInstance() {
+        if (instance == null) {
+            instance = new SecurityManager();
+        }
+        return instance;
     }
 
     public Utilisateur authenticate(LoginRequest loginRequest) {
@@ -61,7 +59,7 @@ public class SecurityManager {
         System.out.println("Mot de passe fourni: " + loginRequest.getPassword());
         System.out.println("Mot de passe stocké (hash): " + utilisateur.getPassword());
 
-        boolean passwordMatches = passwordEncoder.matches(loginRequest.getPassword(), utilisateur.getPassword());
+        boolean passwordMatches = userPasswordHasher.verifyPassword(loginRequest.getPassword(), utilisateur.getPassword());
         System.out.println("Résultat comparaison: " + passwordMatches);
 
         if (!passwordMatches) {
@@ -95,15 +93,5 @@ public class SecurityManager {
     public Boolean deleteUserAvatar(Long userId) {
         // Suppression de l'avatar
         return true;
-    }
-
-    public String generateJwtToken(Authentication authentication) {
-        // Génération du token JWT
-        return null;
-    }
-
-    public Authentication authenticateUser(LoginRequest credentials) {
-        // Authentification de l'utilisateur
-        return null;
     }
 }

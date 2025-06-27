@@ -1,9 +1,9 @@
 package com.association.security.service;
 
-import com.association.security.model.Role;
+import com.association.model.enums.UserRole;
 
 public interface AuthorizationService {
     boolean hasPermission(Long userId, String resource, String action);
-    void assignRole(Long userId, Role role);
-    void revokeRole(Long userId, Role role);
+    void assignRole(Long userId, UserRole role);
+    void revokeRole(Long userId, UserRole role);
 }

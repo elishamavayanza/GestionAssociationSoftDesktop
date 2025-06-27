@@ -1,6 +1,6 @@
 package com.association.view.interfaces;
 
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Utilisateur;
 import com.association.view.components.*;
 import com.association.view.styles.Colors;
 

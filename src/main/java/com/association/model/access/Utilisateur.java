@@ -1,6 +1,7 @@
-package com.association.security.model;
+package com.association.model.access;
 
 import com.association.model.Entity;
+import com.association.model.enums.UserRole;
 import com.association.util.file.FileStorageService;
 
 import java.io.InputStream;
@@ -15,7 +16,7 @@ public class Utilisateur extends Entity {
     private boolean isActive = true;
     private Date lastLogin;
     private int failedLoginAttempts = 0;
-    private Set<Role> roles = new HashSet<>();
+    private Set<UserRole> roles = new HashSet<>();
     private String avatar; // chemin/URL de l'image
     private transient FileStorageService fileStorageService; // transient pour éviter la sérialisation
 
@@ -81,11 +82,11 @@ public class Utilisateur extends Entity {
         this.failedLoginAttempts = failedLoginAttempts;
     }
 
-    public Set<Role> getRoles() {
+    public Set<UserRole> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<Role> roles) {
+    public void setRoles(Set<UserRole> roles) {
         this.roles = roles;
     }
 
@@ -111,11 +112,11 @@ public class Utilisateur extends Entity {
         // Implémentation à faire : générer mot de passe temporaire, hasher et notifier
     }
 
-    public void addRole(Role role) {
+    public void addRole(UserRole role) {
         this.roles.add(role);
     }
 
-    public boolean hasRole(Role role) {
+    public boolean hasRole(UserRole role) {
         return this.roles.contains(role);
     }
 

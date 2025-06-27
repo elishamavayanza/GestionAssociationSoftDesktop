@@ -1,15 +1,13 @@
-package com.association.dao.impl;
+package com.association.dao;
 
-import com.association.dao.MembreDao;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
-public class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
+class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     public MembreDaoImpl() {
         super("membres");
     }

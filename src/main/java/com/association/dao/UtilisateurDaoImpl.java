@@ -1,11 +1,10 @@
-package com.association.dao.impl;
+package com.association.dao;
 
-import com.association.dao.UtilisateurDao;
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Utilisateur;
 import java.sql.*;
 import java.util.Optional;
 
-public class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements UtilisateurDao {
+class UtilisateurDaoImpl extends GenericDaoImpl<Utilisateur> implements UtilisateurDao {
     public UtilisateurDaoImpl() {
         super("utilisateurs");
     }

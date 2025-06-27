@@ -1,12 +1,11 @@
 package com.association.view;
 
-import com.association.security.model.Utilisateur;
-import com.association.util.file.FileStorageService;
+import com.association.model.access.Utilisateur;
 import com.association.view.interfaces.InterfaceFactory;
 import com.association.view.interfaces.RoleInterface;
 import com.association.view.styles.Colors;
 import com.association.view.components.*;
-import com.association.manager.SecurityManager;
+import com.association.security.SecurityManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,15 +13,13 @@ import java.awt.image.BufferedImage;
 import java.net.URL;
 
 public class UserProfilePanel extends JPanel {
-    private final MainFrame mainFrame;
+    private final LoginFrame loginFrame;
     private final Utilisateur utilisateur;
-    private final SecurityManager securityManager;
+    private final SecurityManager securityManager = SecurityManager.getInstance();
 
-    public UserProfilePanel(MainFrame mainFrame, Utilisateur utilisateur,
-                            SecurityManager securityManager) {
-        this.mainFrame = mainFrame;
+    public UserProfilePanel(LoginFrame loginFrame, Utilisateur utilisateur) {
+        this.loginFrame = loginFrame;
         this.utilisateur = utilisateur;
-        this.securityManager = securityManager;
         initComponents();
     }
 
@@ -97,8 +94,8 @@ public class UserProfilePanel extends JPanel {
         logoutButton.setBackground(Colors.CURRENT_DANGER);
         logoutButton.setHoverBackground(new Color(Colors.CURRENT_DANGER.getRGB()).darker());
         logoutButton.addActionListener(e -> {
-            AuthPanel authPanel = new AuthPanel(mainFrame, securityManager);
-            mainFrame.switchView(authPanel, "Authentification");
+            AuthPanel authPanel = new AuthPanel(loginFrame);
+            loginFrame.switchView(authPanel, "Authentification");
         });
 
         buttonPanel.add(continueButton);
@@ -112,6 +109,6 @@ public class UserProfilePanel extends JPanel {
         RoleInterface roleInterface = InterfaceFactory.createInterface(utilisateur);
         JFrame userFrame = roleInterface.createInterface();
         userFrame.setVisible(true);
-        mainFrame.dispose();
+        loginFrame.dispose();
     }
 }

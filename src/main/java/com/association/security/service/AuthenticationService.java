@@ -1,7 +1,7 @@
 package com.association.security.service;
 
-import com.association.security.model.Session;
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Session;
+import com.association.model.access.Utilisateur;
 import java.util.Optional;
 
 public interface AuthenticationService {

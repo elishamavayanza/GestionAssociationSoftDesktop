@@ -2,10 +2,10 @@ package com.association.view;
 
 import javax.swing.*;
 
-public class MainFrame extends JFrame {
+public class LoginFrame extends JFrame {
     private JPanel currentView;
 
-    public MainFrame() {
+    public LoginFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 350);
         setLocationRelativeTo(null);

@@ -1,8 +1,8 @@
 package com.association.view;
 
-import com.association.manager.SecurityManager;
+import com.association.security.SecurityManager;
 import com.association.manager.dto.LoginRequest;
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Utilisateur;
 import com.association.view.components.*;
 import com.association.view.styles.Colors;
 
@@ -15,8 +15,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class AuthPanel extends JPanel {
-    private final SecurityManager securityManager;
-    private final MainFrame mainFrame;
+    private final SecurityManager securityManager = SecurityManager.getInstance();
+    private final LoginFrame loginFrame;
 
     private CustomTextField usernameField;
     private CustomPasswordField passwordField;
@@ -24,9 +24,8 @@ public class AuthPanel extends JPanel {
     private JCheckBox rememberMeCheckbox;
     private JLabel forgotPasswordLabel;
 
-    public AuthPanel(MainFrame mainFrame, SecurityManager securityManager) {
-        this.mainFrame = mainFrame;
-        this.securityManager = securityManager;
+    public AuthPanel(LoginFrame loginFrame) {
+        this.loginFrame = loginFrame;
         initComponents();
     }
 
@@ -115,10 +114,10 @@ public class AuthPanel extends JPanel {
         panel.add(new JLabel("Entrez votre email:"));
         panel.add(emailField);
 
-        int result = JOptionPane.showConfirmDialog(mainFrame, panel, "Mot de passe oublié",
+        int result = JOptionPane.showConfirmDialog(loginFrame, panel, "Mot de passe oublié",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
-            JOptionPane.showMessageDialog(mainFrame,
+            JOptionPane.showMessageDialog(loginFrame,
                     "Un lien de réinitialisation a été envoyé à " + emailField.getText(),
                     "Email envoyé", JOptionPane.INFORMATION_MESSAGE);
         }
@@ -144,8 +143,8 @@ public class AuthPanel extends JPanel {
 
                 if (utilisateur != null) {
                     utilisateur.setLastLogin(new Date());
-                    UserProfilePanel profilePanel = new UserProfilePanel(mainFrame, utilisateur, securityManager);
-                    mainFrame.switchView(profilePanel, "Profil Utilisateur");
+                    UserProfilePanel profilePanel = new UserProfilePanel(loginFrame, utilisateur);
+                    loginFrame.switchView(profilePanel, "Profil Utilisateur");
                 } else {
                     showError("Identifiants incorrects");
                 }
@@ -156,7 +155,7 @@ public class AuthPanel extends JPanel {
         }
 
         private void showError(String message) {
-            JOptionPane.showMessageDialog(mainFrame,
+            JOptionPane.showMessageDialog(loginFrame,
                     message,
                     "Erreur",
                     JOptionPane.ERROR_MESSAGE);

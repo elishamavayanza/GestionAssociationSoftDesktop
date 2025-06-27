@@ -1,6 +1,5 @@
-package com.association.dao.impl;
+package com.association.dao;
 
-import com.association.dao.EmpruntDao;
 import com.association.model.transaction.Emprunt;
 import com.association.model.enums.StatutEmprunt;
 import java.math.BigDecimal;
@@ -8,7 +7,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
+class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     public EmpruntDaoImpl() {
         super("emprunts");
     }

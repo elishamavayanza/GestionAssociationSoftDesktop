@@ -1,10 +1,12 @@
 package com.association.manager;
 
 import com.association.dao.GenericDao;
+import com.association.model.Entity;
+
 import java.util.List;
 import java.util.Optional;
 
-public abstract class BaseManager<T> {
+public abstract class BaseManager<T extends Entity> {
     protected GenericDao<T> dao;
 
     public BaseManager(GenericDao<T> dao) {

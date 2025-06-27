@@ -1,6 +1,6 @@
 package com.association.security.config;
 
-import com.association.security.model.Utilisateur;
+import com.association.model.access.Utilisateur;
 
 public class LoginPolicy {
     private int maxAttempts = 5;

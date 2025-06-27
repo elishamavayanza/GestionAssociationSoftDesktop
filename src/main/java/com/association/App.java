@@ -1,12 +1,10 @@
 package com.association;
 
+import com.association.dao.DAOFactory;
 import com.association.dao.UtilisateurDao;
-import com.association.dao.impl.UtilisateurDaoImpl;
-import com.association.manager.SecurityManager;
 import com.association.util.file.FileStorageService;
 import com.association.view.AuthPanel;
-import com.association.view.MainFrame;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.association.view.LoginFrame;
 
 import javax.swing.*;
 import java.io.InputStream;
@@ -15,7 +13,7 @@ public class App {
     public static void main(String[] args) {
         // Initialisation des dépendances
 
-        UtilisateurDao utilisateurDao = new UtilisateurDaoImpl();
+        UtilisateurDao utilisateurDao = DAOFactory.getInstance(UtilisateurDao.class);
         FileStorageService fileStorageService = new FileStorageService() {
             @Override
             public String storeFile(byte[] file, String directory) {
@@ -42,14 +40,13 @@ public class App {
                 return "";
             }
         };
-        SecurityManager securityManager = new SecurityManager(utilisateurDao, fileStorageService);
 
         // Afficher l'interface de connexion
         SwingUtilities.invokeLater(() -> {
-            MainFrame mainFrame = new MainFrame();
-            AuthPanel authPanel = new AuthPanel(mainFrame, securityManager);
-            mainFrame.switchView(authPanel, "Authentification");
-            mainFrame.setVisible(true);
+            LoginFrame loginFrame = new LoginFrame();
+            AuthPanel authPanel = new AuthPanel(loginFrame);
+            loginFrame.switchView(authPanel, "Authentification");
+            loginFrame.setVisible(true);
         });
 
 

@@ -1,4 +1,4 @@
-package com.association.security.model;
+package com.association.model.access;
 
 import java.util.Date;
 
