@@ -1,5 +1,6 @@
 package com.association.security;
 
+import com.association.dao.DAOFactory;
 import com.association.dao.UtilisateurDao;
 import com.association.manager.dto.LoginRequest;
 import com.association.model.access.Utilisateur;
@@ -8,7 +9,7 @@ import java.io.InputStream;
 import java.util.Optional;
 
 public class SecurityManager {
-    private UtilisateurDao utilisateurDao;
+    private final UtilisateurDao utilisateurDao = DAOFactory.getInstance(UtilisateurDao.class);
     private final UserPasswordHasher userPasswordHasher = UserPasswordHasher.getInstance();
 
     private static SecurityManager instance;
