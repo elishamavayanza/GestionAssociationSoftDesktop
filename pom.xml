@@ -116,6 +116,12 @@
       <version>5.3.30</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-transcoder</artifactId>
+      <version>1.16</version>
+    </dependency>
+
     <!-- Servlet API (scope provided) -->
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -129,7 +135,7 @@
       <version>0.4</version>
     </dependency>
 
-  </dependencies>
+    </dependencies>
   <build>
     <plugins>
       <plugin>

@@ -27,6 +27,7 @@ public class AuthPanel extends JPanel {
     public AuthPanel(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
         initComponents();
+
     }
 
     private void initComponents() {
@@ -55,6 +56,8 @@ public class AuthPanel extends JPanel {
         add(usernameLabel, gbc);
 
         usernameField = new CustomTextField();
+        usernameField.setText(System.getenv("APP_USERNAME") != null ? System.getenv("APP_USERNAME") : "Isaac");
+
         gbc.gridx = 1;
         gbc.gridy = 1;
         add(usernameField, gbc);
@@ -67,6 +70,8 @@ public class AuthPanel extends JPanel {
         add(passwordLabel, gbc);
 
         passwordField = new CustomPasswordField();
+        passwordField.setText(System.getenv("APP_PASSWORD") != null ? System.getenv("APP_PASSWORD") : "Isaac@1234");
+
         gbc.gridx = 1;
         gbc.gridy = 2;
         add(passwordField, gbc);
@@ -162,4 +167,6 @@ public class AuthPanel extends JPanel {
             passwordField.setText("");
         }
     }
+
+
 }
