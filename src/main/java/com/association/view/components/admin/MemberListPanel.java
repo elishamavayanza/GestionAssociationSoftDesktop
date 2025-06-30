@@ -5,11 +5,13 @@ import com.association.dao.MembreDao;
 import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
+import com.association.view.components.IconManager;
 import com.association.view.components.common.AdvancedSearchDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -35,56 +37,106 @@ public class MemberListPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Colors.BACKGROUND);
 
-        // Titre
-        JLabel titleLabel = new JLabel("Liste des Membres", SwingConstants.CENTER);
+        // Panel d'en-tête avec le titre et les outils de recherche
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Colors.BACKGROUND);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Titre à gauche
+        JLabel titleLabel = new JLabel("Liste des Membres");
         titleLabel.setFont(Fonts.titleFont());
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-        add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setHorizontalAlignment(SwingConstants.LEFT);
 
-        // Panel principal
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        contentPanel.setBackground(Colors.BACKGROUND);
-
-        // Panel de recherche
-        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
-        searchPanel.setBackground(Colors.BACKGROUND);
+        // Panel pour les outils de recherche à droite
+        JPanel toolsPanel = new JPanel(new BorderLayout(10, 0));
+        toolsPanel.setBackground(Colors.BACKGROUND);
 
         // Panel pour la recherche simple
-        JPanel simpleSearchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        simpleSearchPanel.setBackground(Colors.BACKGROUND);
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        searchPanel.setBackground(Colors.BACKGROUND);
 
-        // Composants de recherche simple
-        JLabel searchLabel = new JLabel("Rechercher par nom:");
-        searchLabel.setFont(Fonts.labelFont());
+        // Barre de recherche
 
-        searchField = new JTextField(20);
+
+        Border roundedBorder = new Border() {
+            private final int radius = 10;
+
+            @Override
+            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (c instanceof AbstractButton) {
+                    AbstractButton button = (AbstractButton) c;
+                    if (button.getModel().isRollover()) {
+                        g2.setColor(new Color(100, 150, 255)); // Couleur au survol
+                    } else {
+                        g2.setColor(Color.GRAY); // Couleur normale
+                    }
+                } else {
+                    g2.setColor(Color.GRAY);
+                }
+
+                g2.drawRoundRect(x, y, width-1, height-1, radius, radius);
+                g2.dispose();
+            }
+
+            @Override
+            public Insets getBorderInsets(Component c) {
+                return new Insets(4, 8, 4, 8);
+            }
+
+            @Override
+            public boolean isBorderOpaque() {
+                return false;
+            }
+        };
+
+        searchField = new JTextField(15);
         searchField.setFont(Fonts.textFieldFont());
         searchField.addActionListener(this::performSearch);
+        searchField.setBorder(roundedBorder); // Appliquer la bordure arrondie
 
-        JButton searchButton = new JButton("Rechercher");
-        searchButton.setFont(Fonts.buttonFont());
-        searchButton.setBackground(Colors.PRIMARY);
-        searchButton.setForeground(Color.WHITE);
+
+        // Bouton de recherche simple avec icône
+        JButton searchButton = new JButton();
+        searchButton.setIcon(IconManager.getIcon("search.svg", 18));
+        searchButton.setToolTipText("Rechercher");
         searchButton.setFocusPainted(false);
+        searchButton.setContentAreaFilled(false);
+        searchButton.setBorder(roundedBorder); // Appliquer la bordure arrondie
+        searchButton.setOpaque(false);
+        searchButton.setMargin(new Insets(0, 0, 0, 0));
         searchButton.addActionListener(this::performSearch);
 
-        simpleSearchPanel.add(searchLabel);
-        simpleSearchPanel.add(searchField);
-        simpleSearchPanel.add(searchButton);
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
 
-        // Bouton de recherche avancée
-        advancedSearchButton = new JButton("Recherche Avancée");
-        advancedSearchButton.setFont(Fonts.buttonFont());
-        advancedSearchButton.setBackground(Colors.SECONDARY);
-        advancedSearchButton.setForeground(Color.WHITE);
+        // Bouton de recherche avancée avec icône seulement
+        advancedSearchButton = new JButton();
+        advancedSearchButton.setIcon(IconManager.getIcon("advanced_search.svg", 16));
+        advancedSearchButton.setToolTipText("Recherche Avancée");
         advancedSearchButton.setFocusPainted(false);
+        advancedSearchButton.setContentAreaFilled(false);
+        advancedSearchButton.setBorder(roundedBorder); // Appliquer la même bordure
+        advancedSearchButton.setOpaque(false);
+        advancedSearchButton.setMargin(new Insets(0, 0, 0, 0));
         advancedSearchButton.addActionListener(e -> showAdvancedSearchDialog());
 
-        // Ajout des composants au panel de recherche
-        searchPanel.add(simpleSearchPanel, BorderLayout.CENTER);
-        searchPanel.add(advancedSearchButton, BorderLayout.EAST);
-        contentPanel.add(searchPanel, BorderLayout.NORTH);
+        // Ajout des composants au panel d'outils
+        toolsPanel.add(searchPanel, BorderLayout.CENTER);
+        toolsPanel.add(advancedSearchButton, BorderLayout.EAST);
+
+        // Ajout des composants au panel d'en-tête
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+        headerPanel.add(toolsPanel, BorderLayout.EAST);
+
+        add(headerPanel, BorderLayout.NORTH);
+
+        // Panel principal pour le contenu
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 10, 20));
+        contentPanel.setBackground(Colors.BACKGROUND);
 
         // Modèle de tableau
         String[] columnNames = {"ID", "Nom", "Contact", "Date Inscription", "Statut"};
