@@ -26,4 +26,9 @@ public class Fonts {
     public static Font textFieldFont() {
         return new Font("Arial", Font.BOLD, 14);
     }
+
+    public static Font labelFont() {
+        return new Font("Arial", Font.BOLD, 14);
+
+    }
 }

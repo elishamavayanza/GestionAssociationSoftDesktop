@@ -202,6 +202,27 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
         return membres;
     }
 
+    @Override
+    public List<Membre> findByNameContaining(String name) {
+        List<Membre> membres = new ArrayList<>();
+        String sql = "SELECT m.id, m.date_inscription, m.statut, p.nom, p.contact, p.photo_path " +
+                "FROM membres m JOIN personnes p ON m.id = p.id " +
+                "WHERE LOWER(p.nom) LIKE LOWER(?)";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + name + "%");
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                membres.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return membres;
+    }
 
 
 }

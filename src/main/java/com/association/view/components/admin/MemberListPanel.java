@@ -5,7 +5,7 @@ import com.association.dao.MembreDao;
 import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
-import com.association.view.components.AdvancedSearchPanel;
+import com.association.view.components.common.AdvancedSearchDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
@@ -13,7 +13,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
@@ -22,7 +21,8 @@ public class MemberListPanel extends JPanel {
     private final MembreDao membreDao;
     private JTable memberTable;
     private DefaultTableModel tableModel;
-    private AdvancedSearchPanel searchPanel;
+    private JButton advancedSearchButton;
+    private JTextField searchField;
 
     public MemberListPanel(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -47,8 +47,43 @@ public class MemberListPanel extends JPanel {
         contentPanel.setBackground(Colors.BACKGROUND);
 
         // Panel de recherche
-        searchPanel = new AdvancedSearchPanel();
-        searchPanel.getSearchButton().addActionListener(e -> searchMembers());
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setBackground(Colors.BACKGROUND);
+
+        // Panel pour la recherche simple
+        JPanel simpleSearchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        simpleSearchPanel.setBackground(Colors.BACKGROUND);
+
+        // Composants de recherche simple
+        JLabel searchLabel = new JLabel("Rechercher par nom:");
+        searchLabel.setFont(Fonts.labelFont());
+
+        searchField = new JTextField(20);
+        searchField.setFont(Fonts.textFieldFont());
+        searchField.addActionListener(this::performSearch);
+
+        JButton searchButton = new JButton("Rechercher");
+        searchButton.setFont(Fonts.buttonFont());
+        searchButton.setBackground(Colors.PRIMARY);
+        searchButton.setForeground(Color.WHITE);
+        searchButton.setFocusPainted(false);
+        searchButton.addActionListener(this::performSearch);
+
+        simpleSearchPanel.add(searchLabel);
+        simpleSearchPanel.add(searchField);
+        simpleSearchPanel.add(searchButton);
+
+        // Bouton de recherche avancée
+        advancedSearchButton = new JButton("Recherche Avancée");
+        advancedSearchButton.setFont(Fonts.buttonFont());
+        advancedSearchButton.setBackground(Colors.SECONDARY);
+        advancedSearchButton.setForeground(Color.WHITE);
+        advancedSearchButton.setFocusPainted(false);
+        advancedSearchButton.addActionListener(e -> showAdvancedSearchDialog());
+
+        // Ajout des composants au panel de recherche
+        searchPanel.add(simpleSearchPanel, BorderLayout.CENTER);
+        searchPanel.add(advancedSearchButton, BorderLayout.EAST);
         contentPanel.add(searchPanel, BorderLayout.NORTH);
 
         // Modèle de tableau
@@ -105,14 +140,29 @@ public class MemberListPanel extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private void loadMemberData() {
-        List<Membre> membres = membreDao.findAll();
-        updateTable(membres);
+    private void performSearch(ActionEvent e) {
+        String searchTerm = searchField.getText().trim();
+        if (!searchTerm.isEmpty()) {
+            List<Membre> membres = membreDao.findByNameContaining(searchTerm);
+            updateTable(membres);
+        } else {
+            loadMemberData();
+        }
     }
 
-    private void searchMembers() {
-        MembreSearchCriteria criteria = searchPanel.getSearchCriteria();
-        List<Membre> membres = membreDao.search(criteria);
+    private void showAdvancedSearchDialog() {
+        AdvancedSearchDialog searchDialog = new AdvancedSearchDialog(parentFrame);
+        searchDialog.setVisible(true);
+
+        if (searchDialog.isSearchPerformed()) {
+            MembreSearchCriteria criteria = searchDialog.getSearchCriteria();
+            List<Membre> membres = membreDao.search(criteria);
+            updateTable(membres);
+        }
+    }
+
+    private void loadMemberData() {
+        List<Membre> membres = membreDao.findAll();
         updateTable(membres);
     }
 

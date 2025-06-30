@@ -14,5 +14,6 @@ public interface MembreDao extends GenericDao<Membre> {
     List<Membre> findTopContributors(int limit);
     List<Membre> findAll();
     List<Membre> search(MembreSearchCriteria criteria);
+    List<Membre> findByNameContaining(String name);
 
 }
