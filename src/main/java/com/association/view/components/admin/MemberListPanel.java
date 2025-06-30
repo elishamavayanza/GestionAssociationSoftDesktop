@@ -15,6 +15,8 @@ import javax.swing.border.Border;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
@@ -95,7 +97,30 @@ public class MemberListPanel extends JPanel {
         searchField = new JTextField(15);
         searchField.setFont(Fonts.textFieldFont());
         searchField.addActionListener(this::performSearch);
-        searchField.setBorder(roundedBorder); // Appliquer la bordure arrondie
+        searchField.setBorder(roundedBorder);
+
+// Ajouter le texte par défaut (placeholder)
+        searchField.setText("Rechercher...");
+        searchField.setForeground(Color.GRAY); // Couleur du texte de placeholder
+
+// Gestion de l'effacement du texte au clic
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals("Rechercher...")) {
+                    searchField.setText("");
+                    searchField.setForeground(Color.BLACK); // Couleur normale du texte
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().isEmpty()) {
+                    searchField.setForeground(Color.GRAY);
+                    searchField.setText("Rechercher...");
+                }
+            }
+        });// Appliquer la bordure arrondie
 
 
         // Bouton de recherche simple avec icône
