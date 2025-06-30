@@ -1,4 +1,4 @@
-package com.association.view.login;
+package com.association.view;
 
 import com.association.model.access.Utilisateur;
 import com.association.model.enums.UserRole;

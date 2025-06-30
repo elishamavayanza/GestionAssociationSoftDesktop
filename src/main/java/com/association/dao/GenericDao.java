@@ -14,4 +14,6 @@ public interface GenericDao<T extends Entity> extends ObservableDao<T> {
     long count();
     boolean existsById(Long id);
     boolean saveAll(Iterable<T> entities);
+
+
 }

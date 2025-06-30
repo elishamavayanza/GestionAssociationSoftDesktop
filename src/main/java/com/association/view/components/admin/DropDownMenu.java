@@ -1,14 +1,18 @@
-package com.association.view.components;
+package com.association.view.components.admin;
 
+import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.HoverButton;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class DropDownMenu extends JPanel {
     private final JButton mainButton;
     public final JPanel subMenuPanel;
     private boolean isExpanded = false;
+    private static HoverButton lastSelectedButton = null;
 
     public DropDownMenu(String text, String iconPath) {
 
@@ -76,12 +80,14 @@ public class DropDownMenu extends JPanel {
     }
 
 
-    public void addSubMenuItem(String text, String iconPath) {
+    public HoverButton addSubMenuItem(String text, String iconPath) {
         HoverButton subButton = new HoverButton(
                 text,
                 IconManager.getIcon(iconPath, 20),
                 Colors.SECONDARY.darker(),
-                Colors.SECONDARY.darker().darker()
+                Colors.SECONDARY.darker().darker(),
+                Colors.PRIMARY_DARK, // Couleur pour clic simple
+                Colors.PRIMARY   // Couleur pour double-clic (ajoutez cette couleur dans votre classe Colors)
         );
         subButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         subButton.setBorder(BorderFactory.createEmptyBorder(5, 30, 5, 5));
@@ -89,8 +95,37 @@ public class DropDownMenu extends JPanel {
         subButton.setForeground(Color.WHITE);
         subButton.setMaximumSize(new Dimension(200, 40));
 
+        // Ajout de l'action pour le double-clic
+        subButton.setDoubleClickAction(() -> {
+            // Désélectionner le dernier bouton sélectionné s'il existe et est différent
+            if (lastSelectedButton != null && lastSelectedButton != subButton) {
+                lastSelectedButton.setSelectedState(false);
+            }
+
+            // Mettre à jour le dernier bouton sélectionné
+            lastSelectedButton = subButton;
+
+            // Pas besoin de changer l'état ici, car il est géré par mouseClicked
+        });
+
+        // Ajoutez un MouseListener pour gérer le simple clic
+        subButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 1) {
+                    // Désélectionner le dernier bouton sélectionné s'il existe et est différent
+                    if (lastSelectedButton != null && lastSelectedButton != subButton) {
+                        lastSelectedButton.setSelectedState(false);
+                    }
+                    lastSelectedButton = subButton.isSelected() ? subButton : null;
+                }
+            }
+        });
+
         subMenuPanel.add(subButton);
         subMenuPanel.add(Box.createRigidArea(new Dimension(0, 2)));
+
+        return subButton;
     }
 
     private void toggleSubMenu() {

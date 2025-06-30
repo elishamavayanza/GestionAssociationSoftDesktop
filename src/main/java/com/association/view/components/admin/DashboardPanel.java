@@ -1,4 +1,4 @@
-package com.association.view.components;
+package com.association.view.components.admin;
 
 import javax.swing.*;
 import java.awt.*;

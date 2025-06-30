@@ -1,4 +1,4 @@
-package com.association.view.login;
+package com.association.view;
 
 import javax.swing.*;
 

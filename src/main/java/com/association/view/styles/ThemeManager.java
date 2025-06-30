@@ -2,6 +2,7 @@ package com.association.view.styles;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Map;
 
 public class ThemeManager {
     private boolean darkMode = false;
@@ -11,32 +12,29 @@ public class ThemeManager {
         Colors.setDarkTheme(darkMode);
     }
 
-    public void applyTheme(Component component) {
-        if (component instanceof JFrame) {
-            ((JFrame) component).getContentPane().setBackground(Colors.CURRENT_BACKGROUND);
-        }
+    public void applyTheme(Map<String, JComponent> components) {
+        Color bgColor = darkMode ? Colors.DARK_BACKGROUND : Colors.BACKGROUND;
+        Color fgColor = darkMode ? Colors.DARK_TEXT : Colors.TEXT;
 
-        // Parcourir tous les composants pour appliquer le thème
-        applyThemeToComponent(component);
+        components.forEach((key, component) -> {
+            component.setBackground(bgColor);
+            component.setForeground(fgColor);
+
+            if (component instanceof JPanel) {
+                ((JPanel)component).setBorder(BorderFactory.createLineBorder(
+                        darkMode ? Colors.DARK_BORDER : Colors.BORDER));
+            }
+
+            // Gestion spécifique pour différents composants
+            if (key.equals("headerPanel")) {
+                component.setBackground(darkMode ? Colors.DARK_PRIMARY : Colors.PRIMARY);
+            } else if (key.equals("sidePanel")) {
+                component.setBackground(darkMode ? Colors.DARK_SECONDARY : Colors.SECONDARY);
+            }
+        });
     }
 
-    private void applyThemeToComponent(Component component) {
-        if (component instanceof JPanel) {
-            component.setBackground(Colors.CURRENT_BACKGROUND);
-            ((JPanel) component).setOpaque(true);
-        } else if (component instanceof JLabel) {
-            ((JLabel) component).setForeground(Colors.CURRENT_TEXT);
-        } else if (component instanceof JButton) {
-            JButton button = (JButton) component;
-            button.setBackground(Colors.CURRENT_PRIMARY);
-            button.setForeground(Color.WHITE);
-        }
-
-        // Appliquer récursivement aux enfants
-        if (component instanceof Container) {
-            for (Component child : ((Container) component).getComponents()) {
-                applyThemeToComponent(child);
-            }
-        }
+    public boolean isDarkMode() {
+        return darkMode;
     }
 }

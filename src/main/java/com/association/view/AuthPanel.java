@@ -1,4 +1,4 @@
-package com.association.view.login;
+package com.association.view;
 
 import com.association.security.SecurityManager;
 import com.association.manager.dto.LoginRequest;

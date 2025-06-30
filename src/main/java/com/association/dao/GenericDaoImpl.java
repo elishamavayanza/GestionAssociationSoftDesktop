@@ -98,5 +98,6 @@ abstract class GenericDaoImpl<T extends Entity> extends Observable implements Ge
         return false;
     }
 
+
     protected abstract T mapResultSetToEntity(ResultSet rs) throws SQLException;
 }

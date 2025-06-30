@@ -1,5 +1,6 @@
 package com.association.dao;
 
+import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import java.sql.*;
@@ -40,7 +41,11 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     protected Membre mapResultSetToEntity(ResultSet rs) throws SQLException {
         Membre membre = new Membre();
         membre.setId(rs.getLong("id"));
-        // Remplir les autres propriétés
+        membre.setNom(rs.getString("nom"));
+        membre.setContact(rs.getString("contact"));
+        membre.setPhoto(rs.getString("photo_path"));
+        membre.setDateInscription(rs.getDate("date_inscription"));
+        membre.setStatut(StatutMembre.valueOf(rs.getString("statut")));
         return membre;
     }
 
@@ -129,4 +134,74 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
         }
         return membres;
     }
+    @Override
+    public List<Membre> findAll() {
+        List<Membre> membres = new ArrayList<>();
+        String sql = "SELECT * FROM vue_membres_complets";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                membres.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return membres;
+    }
+    @Override
+    public List<Membre> search(MembreSearchCriteria criteria) {
+        List<Membre> membres = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT m.id, m.date_inscription, m.statut, " +
+                        "p.nom, p.contact, p.photo_path " +
+                        "FROM membres m JOIN personnes p ON m.id = p.id WHERE 1=1"
+        );
+
+        List<Object> params = new ArrayList<>();
+
+        if (criteria.getNom() != null && !criteria.getNom().isEmpty()) {
+            sql.append(" AND p.nom LIKE ?");
+            params.add("%" + criteria.getNom() + "%");
+        }
+
+        if (criteria.getContact() != null && !criteria.getContact().isEmpty()) {
+            sql.append(" AND p.contact LIKE ?");
+            params.add("%" + criteria.getContact() + "%");
+        }
+
+        if (criteria.getStatut() != null) {
+            sql.append(" AND m.statut = ?");
+            params.add(criteria.getStatut().name());
+        }
+
+        if (criteria.getDateInscriptionFrom() != null) {
+            sql.append(" AND m.date_inscription >= ?");
+            params.add(new java.sql.Date(criteria.getDateInscriptionFrom().getTime()));
+        }
+
+        if (criteria.getDateInscriptionTo() != null) {
+            sql.append(" AND m.date_inscription <= ?");
+            params.add(new java.sql.Date(criteria.getDateInscriptionTo().getTime()));
+        }
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                membres.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return membres;
+    }
+
+
+
 }

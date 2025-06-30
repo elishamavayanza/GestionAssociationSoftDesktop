@@ -1,5 +1,6 @@
-package com.association.view.components;
+package com.association.view.components.admin;
 
+import com.association.view.components.IconManager;
 import com.association.view.interfaces.AdminInterface;
 import com.association.view.styles.Colors;
 import com.association.view.styles.HoverButton;
@@ -37,9 +38,33 @@ public class SidePanel extends JPanel {
         sidePanel.setBackground(Colors.SECONDARY);
         sidePanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 0));
 
-        JLabel titleLabel = new JLabel("AVEC", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
+        // Création d'un panel pour le titre AVEC avec icône
+        JPanel titlePanel = new JPanel(new BorderLayout(5, 0));
+        titlePanel.setBackground(Colors.SECONDARY);
+        titlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titlePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
+        // Ajout de l'icône à gauche
+        Icon avecIcon = IconManager.getIcon("avec.svg", 30);
+        JLabel iconLabel = new JLabel(avecIcon);
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));;
+
+        // Personnalisation du label AVEC
+        JLabel titleLabel = new JLabel("AVEC");
+        titleLabel.setFont(new Font("Arial Black", Font.BOLD, 24));
+        titleLabel.setForeground(Colors.INPUT_BACKGROUND);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 10));  // Couleur or
+
+        // Ajout des composants au panel titre
+        titlePanel.add(iconLabel, BorderLayout.WEST);
+        titlePanel.add(titleLabel, BorderLayout.CENTER);
+
+        // Création de la ligne horizontale
+        JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
+        separator.setForeground(Colors.DARK_PRIMARY); // Même couleur que le texte
+        separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
+        separator.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));  // Couleur or
+
 
         // Bouton Dashboard
         JButton dashboard = createMenuButton("dashboard.svg", "Dashboard", 24);
@@ -50,12 +75,18 @@ public class SidePanel extends JPanel {
 
         // Menus déroulants
         DropDownMenu gestionMembres = new DropDownMenu("Gestion des Membres", "groups.svg");
-        gestionMembres.addSubMenuItem("Liste Membres", "list.svg");
+        HoverButton listeMembresBtn = gestionMembres.addSubMenuItem("Liste Membres", "list.svg");
+        listeMembresBtn.setDoubleClickAction(() -> {
+            // Créer et afficher le panel de liste des membres
+            MemberListPanel memberListPanel = new MemberListPanel(parentFrame);
+            adminInterface.setContentPanel(memberListPanel);
+        });
+
         gestionMembres.addSubMenuItem("Ajouter Membre", "person_add.svg");
         gestionMembres.addSubMenuItem("Statuts Membres", "verified_user.svg");
 
         DropDownMenu gestionContributions = new DropDownMenu("Gestion Contributions", "payments.svg");
-        gestionContributions.addSubMenuItem("Enregistrer Contribution", "add_circle.svg");
+        gestionContributions.addSubMenuItem("Enregistrer Contribution", "attach_money.svg");
         gestionContributions.addSubMenuItem("Historique Contributions", "acute.svg");
         gestionContributions.addSubMenuItem("Rapports Contributions", "finance.svg");
 
@@ -76,8 +107,10 @@ public class SidePanel extends JPanel {
         JButton parametresBtn = createMenuButton("settings.svg", "Paramètres", 24);
 
         // Ajout des composants
-        sidePanel.add(titleLabel);
-        sidePanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        sidePanel.add(titlePanel);
+        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        sidePanel.add(separator);
+        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));;
         sidePanel.add(dashboard);
         sidePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         sidePanel.add(gestionMembres);

@@ -12,6 +12,7 @@ public class DAOFactory {
     private static DAOFactory instance;
     private final Map<String, ObservableDao<?>> interfaces = new HashMap<>();
 
+
     private DAOFactory () {
 
     }

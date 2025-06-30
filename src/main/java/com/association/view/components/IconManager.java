@@ -50,6 +50,10 @@ public class IconManager {
         }
     }
 
+    public static Icon getIcon(String iconPath, int size) {
+        return getScaledIcon(iconPath, size, size);
+    }
+
     private static class BufferedImageTranscoder extends ImageTranscoder {
         private BufferedImage img;
 

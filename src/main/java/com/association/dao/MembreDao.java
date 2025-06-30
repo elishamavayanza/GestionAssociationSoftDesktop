@@ -1,5 +1,6 @@
 package com.association.dao;
 
+import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import java.util.Date;
@@ -11,4 +12,7 @@ public interface MembreDao extends GenericDao<Membre> {
     boolean updatePhoto(Long membreId, String photoPath);
     long countByStatut(StatutMembre statut);
     List<Membre> findTopContributors(int limit);
+    List<Membre> findAll();
+    List<Membre> search(MembreSearchCriteria criteria);
+
 }
