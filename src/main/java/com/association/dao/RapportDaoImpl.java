@@ -6,6 +6,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Observer;
 
 class RapportDaoImpl extends GenericDaoImpl<Rapport> implements RapportDao {
     public RapportDaoImpl() {
@@ -63,4 +64,5 @@ class RapportDaoImpl extends GenericDaoImpl<Rapport> implements RapportDao {
     public boolean delete(Long id) { return false; }
     @Override
     public boolean saveAll(Iterable<Rapport> entities) { return false; }
+
 }

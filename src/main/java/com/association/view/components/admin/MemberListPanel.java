@@ -29,8 +29,10 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
-public class MemberListPanel extends JPanel {
+public class MemberListPanel extends JPanel implements Observer {
     private final JFrame parentFrame;
     private final MembreDao membreDao;
     private JTable memberTable;
@@ -44,6 +46,23 @@ public class MemberListPanel extends JPanel {
         this.membreDao = DAOFactory.getInstance(MembreDao.class);
         initComponents();
         loadMemberData();
+        // S'enregistrer comme observateur
+        this.membreDao.addObserver(this);
+    }
+    @Override
+    public void update(Observable o, Object arg) {
+        SwingUtilities.invokeLater(() -> {
+            if (arg instanceof Membre) {
+                // Membre modifié
+                loadMemberData();
+            } else if (arg instanceof Long) {
+                // Membre supprimé
+                loadMemberData();
+            } else {
+                // Autre changement
+                loadMemberData();
+            }
+        });
     }
 
     private void initComponents() {

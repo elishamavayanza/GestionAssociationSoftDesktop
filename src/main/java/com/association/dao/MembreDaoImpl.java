@@ -7,6 +7,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Observer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +18,14 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     }
     private static final Logger logger = LoggerFactory.getLogger(MembreDaoImpl.class);
 
-
     @Override
     public boolean create(Membre membre) {
+        // Validation préalable
+        if (membre == null || membre.getNom() == null || membre.getNom().trim().isEmpty()) {
+            logger.error("Tentative de création d'un membre invalide");
+            return false;
+        }
+
         Connection conn = null;
         try {
             conn = databaseConfig.getConnection();
@@ -26,75 +33,141 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
 
             // 1. Insérer dans entities
             String entitySql = "INSERT INTO entities(date_creation, entity_type) VALUES(?, ?)";
-            PreparedStatement entityStmt = conn.prepareStatement(entitySql, Statement.RETURN_GENERATED_KEYS);
-            entityStmt.setTimestamp(1, new Timestamp(membre.getDateCreation().getTime()));
-            entityStmt.setString(2, "MEMBRE");
-            int entityRows = entityStmt.executeUpdate();
+            try (PreparedStatement entityStmt = conn.prepareStatement(entitySql, Statement.RETURN_GENERATED_KEYS)) {
+                entityStmt.setTimestamp(1, new Timestamp(membre.getDateCreation().getTime()));
+                entityStmt.setString(2, "MEMBRE");
 
-            if (entityRows == 0) {
-                conn.rollback();
-                return false;
-            }
+                if (entityStmt.executeUpdate() == 0) {
+                    conn.rollback();
+                    logger.error("Échec de l'insertion dans entities");
+                    return false;
+                }
 
-            ResultSet rs = entityStmt.getGeneratedKeys();
-            if (!rs.next()) {
-                conn.rollback();
-                return false;
+                try (ResultSet rs = entityStmt.getGeneratedKeys()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        logger.error("Aucune clé générée pour l'entité");
+                        return false;
+                    }
+                    long id = rs.getLong(1);
+                    membre.setId(id);
+                }
             }
-            long id = rs.getLong(1);
-            membre.setId(id);
 
             // 2. Insérer dans personnes
             String personneSql = "INSERT INTO personnes(id, nom, contact, photo_path) VALUES(?, ?, ?, ?)";
-            PreparedStatement personneStmt = conn.prepareStatement(personneSql);
-            personneStmt.setLong(1, id);
-            personneStmt.setString(2, membre.getNom());
-            personneStmt.setString(3, membre.getContact());
-            personneStmt.setString(4, membre.getPhoto()); // Vérifier que ce n'est pas null
-            int personneRows = personneStmt.executeUpdate();
+            try (PreparedStatement personneStmt = conn.prepareStatement(personneSql)) {
+                personneStmt.setLong(1, membre.getId());
+                personneStmt.setString(2, membre.getNom());
+                personneStmt.setString(3, membre.getContact() != null ? membre.getContact() : "");
+                personneStmt.setString(4, membre.getPhoto()); // Peut être null
 
-            if (personneRows == 0) {
-                conn.rollback();
-                return false;
+                if (personneStmt.executeUpdate() == 0) {
+                    conn.rollback();
+                    logger.error("Échec de l'insertion dans personnes");
+                    return false;
+                }
             }
 
             // 3. Insérer dans membres
             String membreSql = "INSERT INTO membres(id, date_inscription, statut) VALUES(?, ?, ?)";
-            PreparedStatement membreStmt = conn.prepareStatement(membreSql);
-            membreStmt.setLong(1, id);
-            membreStmt.setDate(2, new java.sql.Date(membre.getDateInscription().getTime()));
-            membreStmt.setString(3, membre.getStatut().name());
-            int membreRows = membreStmt.executeUpdate();
+            try (PreparedStatement membreStmt = conn.prepareStatement(membreSql)) {
+                membreStmt.setLong(1, membre.getId());
+                membreStmt.setDate(2, new java.sql.Date(membre.getDateInscription().getTime()));
+                membreStmt.setString(3, membre.getStatut() != null ? membre.getStatut().name() : StatutMembre.ACTIF.name());
 
-            if (membreRows == 0) {
-                conn.rollback();
-                return false;
+                if (membreStmt.executeUpdate() == 0) {
+                    conn.rollback();
+                    logger.error("Échec de l'insertion dans membres");
+                    return false;
+                }
             }
 
             conn.commit();
+            logger.info("Membre créé avec succès - ID: {}", membre.getId());
+            notifyObservers(membre);
+            return true;
+
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                logger.error("Erreur lors du rollback", ex);
+            }
+            logger.error("Erreur SQL lors de la création du membre", e);
+            return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.warn("Erreur lors de la fermeture de la connexion", e);
+                }
+            }
+        }
+    }
+    @Override
+    public boolean update(Membre membre) {
+        String sql = "UPDATE personnes SET nom = ?, contact = ?, photo_path = ? WHERE id = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, membre.getNom());
+            stmt.setString(2, membre.getContact());
+            stmt.setString(3, membre.getPhoto());
+            stmt.setLong(4, membre.getId());
+
+            boolean updated = stmt.executeUpdate() > 0;
+            if (updated) {
+                notifyObservers(membre);
+            }
+            return updated;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    @Override
+    public boolean delete(Long id) {
+        Connection conn = null;
+        try {
+            conn = databaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            // Supprimer de la table membres
+            String membreSql = "DELETE FROM membres WHERE id = ?";
+            PreparedStatement membreStmt = conn.prepareStatement(membreSql);
+            membreStmt.setLong(1, id);
+            membreStmt.executeUpdate();
+
+            // Supprimer de la table personnes
+            String personneSql = "DELETE FROM personnes WHERE id = ?";
+            PreparedStatement personneStmt = conn.prepareStatement(personneSql);
+            personneStmt.setLong(1, id);
+            personneStmt.executeUpdate();
+
+            // Supprimer de la table entities
+            String entitySql = "DELETE FROM entities WHERE id = ?";
+            PreparedStatement entityStmt = conn.prepareStatement(entitySql);
+            entityStmt.setLong(1, id);
+            entityStmt.executeUpdate();
+
+            conn.commit();
+            notifyObservers(id);
             return true;
         } catch (SQLException e) {
             if (conn != null) {
                 try { conn.rollback(); } catch (SQLException ex) {}
             }
-            logger.error("Erreur création membre", e);
+            e.printStackTrace();
             return false;
         } finally {
             if (conn != null) {
                 try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
             }
         }
-    }
-    @Override
-    public boolean update(Membre membre) {
-        // Implémentation pour mettre à jour un membre
-        return false;
-    }
-
-    @Override
-    public boolean delete(Long id) {
-        // Implémentation pour supprimer un membre
-        return false;
     }
 
     @Override
@@ -297,6 +370,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
         }
         return membres;
     }
+
 
 
 }

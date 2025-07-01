@@ -7,10 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Observable;
-import java.util.Optional;
+import java.util.*;
 
 abstract class GenericDaoImpl<T extends Entity> extends Observable implements GenericDao<T> {
     protected final DatabaseConfig databaseConfig;
@@ -22,19 +19,17 @@ abstract class GenericDaoImpl<T extends Entity> extends Observable implements Ge
     }
 
     @Override
-    public void addObserver(java.util.Observer o) {
-        super.addObserver(o);
-    }
-
-    @Override
-    public void removeObserver(java.util.Observer o) {
-        super.deleteObserver(o);
-    }
-
-    @Override
-    public void notifyObservers() {
+    public void notifyObservers(Object arg) {
         setChanged();
-        super.notifyObservers();
+        super.notifyObservers(arg);
+    }
+
+    public void notifyObservers(T entity) {
+        notifyObservers((Object)entity);
+    }
+
+    public void notifyObservers(Long id) {
+        notifyObservers((Object)id);
     }
 
     @Override
@@ -97,7 +92,11 @@ abstract class GenericDaoImpl<T extends Entity> extends Observable implements Ge
         }
         return false;
     }
+    @Override
+    public void removeObserver(Observer o) {
 
-
+    }
     protected abstract T mapResultSetToEntity(ResultSet rs) throws SQLException;
+
+
 }

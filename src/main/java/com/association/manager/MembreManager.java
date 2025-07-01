@@ -6,14 +6,12 @@ import com.association.model.enums.StatutMembre;
 import com.association.manager.dto.MembreSearchCriteria;
 import com.association.util.file.FileStorageService;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MembreManager extends BaseManager<Membre> {
+public class MembreManager extends BaseManager<Membre> implements Observer {
     private final MembreDao membreDao;
     private final FileStorageService fileStorageService;
     private static final Logger logger = LoggerFactory.getLogger(MembreManager.class);
@@ -23,6 +21,9 @@ public class MembreManager extends BaseManager<Membre> {
         super(membreDao);
         this.membreDao = membreDao;
         this.fileStorageService = fileStorageService;
+
+        // S'enregistrer comme observateur
+        membreDao.addObserver(this);
     }
 
     public boolean ajouterMembre(String nom, String contact, byte[] photo, Date dateInscription, StatutMembre statut) {
@@ -108,5 +109,18 @@ public class MembreManager extends BaseManager<Membre> {
     public List<Membre> searchMembres(MembreSearchCriteria criteria) {
         // Implémentation de la recherche avancée
         return membreDao.findByNom(criteria.getNom());
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if (arg instanceof Membre) {
+            Membre membre = (Membre) arg;
+            logger.info("Membre modifié reçu par l'observateur: {}", membre.getId());
+            // Traiter la notification (mise à jour du cache, etc.)
+        } else if (arg instanceof Long) {
+            Long membreId = (Long) arg;
+            logger.info("Membre supprimé reçu par l'observateur: {}", membreId);
+            // Traiter la suppression (nettoyage du cache, etc.)
+        }
     }
 }
