@@ -199,11 +199,21 @@ public class AjouterMembrePanel extends JPanel {
         int returnValue = fileChooser.showOpenDialog(this);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             try {
-                photoData = Files.readAllBytes(fileChooser.getSelectedFile().toPath());
-                photoButton.setText("Photo sélectionnée");
-                photoButton.setIcon(new ImageIcon(
-                        new ImageIcon(photoData).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)
-                ));
+                byte[] originalPhotoData = Files.readAllBytes(fileChooser.getSelectedFile().toPath());
+
+                // Ouvrir l'éditeur de photo
+                PhotoEditorDialog editor = new PhotoEditorDialog(parentFrame, originalPhotoData);
+                editor.setVisible(true);
+
+                // Récupérer l'image modifiée
+                photoData = editor.getEditedImageData();
+
+                if (photoData != null) {
+                    photoButton.setText("Photo sélectionnée");
+                    photoButton.setIcon(new ImageIcon(
+                            new ImageIcon(photoData).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)
+                    ));
+                }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
                         "Erreur lors de la lecture de la photo: " + ex.getMessage(),

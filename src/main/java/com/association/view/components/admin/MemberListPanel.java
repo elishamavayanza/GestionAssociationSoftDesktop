@@ -347,16 +347,12 @@ public class MemberListPanel extends JPanel {
     private String getStatusText(StatutMembre statut) {
         if (statut == null) return "INCONNU";
 
-        switch (statut) {
-            case ACTIF:
-                return "Actif";
-            case INACTIF:
-                return "Inactif";
-            case SUSPENDU:
-                return "Suspendu";
-            default:
-                return statut.name();
-        }
+        return switch (statut) {
+            case ACTIF -> "Actif";
+            case INACTIF -> "Inactif";
+            case SUSPENDU -> "Suspendu";
+            default -> statut.name();
+        };
     }
 
     private void customizeTableAppearance() {
