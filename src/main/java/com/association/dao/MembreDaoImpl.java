@@ -7,27 +7,35 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     public MembreDaoImpl() {
         super("membres");
     }
+    private static final Logger logger = LoggerFactory.getLogger(MembreDaoImpl.class);
+
 
     @Override
     public boolean create(Membre membre) {
         Connection conn = null;
         try {
             conn = databaseConfig.getConnection();
-            conn.setAutoCommit(false); // Désactive l'auto-commit
+            conn.setAutoCommit(false);
 
             // 1. Insérer dans entities
             String entitySql = "INSERT INTO entities(date_creation, entity_type) VALUES(?, ?)";
             PreparedStatement entityStmt = conn.prepareStatement(entitySql, Statement.RETURN_GENERATED_KEYS);
             entityStmt.setTimestamp(1, new Timestamp(membre.getDateCreation().getTime()));
             entityStmt.setString(2, "MEMBRE");
-            entityStmt.executeUpdate();
+            int entityRows = entityStmt.executeUpdate();
 
-            // Récupérer l'ID généré
+            if (entityRows == 0) {
+                conn.rollback();
+                return false;
+            }
+
             ResultSet rs = entityStmt.getGeneratedKeys();
             if (!rs.next()) {
                 conn.rollback();
@@ -42,8 +50,13 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
             personneStmt.setLong(1, id);
             personneStmt.setString(2, membre.getNom());
             personneStmt.setString(3, membre.getContact());
-            personneStmt.setString(4, membre.getPhoto());
-            personneStmt.executeUpdate();
+            personneStmt.setString(4, membre.getPhoto()); // Vérifier que ce n'est pas null
+            int personneRows = personneStmt.executeUpdate();
+
+            if (personneRows == 0) {
+                conn.rollback();
+                return false;
+            }
 
             // 3. Insérer dans membres
             String membreSql = "INSERT INTO membres(id, date_inscription, statut) VALUES(?, ?, ?)";
@@ -51,7 +64,12 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
             membreStmt.setLong(1, id);
             membreStmt.setDate(2, new java.sql.Date(membre.getDateInscription().getTime()));
             membreStmt.setString(3, membre.getStatut().name());
-            membreStmt.executeUpdate();
+            int membreRows = membreStmt.executeUpdate();
+
+            if (membreRows == 0) {
+                conn.rollback();
+                return false;
+            }
 
             conn.commit();
             return true;
@@ -59,7 +77,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
             if (conn != null) {
                 try { conn.rollback(); } catch (SQLException ex) {}
             }
-            e.printStackTrace();
+            logger.error("Erreur création membre", e);
             return false;
         } finally {
             if (conn != null) {
@@ -67,7 +85,6 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
             }
         }
     }
-
     @Override
     public boolean update(Membre membre) {
         // Implémentation pour mettre à jour un membre

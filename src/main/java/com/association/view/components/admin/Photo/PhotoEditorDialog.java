@@ -1,5 +1,6 @@
-package com.association.view.components.admin;
+package com.association.view.components.admin.Photo;
 
+import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -221,7 +222,9 @@ public class PhotoEditorDialog extends JDialog {
         buttonPanel.setBackground(Colors.CURRENT_CARD_BACKGROUND);
 
         // Bouton de retournement horizontal
-        flipHorizontalButton = new JButton("Retournement H");
+        flipHorizontalButton = new JButton();
+        flipHorizontalButton.setIcon(IconManager.getIcon("flip-horizontal.svg", 20));
+        flipHorizontalButton.setToolTipText("Retournement horizontal");
         customizeButton(flipHorizontalButton);
         flipHorizontalButton.addActionListener(e -> {
             isFlippedHorizontal = !isFlippedHorizontal;
@@ -233,7 +236,9 @@ public class PhotoEditorDialog extends JDialog {
         });
 
         // Bouton de retournement vertical
-        flipVerticalButton = new JButton("Retournement V");
+        flipVerticalButton = new JButton();
+        flipVerticalButton.setIcon(IconManager.getIcon("flip-vertical.svg", 20));
+        flipVerticalButton.setToolTipText("Retournement vertical");
         customizeButton(flipVerticalButton);
         flipVerticalButton.addActionListener(e -> {
             isFlippedVertical = !isFlippedVertical;
@@ -245,11 +250,13 @@ public class PhotoEditorDialog extends JDialog {
         });
 
         // Bouton de recadrage
-        cropButton = new JButton("Recadrer");
+        cropButton = new JButton();
+        cropButton.setIcon(IconManager.getIcon("crop.svg", 20));
+        cropButton.setToolTipText("Recadrer");
         customizeButton(cropButton);
         cropButton.addActionListener(e -> {
             isCropping = !isCropping;
-            cropButton.setText(isCropping ? "Valider recadrage" : "Recadrer");
+            cropButton.setToolTipText(isCropping ? "Valider recadrage" : "Recadrer");
             if (!isCropping && cropRect != null) {
                 applyCrop();
             }
@@ -257,8 +264,11 @@ public class PhotoEditorDialog extends JDialog {
             imagePanel.repaint();
         });
 
+
         // Bouton de réinitialisation
-        resetButton = new JButton("Réinitialiser");
+        resetButton = new JButton();
+        resetButton.setIcon(IconManager.getIcon("reset.svg", 20));
+        resetButton.setToolTipText("Réinitialiser");
         customizeButton(resetButton);
         resetButton.addActionListener(e -> {
             rotationAngle = 0;
@@ -271,22 +281,27 @@ public class PhotoEditorDialog extends JDialog {
             displayedImage = originalImage;
             imageLabel.setIcon(new ImageIcon(displayedImage));
             isCropping = false;
-            cropButton.setText("Recadrer");
+            cropButton.setToolTipText("Recadrer");
             cropRect = null;
             imagePanel.repaint();
         });
 
         // Boutons OK/Annuler
-        JButton okButton = new JButton("OK");
+        JButton okButton = new JButton();
+        okButton.setIcon(IconManager.getIcon("check.svg", 20));
+        okButton.setToolTipText("OK");
         customizePrimaryButton(okButton);
         okButton.addActionListener(e -> dispose());
 
-        JButton cancelButton = new JButton("Annuler");
+        JButton cancelButton = new JButton();
+        cancelButton.setIcon(IconManager.getIcon("close.svg", 20));
+        cancelButton.setToolTipText("Annuler");
         customizeButton(cancelButton);
         cancelButton.addActionListener(e -> {
             displayedImage = originalImage;
             dispose();
         });
+
 
         buttonPanel.add(flipHorizontalButton);
         buttonPanel.add(flipVerticalButton);

@@ -6,6 +6,8 @@ import com.association.manager.MembreManager;
 import com.association.model.enums.StatutMembre;
 import com.association.util.file.FileStorageService;
 import com.association.util.file.FileStorageServiceAdapter;
+import com.association.util.file.RealFileStorageService;
+import com.association.view.components.admin.Photo.PhotoEditorDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
@@ -13,6 +15,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Date;
 
@@ -34,7 +38,7 @@ public class AjouterMembrePanel extends JPanel {
         this.parentFrame = parentFrame;
 
         // Initialisation des services
-        FileStorageService fileStorageService = new FileStorageServiceAdapter();
+        FileStorageService fileStorageService = new RealFileStorageService();
         this.membreManager = new MembreManager(DAOFactory.getInstance(MembreDao.class), fileStorageService);
 
         // Configuration du layout et style
@@ -192,14 +196,34 @@ public class AjouterMembrePanel extends JPanel {
 
     private void choisirPhoto(ActionEvent e) {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Sélectionner une photo");
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-                "Images", "jpg", "jpeg", "png", "gif"));
+
+        // Configurer le file chooser
+        fileChooser.setDialogTitle("Sélectionner une photo de profil");
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fileChooser.setAcceptAllFileFilterUsed(false);
+
+        // Filtres pour les images
+        fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Images (JPG, PNG, GIF)", "jpg", "jpeg", "png", "gif"));
+
+        // Démarrer dans le dossier "Images" de l'utilisateur
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home") + "/Images"));
 
         int returnValue = fileChooser.showOpenDialog(this);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
             try {
-                byte[] originalPhotoData = Files.readAllBytes(fileChooser.getSelectedFile().toPath());
+                // Lire le fichier image
+                byte[] originalPhotoData = Files.readAllBytes(selectedFile.toPath());
+
+                // Vérifier la taille du fichier (par exemple, max 5MB)
+                long maxSize = 5 * 1024 * 1024; // 5MB
+                if (selectedFile.length() > maxSize) {
+                    JOptionPane.showMessageDialog(this,
+                            "La photo est trop grande (max 5MB)",
+                            "Erreur", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
                 // Ouvrir l'éditeur de photo
                 PhotoEditorDialog editor = new PhotoEditorDialog(parentFrame, originalPhotoData);
@@ -209,15 +233,17 @@ public class AjouterMembrePanel extends JPanel {
                 photoData = editor.getEditedImageData();
 
                 if (photoData != null) {
-                    photoButton.setText("Photo sélectionnée");
-                    photoButton.setIcon(new ImageIcon(
-                            new ImageIcon(photoData).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)
-                    ));
+                    // Afficher un aperçu
+                    ImageIcon icon = new ImageIcon(photoData);
+                    Image scaledImage = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+                    photoButton.setIcon(new ImageIcon(scaledImage));
+                    photoButton.setText(selectedFile.getName());
                 }
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this,
                         "Erreur lors de la lecture de la photo: " + ex.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         }
     }
@@ -243,21 +269,28 @@ public class AjouterMembrePanel extends JPanel {
 
             if (success) {
                 showSuccess("Membre ajouté avec succès", "Succès");
-                // parentFrame.dispose(); // Retirer cette ligne
-                // Optionnel : Réinitialiser le formulaire
-                nomField.setText("");
-                contactField.setText("");
-                statutComboBox.setSelectedItem(StatutMembre.ACTIF);
-                photoData = null;
-                photoButton.setText("Choisir une photo");
-                photoButton.setIcon(null);
+                resetForm();
             } else {
-                showError("Erreur lors de l'ajout du membre", "Erreur");
+                // Message plus précis
+                if (photoData != null && photoData.length > 0) {
+                    showError("Erreur lors de l'enregistrement de la photo ou du membre", "Erreur");
+                } else {
+                    showError("Erreur lors de l'ajout du membre", "Erreur");
+                }
             }
         } catch (Exception ex) {
             showError("Erreur technique: " + ex.getMessage(), "Erreur");
             ex.printStackTrace();
         }
+    }
+
+    private void resetForm() {
+        nomField.setText("");
+        contactField.setText("");
+        statutComboBox.setSelectedItem(StatutMembre.ACTIF);
+        photoData = null;
+        photoButton.setText("Choisir une photo");
+        photoButton.setIcon(null);
     }
 
     private void showError(String message, String title) {

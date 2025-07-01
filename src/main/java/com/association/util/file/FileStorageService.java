@@ -8,4 +8,5 @@ public interface FileStorageService {
     boolean deleteFile(String filePath);
     String getFileExtension(String filename);
     String generateUniqueFilename(String originalName);
+
 }
