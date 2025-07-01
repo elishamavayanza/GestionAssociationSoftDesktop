@@ -53,9 +53,9 @@ public class AjouterMembrePanel extends JPanel {
     }
 
     private JPanel createListPanel() {
-        ListeMembresPanel listeMembresPanel = new ListeMembresPanel();
-        listeMembresPanel.setPreferredSize(new Dimension(250, getHeight()));
-        return listeMembresPanel;
+        ListeMemberbyName listeMemberbyName = new ListeMemberbyName();
+        listeMemberbyName.setPreferredSize(new Dimension(250, getHeight()));
+        return listeMemberbyName;
     }
 
     private JPanel createMainPanel() {

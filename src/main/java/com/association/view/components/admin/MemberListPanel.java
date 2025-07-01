@@ -11,9 +11,14 @@ import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import javax.swing.plaf.basic.BasicScrollBarUI;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -170,6 +175,7 @@ public class MemberListPanel extends JPanel {
         contentPanel.setBackground(Colors.BACKGROUND);
 
         // Modèle de tableau
+        // Modèle de tableau
         String[] columnNames = {"ID", "Nom", "Contact", "Date Inscription", "Statut"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -178,14 +184,60 @@ public class MemberListPanel extends JPanel {
             }
         };
 
-        memberTable = new JTable(tableModel);
+// Création de la table avec les personnalisations
+        memberTable = new JTable(tableModel) {
+            @Override
+            public int getAutoResizeMode() {
+                return JTable.AUTO_RESIZE_OFF; // Retourne un int, pas un boolean
+            }
+        };
+
+// Configuration du style de la table
+        memberTable.setShowHorizontalLines(true);
+        memberTable.setShowVerticalLines(false);
+        memberTable.setGridColor(Colors.BORDER);
+        memberTable.setIntercellSpacing(new Dimension(0, 1));
+        memberTable.setRowMargin(5);
         memberTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         memberTable.setRowHeight(30);
         memberTable.setFont(Fonts.tableFont());
         memberTable.getTableHeader().setFont(Fonts.tableHeaderFont());
 
+        memberTable.setAutoCreateRowSorter(true);
+
+// Empêcher le déplacement des colonnes
+        memberTable.getTableHeader().setReorderingAllowed(false);
+
+// Configuration du rendu du header pour qu'il soit cohérent avec le style
+        memberTable.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setBackground(Colors.PRIMARY);
+                setForeground(Color.WHITE);
+                setHorizontalAlignment(CENTER);
+                setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                return this;
+            }
+        });
+
+        customizeTableAppearance(); // Applique les autres personnalisations
+
         JScrollPane scrollPane = new JScrollPane(memberTable);
         scrollPane.setBackground(Colors.BACKGROUND);
+
+// Optionnel: supprimer la bordure si vous voulez un look plus minimaliste
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+
+// Personnalisation de la barre de défilement
+        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+        JScrollBar horizontalScrollBar = scrollPane.getHorizontalScrollBar();
+
+// Appliquer le style aux barres de défilement
+        customizeScrollBar(verticalScrollBar);
+        customizeScrollBar(horizontalScrollBar);
+
         contentPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Panel de boutons
@@ -286,5 +338,152 @@ public class MemberListPanel extends JPanel {
             default:
                 return statut.name();
         }
+    }
+
+    private void customizeTableAppearance() {
+        // Personnalisation de l'en-tête
+        memberTable.getTableHeader().setOpaque(false);
+        memberTable.getTableHeader().setBackground(Colors.PRIMARY);
+        memberTable.getTableHeader().setForeground(Color.WHITE);
+        memberTable.getTableHeader().setFont(Fonts.tableHeaderFont());
+
+        // Personnalisation des cellules
+        memberTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                // Couleur de fond alternée pour les lignes
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
+                }
+
+                // Personnalisation selon la colonne (ex: statut)
+                if (column == 4) { // Colonne Statut
+                    String status = (String) value;
+                    switch (status) {
+                        case "Actif":
+                            c.setForeground(Colors.SUCCESS);
+                            break;
+                        case "Inactif":
+                            c.setForeground(Colors.DANGER);
+                            break;
+                        case "Suspendu":
+                            c.setForeground(Colors.WARNING);
+                            break;
+                        default:
+                            c.setForeground(Colors.TEXT);
+                    }
+                } else {
+                    c.setForeground(Colors.TEXT);
+                }
+
+                // Centrer le texte dans toutes les cellules
+                setHorizontalAlignment(SwingConstants.CENTER);
+
+                return c;
+            }
+        });
+
+        // Largeur des colonnes
+        memberTable.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
+        memberTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Nom
+        memberTable.getColumnModel().getColumn(2).setPreferredWidth(120); // Contact
+        memberTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Date
+        memberTable.getColumnModel().getColumn(4).setPreferredWidth(80);  // Statut
+    }
+    private void customizeScrollBar(JScrollBar scrollBar) {
+        // Définir la taille préférée pour rendre la barre plus fine
+        if (scrollBar.getOrientation() == JScrollBar.VERTICAL) {
+            scrollBar.setPreferredSize(new Dimension(8, 0)); // Largeur réduite à 8px
+        } else {
+            scrollBar.setPreferredSize(new Dimension(0, 8)); // Hauteur réduite à 8px
+        }
+
+        scrollBar.setBackground(Colors.BACKGROUND);
+        scrollBar.setForeground(Colors.SECONDARY);
+
+        // Modifier l'UI de la barre de défilement
+        scrollBar.setUI(new BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = Colors.SECONDARY;
+                this.trackColor = Colors.CARD_BACKGROUND;
+                this.thumbDarkShadowColor = Colors.DARK_SECONDARY;
+                this.thumbHighlightColor = Colors.SECONDARY;
+                this.thumbLightShadowColor = Colors.SECONDARY;
+            }
+
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            private JButton createZeroButton() {
+                JButton button = new JButton();
+                button.setPreferredSize(new Dimension(0, 0));
+                button.setMinimumSize(new Dimension(0, 0));
+                button.setMaximumSize(new Dimension(0, 0));
+                return button;
+            }
+
+            @Override
+            protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+                Graphics2D g2 = (Graphics2D)g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(trackColor);
+                g2.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+            }
+
+            @Override
+            protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                Graphics2D g2 = (Graphics2D)g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (thumbBounds.isEmpty() || !scrollBar.isEnabled()) {
+                    return;
+                }
+
+                int width = thumbBounds.width;
+                int height = thumbBounds.height;
+
+                // Pour une barre plus fine, on réduit encore la largeur/hauteur du thumb
+                if (scrollBar.getOrientation() == JScrollBar.VERTICAL) {
+                    width = 6; // Largeur du thumb encore plus réduite
+                    thumbBounds.x += 1; // Centrer le thumb
+                } else {
+                    height = 6; // Hauteur du thumb encore plus réduite
+                    thumbBounds.y += 1; // Centrer le thumb
+                }
+
+                g2.setColor(thumbColor);
+                g2.fillRoundRect(thumbBounds.x, thumbBounds.y, width, height, 3, 3);
+
+                // Effet de survol
+                if (isThumbRollover()) {
+                    g2.setColor(new Color(thumbColor.getRed(), thumbColor.getGreen(), thumbColor.getBlue(), 150));
+                    g2.fillRoundRect(thumbBounds.x, thumbBounds.y, width, height, 3, 3);
+                }
+            }
+        });
+
+        // Ajouter un écouteur pour changer la couleur au survol
+        scrollBar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                scrollBar.setForeground(Colors.PRIMARY_DARK);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                scrollBar.setForeground(Colors.PRIMARY);
+            }
+        });
     }
 }

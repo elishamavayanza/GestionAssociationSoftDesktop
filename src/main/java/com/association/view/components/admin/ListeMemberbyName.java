@@ -8,11 +8,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
-public class ListeMembresPanel extends JPanel {
+public class ListeMemberbyName extends JPanel {
     private final JList<String> membreList;
     private final DefaultListModel<String> listModel;
 
-    public ListeMembresPanel() {
+    public ListeMemberbyName() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Membres existants"));
 

@@ -5,6 +5,7 @@ import com.association.manager.dto.LoginRequest;
 import com.association.model.access.Utilisateur;
 import com.association.view.components.*;
 import com.association.view.styles.Colors;
+import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import java.awt.*;
@@ -160,10 +161,38 @@ public class AuthPanel extends JPanel {
         }
 
         private void showError(String message) {
-            JOptionPane.showMessageDialog(loginFrame,
-                    message,
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+            // Création du panel personnalisé
+            JPanel panel = new JPanel(new BorderLayout(10, 10));
+            panel.setBackground(Colors.ERROR_BACKGROUND);
+            panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            // Configuration du message
+            JLabel messageLabel = new JLabel("<html><div style='width: 250px;'>" + message + "</div></html>");
+            messageLabel.setFont(Fonts.labelFont());
+            messageLabel.setForeground(Colors.CURRENT_TEXT);
+
+            // Ajout de l'icône d'erreur
+            Icon errorIcon = UIManager.getIcon("OptionPane.errorIcon");
+            if (errorIcon != null) {
+                JLabel iconLabel = new JLabel(errorIcon);
+                panel.add(iconLabel, BorderLayout.WEST);
+            }
+
+            panel.add(messageLabel, BorderLayout.CENTER);
+
+            // Création de la boîte de dialogue
+            JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE);
+            JDialog dialog = pane.createDialog(loginFrame, "Erreur");
+
+            // Configuration de l'icône de la fenêtre
+            if (errorIcon instanceof ImageIcon) {
+                dialog.setIconImage(((ImageIcon)errorIcon).getImage());
+            }
+
+            // Affichage de la boîte de dialogue
+            dialog.setVisible(true);
+
+            // Réinitialisation du champ mot de passe après fermeture
             passwordField.setText("");
         }
     }
