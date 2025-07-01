@@ -11,6 +11,9 @@ import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -107,20 +110,19 @@ public class MemberListPanel extends JPanel {
 
         searchField = new JTextField(15);
         searchField.setFont(Fonts.textFieldFont());
-        searchField.addActionListener(this::performSearch);
         searchField.setBorder(roundedBorder);
 
-// Ajouter le texte par défaut (placeholder)
+// Texte par défaut (placeholder)
         searchField.setText("Rechercher...");
-        searchField.setForeground(Color.GRAY); // Couleur du texte de placeholder
+        searchField.setForeground(Color.GRAY);
 
-// Gestion de l'effacement du texte au clic
+// Gestion du placeholder
         searchField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
                 if (searchField.getText().equals("Rechercher...")) {
                     searchField.setText("");
-                    searchField.setForeground(Color.BLACK); // Couleur normale du texte
+                    searchField.setForeground(Color.BLACK);
                 }
             }
 
@@ -131,8 +133,25 @@ public class MemberListPanel extends JPanel {
                     searchField.setText("Rechercher...");
                 }
             }
-        });// Appliquer la bordure arrondie
+        });
 
+// Ajout du DocumentListener pour la recherche en temps réel
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                performRealTimeSearch();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                performRealTimeSearch();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                performRealTimeSearch();
+            }
+        });
 
         // Bouton de recherche simple avec icône
         JButton searchButton = new JButton();
@@ -485,5 +504,25 @@ public class MemberListPanel extends JPanel {
                 scrollBar.setForeground(Colors.PRIMARY);
             }
         });
+    }
+    private void performRealTimeSearch() {
+        String searchTerm = searchField.getText().trim();
+
+        // Ne pas effectuer de recherche si c'est le texte placeholder
+        if (searchTerm.equals("Rechercher...") || searchTerm.isEmpty()) {
+            loadMemberData();
+            return;
+        }
+
+        // Utiliser un SwingWorker pour éviter de bloquer l'interface
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                List<Membre> membres = membreDao.findByNameContaining(searchTerm);
+                SwingUtilities.invokeLater(() -> updateTable(membres));
+                return null;
+            }
+        };
+        worker.execute();
     }
 }
