@@ -26,19 +26,20 @@ public class SidePanel extends JPanel {
         setBackground(Colors.SECONDARY);
         setPreferredSize(new Dimension(220, parentFrame.getHeight()));
 
-        JPanel sidePanel = createSidePanelContent();
-        JScrollPane scrollPane = createScrollPane(sidePanel);
+        // Créer un panel pour le header fixe
+        JPanel headerPanel = createHeaderPanel();
 
+        // Créer le panel scrollable (sans le header)
+        JPanel scrollableContent = createSidePanelContent();
+        JScrollPane scrollPane = createScrollPane(scrollableContent);
+
+        // Ajouter les deux panels au panel principal
+        add(headerPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private JPanel createSidePanelContent() {
-        JPanel sidePanel = new JPanel();
-        sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.Y_AXIS));
-        sidePanel.setBackground(Colors.SECONDARY);
-        sidePanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 0));
-
-        // Création d'un panel pour le titre AVEC avec icône
+    private JPanel createHeaderPanel() {
+        // Création d'un panel pour le titre AVEC avec icône (identique à votre code actuel)
         JPanel titlePanel = new JPanel(new BorderLayout(5, 0));
         titlePanel.setBackground(Colors.SECONDARY);
         titlePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -53,7 +54,7 @@ public class SidePanel extends JPanel {
         JLabel titleLabel = new JLabel("AVEC");
         titleLabel.setFont(new Font("Arial Black", Font.BOLD, 24));
         titleLabel.setForeground(Colors.INPUT_BACKGROUND);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 10));  // Couleur or
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 10));
 
         // Ajout des composants au panel titre
         titlePanel.add(iconLabel, BorderLayout.WEST);
@@ -61,21 +62,39 @@ public class SidePanel extends JPanel {
 
         // Création de la ligne horizontale
         JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
-        separator.setForeground(Colors.DARK_PRIMARY); // Même couleur que le texte
+        separator.setForeground(Colors.DARK_PRIMARY);
         separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
-        separator.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));  // Couleur or
+        separator.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
+        // Panel principal pour le header
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+        headerPanel.setBackground(Colors.SECONDARY);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 0));
+
+        headerPanel.add(titlePanel);
+        headerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        headerPanel.add(separator);
+        headerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        return headerPanel;
+    }
+
+    private JPanel createSidePanelContent() {
+        JPanel sidePanel = new JPanel();
+        sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.Y_AXIS));
+        sidePanel.setBackground(Colors.SECONDARY);
+        sidePanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 10, 0)); // Notez le padding top à 0
 
         // Bouton Dashboard
         JButton dashboard = createMenuButton();
         dashboard.addActionListener(e -> adminInterface.setContentPanel(new DashboardPanel(parentFrame,
                 adminInterface.getUtilisateur().getUsername())));
 
-        // Menus déroulants
+        // Menus déroulants (identique à votre code actuel)
         DropDownMenu gestionMembres = new DropDownMenu("Gestion des Membres", "groups.svg");
         HoverButton listeMembresBtn = gestionMembres.addSubMenuItem("Liste Membres", "list.svg");
         listeMembresBtn.setDoubleClickAction(() -> {
-            // Créer et afficher le panel de liste des membres
             MemberListPanel memberListPanel = new MemberListPanel(parentFrame);
             adminInterface.setContentPanel(memberListPanel);
         });
@@ -110,11 +129,7 @@ public class SidePanel extends JPanel {
         DropDownMenu parametresBtn = new DropDownMenu("Paramètres", "settings.svg");
         parametresBtn.addSubMenuItem("Preference", "preference.svg");
 
-        // Ajout des composants
-        sidePanel.add(titlePanel);
-        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        sidePanel.add(separator);
-        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        // Ajout des composants (sans le header)
         sidePanel.add(dashboard);
         sidePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         sidePanel.add(gestionMembres);
