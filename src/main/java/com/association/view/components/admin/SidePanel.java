@@ -11,7 +11,7 @@ import java.awt.*;
 
 public class SidePanel extends JPanel {
     private final JFrame parentFrame;
-    private AdminInterface adminInterface; // Ajoutez cette référence
+    private final AdminInterface adminInterface; // Ajoutez cette référence
 
 
     public SidePanel(JFrame parentFrame,  AdminInterface adminInterface) {
@@ -47,7 +47,7 @@ public class SidePanel extends JPanel {
         // Ajout de l'icône à gauche
         Icon avecIcon = IconManager.getIcon("avec.svg", 30);
         JLabel iconLabel = new JLabel(avecIcon);
-        iconLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));;
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 0, 5));
 
         // Personnalisation du label AVEC
         JLabel titleLabel = new JLabel("AVEC");
@@ -67,11 +67,9 @@ public class SidePanel extends JPanel {
 
 
         // Bouton Dashboard
-        JButton dashboard = createMenuButton("dashboard.svg", "Dashboard", 24);
-        dashboard.addActionListener(e -> {
-            adminInterface.setContentPanel(new DashboardPanel(parentFrame,
-                    ((AdminInterface)adminInterface).getUtilisateur().getUsername()));
-        });
+        JButton dashboard = createMenuButton();
+        dashboard.addActionListener(e -> adminInterface.setContentPanel(new DashboardPanel(parentFrame,
+                adminInterface.getUtilisateur().getUsername())));
 
         // Menus déroulants
         DropDownMenu gestionMembres = new DropDownMenu("Gestion des Membres", "groups.svg");
@@ -82,7 +80,12 @@ public class SidePanel extends JPanel {
             adminInterface.setContentPanel(memberListPanel);
         });
 
-        gestionMembres.addSubMenuItem("Ajouter Membre", "person_add.svg");
+        HoverButton ajouterMembreBtn = gestionMembres.addSubMenuItem("Ajouter Membre", "person_add.svg");
+        ajouterMembreBtn.setDoubleClickAction(() -> {
+            AjouterMembrePanel ajouterMembrePanel = new AjouterMembrePanel(parentFrame);
+            adminInterface.setContentPanel(ajouterMembrePanel);
+        });
+
         gestionMembres.addSubMenuItem("Statuts Membres", "verified_user.svg");
 
         DropDownMenu gestionContributions = new DropDownMenu("Gestion Contributions", "payments.svg");
@@ -104,13 +107,14 @@ public class SidePanel extends JPanel {
         administration.addSubMenuItem("Gestion Utilisateurs", "manage_accounts.svg");
         administration.addSubMenuItem("Paramètres Système", "tune.svg");
 
-        JButton parametresBtn = createMenuButton("settings.svg", "Paramètres", 24);
+        DropDownMenu parametresBtn = new DropDownMenu("Paramètres", "settings.svg");
+        parametresBtn.addSubMenuItem("Preference", "preference.svg");
 
         // Ajout des composants
         sidePanel.add(titlePanel);
         sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));
         sidePanel.add(separator);
-        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));;
+        sidePanel.add(Box.createRigidArea(new Dimension(0, 10)));
         sidePanel.add(dashboard);
         sidePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         sidePanel.add(gestionMembres);
@@ -144,10 +148,10 @@ public class SidePanel extends JPanel {
         return scrollPane;
     }
 
-    private JButton createMenuButton(String iconPath, String text, int size) {
-        Icon icon = IconManager.getIcon(iconPath, size);
+    private JButton createMenuButton() {
+        Icon icon = IconManager.getIcon("dashboard.svg", 24);
         HoverButton button = new HoverButton(
-                text,
+                "Dashboard",
                 icon,
                 Colors.SECONDARY,
                 Colors.SECONDARY.darker()

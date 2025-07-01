@@ -6,13 +6,15 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class HoverButton extends JButton {
-    private Color normalBackground;
-    private Color hoverBackground;
+    private final Color normalBackground;
+    private final Color hoverBackground;
     private Color clickedBackground;
     private Color doubleClickedBackground; // Nouvelle couleur pour double-clic
     private Runnable doubleClickAction;
     private boolean isSelected = false;
     private boolean isDoubleClicked = false; // Nouvel état pour double-clic
+    private boolean isHovered = false; // Nouvel état pour suivre le survol
+
 
     public HoverButton(String text, Icon icons, Color normalBg, Color hoverBg) {
         this(text, icons, normalBg, hoverBg, null, null);
@@ -40,16 +42,14 @@ public class HoverButton extends JButton {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent evt) {
-                if (!isSelected && !isDoubleClicked) {
-                    setBackground(hoverBackground);
-                }
+                isHovered = true;
+                updateBackground();
             }
 
             @Override
             public void mouseExited(MouseEvent evt) {
-                if (!isSelected && !isDoubleClicked) {
-                    setBackground(normalBackground);
-                }
+                isHovered = false;
+                updateBackground();
             }
 
             @Override
@@ -61,8 +61,35 @@ public class HoverButton extends JButton {
                     setSelectedState(true);
                 }
             }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // Réinitialiser l'état de double-clic quand on clique ailleurs
+                if (!isDoubleClicked && !isSelected) {
+                    resetStates();
+                }
+            }
         });
     }
+
+    public void resetStates() {
+        this.isSelected = false;
+        this.isDoubleClicked = false;
+        updateBackground();
+    }
+
+    private void updateBackground() {
+        if (isDoubleClicked) {
+            setBackground(doubleClickedBackground);
+        } else if (isSelected) {
+            setBackground(clickedBackground);
+        } else if (isHovered) {
+            setBackground(hoverBackground);
+        } else {
+            setBackground(normalBackground);
+        }
+    }
+
 
     public void setDoubleClickAction(Runnable action) {
         this.doubleClickAction = action;
@@ -78,14 +105,14 @@ public class HoverButton extends JButton {
 
     public void setSelectedState(boolean selected) {
         this.isSelected = selected;
-        this.isDoubleClicked = false; // Réinitialiser l'état de double-clic
-        setBackground(selected ? clickedBackground : normalBackground);
+        this.isDoubleClicked = false;
+        updateBackground();
     }
 
     public void setDoubleClickedState(boolean doubleClicked) {
         this.isDoubleClicked = doubleClicked;
-        this.isSelected = false; // Réinitialiser l'état de sélection simple
-        setBackground(doubleClicked ? doubleClickedBackground : normalBackground);
+        this.isSelected = false;
+        updateBackground();
     }
 
     public boolean isSelected() {
@@ -102,22 +129,4 @@ public class HoverButton extends JButton {
         setBackground(normalBackground);
     }
 
-//    public void setDoubleClickAction(Runnable action) {
-//        this.doubleClickAction = action;
-//    }
-//
-//    public void setClickedBackground(Color color) {
-//        this.clickedBackground = color;
-//    }
-//
-//    // Nouvelle méthode pour définir l'état sélectionné
-//    public void setSelectedState(boolean selected) {
-//        this.isSelected = selected;
-//        setBackground(selected ? clickedBackground : normalBackground);
-//    }
-//
-//    // Nouvelle méthode pour vérifier l'état sélectionné
-//    public boolean isSelected() {
-//        return isSelected;
-//    }
 }

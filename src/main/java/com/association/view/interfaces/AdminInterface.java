@@ -26,6 +26,7 @@ public class AdminInterface implements RoleInterface {
         frame.setSize(1200, 800);
         frame.setLocationRelativeTo(null);
 
+
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Colors.BACKGROUND);
 
@@ -126,5 +127,8 @@ public class AdminInterface implements RoleInterface {
     @Override
     public boolean hasAccessToFeature(String featureName) {
         return true;
+    }
+
+    public void updateTheme(boolean darkMode) {
     }
 }

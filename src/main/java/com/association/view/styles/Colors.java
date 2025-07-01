@@ -35,6 +35,9 @@ public class Colors {
     public static final Color DARK_TEXT_SECONDARY = new Color(180, 180, 180);
     public static final Color DARK_BORDER = new Color(80, 80, 80);
 
+    public static final Color ERROR_BACKGROUND = new Color(255, 235, 238);
+    public static final Color WARNING_BACKGROUND = new Color(255, 249, 196);
+    public static final Color SUCCESS_BACKGROUND = new Color(237, 247, 237);
     // Utility method to toggle between themes
     public static void setDarkTheme(boolean enabled) {
         if (enabled) {

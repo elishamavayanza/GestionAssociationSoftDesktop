@@ -20,18 +20,25 @@ public class MembreManager extends BaseManager<Membre> {
         this.fileStorageService = fileStorageService;
     }
 
-    public boolean ajouterMembre(String nom, String contact, byte[] photo, Date dateInscription) {
+    public boolean ajouterMembre(String nom, String contact, byte[] photo, Date dateInscription,  StatutMembre statut) {
         Membre membre = new Membre();
         membre.setNom(nom);
         membre.setContact(contact);
         membre.setDateInscription(dateInscription);
+        membre.setStatut(statut); // ← ici on utilise le statut sélectionné
 
-        if (photo != null) {
-            String photoPath = fileStorageService.storeFile(photo, "membres/" + membre.getId() + "/photo");
+        // Stocker la photo si elle existe
+        if (photo != null && photo.length > 0) {
+            String photoPath = fileStorageService.storeFile(photo, "membres/photos");
             membre.setPhoto(photoPath);
         }
 
-        return create(membre);
+        try {
+            return membreDao.create(membre);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public boolean modifierMembre(Long id, String nom, String contact) {

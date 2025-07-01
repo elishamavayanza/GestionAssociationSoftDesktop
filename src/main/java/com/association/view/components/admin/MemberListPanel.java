@@ -9,6 +9,8 @@ import com.association.view.components.IconManager;
 import com.association.view.components.common.AdvancedSearchDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -27,6 +29,7 @@ public class MemberListPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JButton advancedSearchButton;
     private JTextField searchField;
+    private javax.swing.Timer refreshTimer;
 
     public MemberListPanel(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -39,6 +42,9 @@ public class MemberListPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Colors.BACKGROUND);
 
+        // Créer un timer qui se déclenche toutes les 30 secondes (30000 ms)
+        refreshTimer = new Timer(30000, e -> loadMemberData());
+        refreshTimer.start(); // Démarrer le timer
         // Panel d'en-tête avec le titre et les outils de recherche
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Colors.BACKGROUND);
@@ -61,15 +67,13 @@ public class MemberListPanel extends JPanel {
 
 
         Border roundedBorder = new Border() {
-            private final int radius = 10;
 
             @Override
             public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                if (c instanceof AbstractButton) {
-                    AbstractButton button = (AbstractButton) c;
+                if (c instanceof AbstractButton button) {
                     if (button.getModel().isRollover()) {
                         g2.setColor(new Color(100, 150, 255)); // Couleur au survol
                     } else {
@@ -79,12 +83,14 @@ public class MemberListPanel extends JPanel {
                     g2.setColor(Color.GRAY);
                 }
 
-                g2.drawRoundRect(x, y, width-1, height-1, radius, radius);
+                int radius = 10;
+                g2.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
                 g2.dispose();
             }
 
+            @Contract(value = "_ -> new", pure = true)
             @Override
-            public Insets getBorderInsets(Component c) {
+            public @NotNull Insets getBorderInsets(Component c) {
                 return new Insets(4, 8, 4, 8);
             }
 
@@ -203,6 +209,7 @@ public class MemberListPanel extends JPanel {
         // Actions des boutons
         refreshButton.addActionListener(e -> loadMemberData());
         closeButton.addActionListener(e -> {
+            refreshTimer.stop(); // Arrêter le timer
             parentFrame.getContentPane().remove(this);
             parentFrame.revalidate();
             parentFrame.repaint();
@@ -239,8 +246,15 @@ public class MemberListPanel extends JPanel {
     }
 
     private void loadMemberData() {
-        List<Membre> membres = membreDao.findAll();
-        updateTable(membres);
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                List<Membre> membres = membreDao.findAll();
+                SwingUtilities.invokeLater(() -> updateTable(membres));
+                return null;
+            }
+        };
+        worker.execute();
     }
 
     private void updateTable(List<Membre> membres) {
@@ -263,10 +277,14 @@ public class MemberListPanel extends JPanel {
         if (statut == null) return "INCONNU";
 
         switch (statut) {
-            case ACTIF: return "Actif";
-            case INACTIF: return "Inactif";
-            case SUSPENDU: return "Suspendu";
-            default: return statut.name();
+            case ACTIF:
+                return "Actif";
+            case INACTIF:
+                return "Inactif";
+            case SUSPENDU:
+                return "Suspendu";
+            default:
+                return statut.name();
         }
     }
 }
