@@ -81,4 +81,5 @@ public class IconManager {
         button.setContentAreaFilled(false);
         return button;
     }
+
 }
