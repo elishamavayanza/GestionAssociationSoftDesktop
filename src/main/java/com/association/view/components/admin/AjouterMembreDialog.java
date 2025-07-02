@@ -7,6 +7,7 @@ import com.association.model.enums.StatutMembre;
 import com.association.util.file.FileStorageService;
 import com.association.util.file.FileStorageServiceAdapter;
 import com.association.util.file.RealFileStorageService;
+import com.association.view.components.IconManager;
 import com.association.view.components.admin.Photo.PhotoEditorDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
@@ -18,6 +19,7 @@ import java.awt.event.ActionEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.Date;
 
@@ -49,12 +51,22 @@ public class AjouterMembreDialog extends JDialog {
         initUI();
         pack();
         setLocationRelativeTo(parentFrame);
+        setDefaultPhoto();
+
+        setResizable(false);
+    }
+    private void setDefaultPhoto() {
+        ImageIcon defaultIcon = loadDefaultPhoto();
+        if (defaultIcon != null) {
+            photoPreviewLabel.setIcon(defaultIcon);
+            circlePanel.repaint();
+        }
     }
 
     private void initUI() {
         setLayout(new BorderLayout());
         setBackground(Colors.CURRENT_BACKGROUND);
-        ((JComponent)getContentPane()).setBorder(new EmptyBorder(15, 15, 15, 15));
+        ((JComponent)getContentPane()).setBorder(new EmptyBorder(5, 5, 5, 5));
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Colors.CURRENT_BACKGROUND);
@@ -65,12 +77,26 @@ public class AjouterMembreDialog extends JDialog {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(Colors.CURRENT_BACKGROUND);
         contentPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.setMaximumSize(new Dimension(500, Integer.MAX_VALUE));
 
         // Titre centré en haut
         JLabel titleLabel = new JLabel("Ajouter un nouveau membre");
         titleLabel.setFont(Fonts.titleFont());
         titleLabel.setForeground(Colors.CURRENT_TEXT);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+// Effet de survol pour le titre
+        titleLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                titleLabel.setForeground(Colors.CURRENT_PRIMARY);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                titleLabel.setForeground(Colors.CURRENT_TEXT);
+            }
+        });
+
+        contentPanel.add(titleLabel);
         contentPanel.add(titleLabel);
         contentPanel.add(Box.createVerticalStrut(30));
 
@@ -117,8 +143,38 @@ public class AjouterMembreDialog extends JDialog {
         photoPanel.add(circlePanel);
 
         // Bouton Photo
+        // Bouton Photo
         photoButton = new JButton("Ajouter une photo");
-        styleButton(photoButton, false);
+
+// Style avec icône et fond rouge
+        photoButton.setFont(Fonts.buttonFont());
+        photoButton.setFocusPainted(false);
+        photoButton.setBackground(Colors.CURRENT_DANGER);
+        photoButton.setForeground(Color.WHITE);
+
+// Ajout de l'icône
+        ImageIcon photoIcon = IconManager.getScaledIcon("photo_icon.svg", 20, 20);
+        if (photoIcon != null) {
+            photoButton.setIcon(photoIcon);
+            photoButton.setIconTextGap(10);
+        }
+
+        photoButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.CURRENT_DANGER.darker()),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+        ));
+
+// Effet de survol
+        photoButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                photoButton.setBackground(Colors.CURRENT_DANGER.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                photoButton.setBackground(Colors.CURRENT_DANGER);
+            }
+        });
+
         photoButton.addActionListener(this::choisirPhoto);
         photoButton.setPreferredSize(new Dimension(180, 40));
         photoButton.setMaximumSize(new Dimension(180, 40));
@@ -129,43 +185,57 @@ public class AjouterMembreDialog extends JDialog {
         contentPanel.add(photoPanel);
         contentPanel.add(Box.createVerticalStrut(30));
 
-        // Panel pour les champs de formulaire (disposés horizontalement)
+        // Panel pour les champs de formulaire (disposés verticalement)
         JPanel formPanel = new JPanel();
-        formPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        formPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        formPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Champ Nom
         JPanel nomPanel = new JPanel(new BorderLayout(5, 5));
         nomPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        nomPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nomPanel.setMaximumSize(new Dimension(300, 60));
         JLabel nomLabel = new JLabel("Nom:");
         nomLabel.setFont(Fonts.labelFont());
         nomLabel.setForeground(Colors.CURRENT_TEXT);
+        styleLabel(nomLabel, true); // true pour activer l'effet de survol
         nomPanel.add(nomLabel, BorderLayout.NORTH);
         nomField = createStyledTextField();
         nomField.setPreferredSize(new Dimension(200, 30));
         nomPanel.add(nomField, BorderLayout.CENTER);
         formPanel.add(nomPanel);
+        formPanel.add(Box.createVerticalStrut(10));
 
         // Champ Contact
         JPanel contactPanel = new JPanel(new BorderLayout(5, 5));
         contactPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        JLabel contactLabel = new JLabel("Contact:");
+        contactPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contactPanel.setMaximumSize(new Dimension(300, 60));
+        JLabel contactLabel = new JLabel("Email :");
         contactLabel.setFont(Fonts.labelFont());
         contactLabel.setForeground(Colors.CURRENT_TEXT);
+        styleLabel(contactLabel, true);
+        nomPanel.add(nomLabel, BorderLayout.NORTH);
+
         contactPanel.add(contactLabel, BorderLayout.NORTH);
         contactField = createStyledTextField();
         contactField.setPreferredSize(new Dimension(200, 30));
         contactPanel.add(contactField, BorderLayout.CENTER);
         formPanel.add(contactPanel);
+        formPanel.add(Box.createVerticalStrut(10));
 
         // Champ Statut
         JPanel statutPanel = new JPanel(new BorderLayout(5, 5));
         statutPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        statutPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        statutPanel.setMaximumSize(new Dimension(300, 60));
         JLabel statutLabel = new JLabel("Statut:");
         statutLabel.setFont(Fonts.labelFont());
         statutLabel.setForeground(Colors.CURRENT_TEXT);
         statutPanel.add(statutLabel, BorderLayout.NORTH);
+        styleLabel(statutLabel, true);
+
         statutComboBox = new JComboBox<>(StatutMembre.values());
         statutComboBox.setSelectedItem(StatutMembre.ACTIF);
         styleComboBox(statutComboBox);
@@ -207,6 +277,24 @@ public class AjouterMembreDialog extends JDialog {
                 BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
+
+        // Effet de survol pour le champ de texte
+        field.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+        });
+
         return field;
     }
 
@@ -221,6 +309,17 @@ public class AjouterMembreDialog extends JDialog {
                     BorderFactory.createLineBorder(Colors.CURRENT_PRIMARY_DARK),
                     BorderFactory.createEmptyBorder(5, 15, 5, 15)
             ));
+
+            // Effet de survol pour le bouton primaire
+            button.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_PRIMARY.darker());
+                }
+
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_PRIMARY);
+                }
+            });
         } else {
             button.setBackground(Colors.CURRENT_CARD_BACKGROUND);
             button.setForeground(Colors.CURRENT_TEXT);
@@ -228,6 +327,35 @@ public class AjouterMembreDialog extends JDialog {
                     BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
                     BorderFactory.createEmptyBorder(5, 15, 5, 15)
             ));
+
+            // Effet de survol pour le bouton secondaire
+            button.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_BORDER);
+                }
+
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_CARD_BACKGROUND);
+                }
+            });
+        }
+    }
+    private void styleLabel(JLabel label, boolean withHover) {
+        label.setFont(Fonts.labelFont());
+        label.setForeground(Colors.CURRENT_TEXT);
+
+        if (withHover) {
+            label.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    label.setForeground(Colors.CURRENT_PRIMARY);
+                    label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                }
+
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    label.setForeground(Colors.CURRENT_TEXT);
+                    label.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                }
+            });
         }
     }
 
@@ -239,6 +367,23 @@ public class AjouterMembreDialog extends JDialog {
                 BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
+
+        // Effet de survol pour la comboBox
+        comboBox.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                comboBox.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                comboBox.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+        });
     }
 
     private void choisirPhoto(ActionEvent e) {
@@ -328,7 +473,7 @@ public class AjouterMembreDialog extends JDialog {
         statutComboBox.setSelectedItem(StatutMembre.ACTIF);
         photoData = null;
         photoButton.setText("Ajouter une photo");
-        photoPreviewLabel.setIcon(null);
+        setDefaultPhoto(); // Au lieu de photoPreviewLabel.setIcon(null);
     }
 
     private void showError(String message, String title) {
@@ -363,5 +508,25 @@ public class AjouterMembreDialog extends JDialog {
         JDialog dialog = pane.createDialog(this, title);
         dialog.setIconImage(((ImageIcon)icon).getImage());
         dialog.setVisible(true);
+    }
+    private ImageIcon loadDefaultPhoto() {
+        try {
+            URL defaultAvatarUrl = getClass().getResource("/images/avantar.jpg");
+            if (defaultAvatarUrl == null) {
+                System.err.println("Image par défaut non trouvée dans les ressources");
+                return null;
+            }
+
+            ImageIcon defaultIcon = new ImageIcon(defaultAvatarUrl);
+            if (defaultIcon.getImage() == null) {
+                System.err.println("Impossible de charger l'image à partir de l'URL");
+                return null;
+            }
+
+            return CircularImageUtil.createCircularIcon(defaultIcon.getImage(), 150);
+        } catch (Exception e) {
+            System.err.println("Erreur lors du chargement de la photo par défaut: " + e.getMessage());
+            return null;
+        }
     }
 }

@@ -43,6 +43,22 @@ public class AuthPanel extends JPanel {
         JLabel titleLabel = new JLabel("Gestion Association", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(Colors.PRIMARY);
+
+// Effet de survol
+        titleLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                titleLabel.setForeground(Colors.PRIMARY.darker());
+                titleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                titleLabel.setForeground(Colors.PRIMARY);
+                titleLabel.setCursor(Cursor.getDefaultCursor());
+            }
+        });
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -58,6 +74,29 @@ public class AuthPanel extends JPanel {
 
         usernameField = new CustomTextField();
         usernameField.setText(System.getenv("APP_USERNAME") != null ? System.getenv("APP_USERNAME") : "Isaac");
+        usernameField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.BORDER),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+
+// Effet de survol
+        usernameField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                usernameField.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)
+                ));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                usernameField.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.BORDER),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)
+                ));
+            }
+        });
 
         gbc.gridx = 1;
         gbc.gridy = 1;
@@ -72,6 +111,29 @@ public class AuthPanel extends JPanel {
 
         passwordField = new CustomPasswordField();
         passwordField.setText(System.getenv("APP_PASSWORD") != null ? System.getenv("APP_PASSWORD") : "Isaac@1234");
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.BORDER),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+
+// Effet de survol
+        passwordField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                passwordField.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)
+                ));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                passwordField.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.BORDER),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)
+                ));
+            }
+        });
 
         gbc.gridx = 1;
         gbc.gridy = 2;
@@ -81,6 +143,21 @@ public class AuthPanel extends JPanel {
         rememberMeCheckbox = new JCheckBox("Se souvenir de moi");
         rememberMeCheckbox.setBackground(Colors.BACKGROUND);
         rememberMeCheckbox.setForeground(Colors.TEXT);
+        rememberMeCheckbox.setFocusPainted(false);
+
+// Effets de survol
+        rememberMeCheckbox.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                rememberMeCheckbox.setForeground(Colors.PRIMARY);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                rememberMeCheckbox.setForeground(Colors.TEXT);
+            }
+        });
+
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
@@ -88,6 +165,26 @@ public class AuthPanel extends JPanel {
 
         // Bouton de connexion
         loginButton = new CustomButton("Se connecter");
+        loginButton.setBackground(Colors.PRIMARY);
+        loginButton.setForeground(Color.WHITE);
+        loginButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.PRIMARY.darker()),
+                BorderFactory.createEmptyBorder(10, 25, 10, 25)
+        ));
+
+// Effets de survol
+        loginButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                loginButton.setBackground(Colors.PRIMARY.darker());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                loginButton.setBackground(Colors.PRIMARY);
+            }
+        });
+
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
@@ -97,14 +194,27 @@ public class AuthPanel extends JPanel {
 
         // Lien "Mot de passe oublié"
         forgotPasswordLabel = new JLabel("<html><u>Mot de passe oublié ?</u></html>", SwingConstants.CENTER);
-        forgotPasswordLabel.setForeground(Colors.CURRENT_PRIMARY);
+        forgotPasswordLabel.setForeground(Colors.PRIMARY);
         forgotPasswordLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+// Effets de survol
         forgotPasswordLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                forgotPasswordLabel.setForeground(Colors.PRIMARY.darker());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                forgotPasswordLabel.setForeground(Colors.PRIMARY);
+            }
+
             @Override
             public void mouseClicked(MouseEvent e) {
                 showForgotPasswordDialog();
             }
         });
+
         gbc.gridx = 0;
         gbc.gridy = 5;
         add(forgotPasswordLabel, gbc);
