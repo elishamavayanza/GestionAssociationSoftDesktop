@@ -33,7 +33,12 @@ public class IconManager {
     }
 
     private static ImageIcon createFallbackIcon(int width, int height) {
-        return null;
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = img.createGraphics();
+        g2d.setColor(Color.RED);
+        g2d.fillRect(0, 0, width, height);
+        g2d.dispose();
+        return new ImageIcon(img);
     }
 
     private static ImageIcon loadSvgIcon(URL svgUrl, int width, int height) throws Exception {
@@ -50,8 +55,43 @@ public class IconManager {
         }
     }
 
-    public static Icon getIcon(String iconPath, int size) {
+    public static ImageIcon getIcon(String iconPath, int size) {
         return getScaledIcon(iconPath, size, size);
+    }
+
+    public static ImageIcon createBadgedIcon(String iconName, String badgeText, int size, Color badgeColor) {
+        // Charger l'icône de base
+        ImageIcon baseIcon = getIcon(iconName, size);
+        if (baseIcon == null) return null;
+
+        // Créer une nouvelle image avec badge
+        BufferedImage badgedImage = new BufferedImage(
+                size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = badgedImage.createGraphics();
+
+        // Dessiner l'icône de base
+        baseIcon.paintIcon(null, g2d, 0, 0);
+
+        // Dessiner le badge
+        int badgeSize = size / 3;
+        int badgeX = size - badgeSize;
+        int badgeY = 0;
+
+        g2d.setColor(badgeColor);
+        g2d.fillOval(badgeX, badgeY, badgeSize, badgeSize);
+
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, badgeSize / 2));
+
+        // Centrer le texte dans le badge
+        FontMetrics fm = g2d.getFontMetrics();
+        int textX = badgeX + (badgeSize - fm.stringWidth(badgeText)) / 2;
+        int textY = badgeY + ((badgeSize - fm.getHeight()) / 2) + fm.getAscent();
+
+        g2d.drawString(badgeText, textX, textY);
+        g2d.dispose();
+
+        return new ImageIcon(badgedImage);
     }
 
     private static class BufferedImageTranscoder extends ImageTranscoder {
@@ -71,6 +111,7 @@ public class IconManager {
             return img;
         }
     }
+
     public static JButton createIconButton(String iconPath, String tooltip, int size) {
         JButton button = new JButton(getScaledIcon(iconPath, size, size));
         button.setToolTipText(tooltip);
@@ -81,5 +122,4 @@ public class IconManager {
         button.setContentAreaFilled(false);
         return button;
     }
-
 }

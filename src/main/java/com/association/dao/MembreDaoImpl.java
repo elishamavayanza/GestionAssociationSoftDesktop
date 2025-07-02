@@ -26,6 +26,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
             return false;
         }
 
+
         Connection conn = null;
         try {
             conn = databaseConfig.getConnection();
