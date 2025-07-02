@@ -10,12 +10,16 @@ public class Notification implements Serializable {
     private String message;
     private String type;
     private String date;
+    private boolean read;
+
 
     public Notification(String action, String message, String type) {
         this.action = action;
         this.message = message;
         this.type = type;
         this.date = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+        this.read = false;
+
     }
 
     public String getAction() {
@@ -35,12 +39,23 @@ public class Notification implements Serializable {
     }
 
     public String getDisplayText() {
-        return action + " - " + date + " : " + message;
+        String displayText = action + " - " + date + " : " + message;
+        if (!read) {
+            displayText = "● " + displayText; // Ajoute un point pour les non lues
+        }
+        return displayText;
     }
 
     @Override
     public String toString() {
         return getDisplayText();
+    }
+    public boolean isRead() {
+        return read;
+    }
+
+    public void markAsRead() {
+        this.read = true;
     }
 
 }

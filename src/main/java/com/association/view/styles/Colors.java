@@ -38,9 +38,15 @@ public class Colors {
     public static final Color ERROR_BACKGROUND = new Color(255, 235, 238);
     public static final Color WARNING_BACKGROUND = new Color(255, 249, 196);
     public static final Color SUCCESS_BACKGROUND = new Color(237, 247, 237);
+
+    // Dans la classe Colors
+    public static final Color UNREAD_NOTIFICATION = new Color(0, 100, 200); // Bleu pour les non-lues
+    public static Color CURRENT_UNREAD_NOTIFICATION = UNREAD_NOTIFICATION; // Par défaut
+
     // Utility method to toggle between themes
     public static void setDarkTheme(boolean enabled) {
         if (enabled) {
+            CURRENT_UNREAD_NOTIFICATION = new Color(100, 180, 255); // Bleu clair pour thème sombre
             CURRENT_PRIMARY = DARK_PRIMARY;
             CURRENT_PRIMARY_DARK = DARK_PRIMARY_DARK;
             CURRENT_SECONDARY = DARK_SECONDARY;
@@ -55,6 +61,8 @@ public class Colors {
             CURRENT_TEXT_SECONDARY = DARK_TEXT_SECONDARY;
             CURRENT_BORDER = DARK_BORDER;
         } else {
+            CURRENT_UNREAD_NOTIFICATION = UNREAD_NOTIFICATION;
+
             CURRENT_PRIMARY = PRIMARY;
             CURRENT_PRIMARY_DARK = PRIMARY_DARK;
             CURRENT_SECONDARY = SECONDARY;

@@ -15,6 +15,8 @@ import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -29,6 +31,8 @@ public class AdminInterface implements RoleInterface, Observer {
     private JButton notificationButton;
     private int notificationCount = 0;
     private List<Notification> notifications = new ArrayList<>();
+    private int unreadNotificationCount = 0;
+
 
     private final String NOTIFICATION_FILE = "data/notifications.ser"; // Tu peux choisir un .json, .txt, .ser selon ton format
 
@@ -121,10 +125,10 @@ public class AdminInterface implements RoleInterface, Observer {
     }
 
     private void updateNotificationBadge() {
-        if (notificationCount > 0) {
+        if (unreadNotificationCount > 0) {
             notificationButton.setIcon(IconManager.createBadgedIcon(
                     "notification.svg",
-                    String.valueOf(notificationCount),
+                    String.valueOf(unreadNotificationCount),
                     32,
                     Colors.DANGER
             ));
@@ -133,23 +137,12 @@ public class AdminInterface implements RoleInterface, Observer {
         }
     }
 
-//    private void showNotifications() {
-//        // Ici vous pouvez afficher une liste des notifications
-//        // Pour l'exemple, nous affichons juste une notification test
-//        NotificationDialog.showNotification(frame,
-//                "Vous avez " + notificationCount + " nouvelles notifications",
-//                "info");
-//
-//        // Réinitialiser le compteur après visualisation
-//        notificationCount = 0;
-//        updateNotificationBadge();
-//    }
 
     // Méthode pour ajouter une notification
     public void addNotification(String action, String message, String type) {
         Notification notif = new Notification(action, message, type);
         notifications.add(0, notif);
-        notificationCount = notifications.size();
+        unreadNotificationCount++; // Incrémente seulement les non lues
         updateNotificationBadge();
         showToastNotification(message, type);
         saveNotifications();
@@ -234,6 +227,14 @@ public class AdminInterface implements RoleInterface, Observer {
             return;
         }
 
+        // Marquer toutes les notifications comme lues lors de l'affichage
+        for (Notification n : notifications) {
+            if (!n.isRead()) {
+                n.markAsRead();
+                unreadNotificationCount--;
+            }
+        }
+
         // Créer un JDialog personnalisé pour afficher toutes les notifications
         JDialog dialog = new JDialog(frame, "Notifications", false);
         dialog.setSize(400, 500);
@@ -254,18 +255,35 @@ public class AdminInterface implements RoleInterface, Observer {
         JList<Notification> list = new JList<>(model);
         list.setCellRenderer(new NotificationListRenderer());
 
+        // Ajouter le MouseListener après la création de la JList
+        list.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int index = list.locationToIndex(e.getPoint());
+                if (index >= 0) {
+                    Notification notif = list.getModel().getElementAt(index);
+                    if (!notif.isRead()) {
+                        notif.markAsRead();
+                        unreadNotificationCount--;
+                        updateNotificationBadge();
+                        list.repaint();
+                        saveNotifications();
+                    }
+                }
+            }
+        });
 
         JScrollPane scrollPane = new JScrollPane(list);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         JButton clearButton = new JButton("Tout effacer");
-        styleButton(clearButton , true);
+        styleButton(clearButton, true);
 
         clearButton.addActionListener(e -> {
             notifications.clear();
-            notificationCount = 0;
+            unreadNotificationCount = 0;
             updateNotificationBadge();
-            saveNotifications(); // ← Vider aussi le fichier
+            saveNotifications();
             dialog.dispose();
         });
         panel.add(clearButton, BorderLayout.SOUTH);
@@ -273,9 +291,8 @@ public class AdminInterface implements RoleInterface, Observer {
         dialog.setContentPane(panel);
         dialog.setVisible(true);
 
-        // Réinitialiser le compteur après visualisation
-        notificationCount = 0;
         updateNotificationBadge();
+        saveNotifications();
     }
 
     // Renderer personnalisé pour la liste de notifications
@@ -284,29 +301,63 @@ public class AdminInterface implements RoleInterface, Observer {
         public Component getListCellRendererComponent(JList<?> list, Object value,
                                                       int index, boolean isSelected, boolean cellHasFocus) {
             Notification notif = (Notification) value;
+
+            // Utiliser le rendu par défaut comme base
             JLabel label = (JLabel) super.getListCellRendererComponent(
                     list, notif.getDisplayText(), index, isSelected, cellHasFocus);
 
-            // Choisir l’icône selon notif.getType()
-            switch (notif.getType().toLowerCase()) {
-                case "info":
-                    label.setIcon(IconManager.getIcon("infos.svg", 16)); break;
-                case "warning":
-                    label.setIcon(IconManager.getIcon("warning.svg", 16)); break;
-                case "error":
-                    label.setIcon(IconManager.getIcon("error.svg", 16)); break;
-                default:
-                    label.setIcon(IconManager.getIcon("add.svg", 16)); break;
+            // Style différent selon si la notification est lue ou non
+            if (!notif.isRead()) {
+                label.setFont(label.getFont().deriveFont(Font.BOLD));
+                label.setForeground(Colors.CURRENT_UNREAD_NOTIFICATION); // Couleur spéciale pour non-lues
+            } else {
+                label.setFont(label.getFont().deriveFont(Font.PLAIN));
+                label.setForeground(Colors.CURRENT_TEXT_SECONDARY);
             }
 
-            // Alternance de fond
+            // Icône selon le type de notification
+            switch (notif.getType().toLowerCase()) {
+                case "info":
+                    label.setIcon(IconManager.getIcon("infos.svg", 16));
+                    break;
+                case "warning":
+                    label.setIcon(IconManager.getIcon("warning.svg", 16));
+                    break;
+                case "error":
+                    label.setIcon(IconManager.getIcon("error.svg", 16));
+                    break;
+                default:
+                    label.setIcon(IconManager.getIcon("add.svg", 16));
+                    break;
+            }
+
+            // Style de fond
             if (isSelected) {
-                label.setBackground(Colors.CARD_BACKGROUND);
+                label.setBackground(new Color(
+                        Colors.CURRENT_PRIMARY.getRed(),
+                        Colors.CURRENT_PRIMARY.getGreen(),
+                        Colors.CURRENT_PRIMARY.getBlue(),
+                        50)); // 50 pour une légère transparence
+                label.setForeground(Colors.CURRENT_TEXT);
             } else {
                 label.setBackground(index % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
             }
 
-            label.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+            // Ajouter un indicateur visuel pour les notifications non lues
+            if (!notif.isRead()) {
+                label.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 3, 0, 0, Colors.CURRENT_PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 8, 5, 5)
+                ));
+            } else {
+                label.setBorder(BorderFactory.createEmptyBorder(5, 11, 5, 5));
+            }
+
+            // Tooltip avec plus de détails
+            label.setToolTipText("<html><b>" + notif.getAction() + "</b><br>" +
+                    notif.getMessage() + "<br>" +
+                    "<i>" + notif.getDate() + "</i></html>");
+
             return label;
         }
     }
@@ -377,6 +428,7 @@ public class AdminInterface implements RoleInterface, Observer {
         File file = new File(NOTIFICATION_FILE);
         if (!file.exists()) {
             notifications = new ArrayList<>();
+            unreadNotificationCount = 0;
             return;
         }
 
@@ -384,17 +436,20 @@ public class AdminInterface implements RoleInterface, Observer {
             Object obj = ois.readObject();
             if (obj instanceof List) {
                 notifications = (List<Notification>) obj;
-                notificationCount = notifications.size();
+                // Compter seulement les notifications non lues
+                unreadNotificationCount = (int) notifications.stream()
+                        .filter(n -> !n.isRead())
+                        .count();
                 updateNotificationBadge();
-                System.out.println("Notifications chargées : " + notifications.size());
             }
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Erreur de chargement des notifications : " + e.getMessage());
             notifications = new ArrayList<>();
-            // Optionnel : créer une sauvegarde du fichier corrompu
+            unreadNotificationCount = 0;
             file.renameTo(new File(NOTIFICATION_FILE + ".corrupted_" + System.currentTimeMillis()));
         }
     }
+
 
     private void saveNotifications() {
         try {
