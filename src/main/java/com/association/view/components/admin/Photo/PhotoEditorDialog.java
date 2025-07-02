@@ -30,7 +30,8 @@ public class PhotoEditorDialog extends JDialog {
     private boolean isFlippedVertical = false;
     private Point lastDragPoint;
     private JPanel imagePanel; // Déplacez cette déclaration ici
-
+    private int offsetX = 0;
+    private int offsetY = 0;
 
 
     public PhotoEditorDialog(JFrame parent, byte[] photoData) {
@@ -98,17 +99,16 @@ public class PhotoEditorDialog extends JDialog {
 
         // Gestion des événements de souris
         MouseAdapter mouseAdapter = new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    lastDragPoint = e.getPoint();
-                    if (isCropping) {
-                        dragStart = e.getPoint();
-                        cropRect = new Rectangle(dragStart);
-                    }
+            @Override
+            public void mousePressed(MouseEvent e) {
+                lastDragPoint = e.getPoint();
+                if (isCropping) {
+                    dragStart = e.getPoint();
+                    cropRect = new Rectangle(dragStart);
                 }
+            }
 
-
-                @Override
+            @Override
             public void mouseReleased(MouseEvent e) {
                 if (isCropping && cropRect != null) {
                     if (cropRect.width < 0) {
@@ -121,6 +121,7 @@ public class PhotoEditorDialog extends JDialog {
                     }
                     imagePanel.repaint();
                 }
+                lastDragPoint = null;
             }
 
             @Override
@@ -132,7 +133,6 @@ public class PhotoEditorDialog extends JDialog {
                         int width = Math.abs(e.getX() - dragStart.x);
                         int height = Math.abs(e.getY() - dragStart.y);
 
-                        // Utilisez les dimensions de l'image affichée
                         width = Math.min(width, displayedImage.getWidth() - x);
                         height = Math.min(height, displayedImage.getHeight() - y);
 
@@ -140,7 +140,7 @@ public class PhotoEditorDialog extends JDialog {
                         imagePanel.repaint();
                     }
                 } else {
-                    // Glissement pour zoom/rotation
+                    // Glissement pour déplacement/zoom/rotation
                     if (lastDragPoint != null) {
                         int dx = e.getX() - lastDragPoint.x;
                         int dy = e.getY() - lastDragPoint.y;
@@ -154,6 +154,12 @@ public class PhotoEditorDialog extends JDialog {
                         else if ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0) {
                             int newRotation = rotateSlider.getValue() + dx;
                             rotateSlider.setValue(Math.max(-180, Math.min(180, newRotation)));
+                        }
+                        // Glissement simple = déplacement
+                        else {
+                            offsetX += dx;
+                            offsetY += dy;
+                            updateImage();
                         }
 
                         lastDragPoint = e.getPoint();
@@ -304,6 +310,8 @@ public class PhotoEditorDialog extends JDialog {
         resetButton.addActionListener(e -> {
             rotationAngle = 0;
             scaleFactor = 1.0;
+            offsetX = 0;
+            offsetY = 0;
             isFlippedHorizontal = false;
             isFlippedVertical = false;
             zoomSlider.setValue(100);
@@ -467,7 +475,7 @@ public class PhotoEditorDialog extends JDialog {
             transform.translate(-px, -py);
         }
 
-        transform.translate(newWidth/2.0, newHeight/2.0);
+        transform.translate(newWidth/2.0 + offsetX, newHeight/2.0 + offsetY);
         transform.rotate(rotationAngle);
         transform.translate(-originalImage.getWidth()/2.0, -originalImage.getHeight()/2.0);
 
@@ -475,7 +483,7 @@ public class PhotoEditorDialog extends JDialog {
         g2d.dispose();
 
         displayedImage = transformedImage;
-        imagePanel.revalidate(); // Important pour mettre à jour la taille
+        imagePanel.revalidate();
         imagePanel.repaint();
     }
 
