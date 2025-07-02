@@ -3,11 +3,13 @@ package com.association.view.components;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
 
 public class NotificationDialog {
     private static final int NOTIFICATION_WIDTH = 300;
@@ -19,6 +21,8 @@ public class NotificationDialog {
         Icon icon;
         Color bgColor;
         Color borderColor;
+        playBeepSound(type);
+
 
         switch(type.toLowerCase()) {
             case "success":
@@ -120,4 +124,39 @@ public class NotificationDialog {
             }
         }).start();
     }
+
+    private static void playBeepSound(String type) {
+        new Thread(() -> {
+            try {
+                int frequency = 500;
+                int duration = 500;
+
+                switch(type.toLowerCase()) {
+                    case "success":
+                        frequency = 800;
+                        duration = 300;
+                        break;
+                    case "warning":
+                        frequency = 600;
+                        duration = 400;
+                        break;
+                    case "error":
+                        frequency = 400;
+                        duration = 600;
+                        break;
+                    default:
+                        frequency = 500;
+                        duration = 200;
+                }
+
+                Toolkit.getDefaultToolkit().beep(); // Son système
+                // Si tu veux un son généré (par onde sinusoïdale), il faut coder ou utiliser un fichier WAV.
+
+            } catch (Exception e) {
+                System.err.println("Erreur sonore: " + e.getMessage());
+            }
+        }).start();
+    }
+
+
 }
