@@ -124,6 +124,7 @@ public class AdvancedSearchDialog extends JDialog {
         gbc.gridx = 1;
         nomField = new JTextField(20);
         nomField.setFont(Fonts.textFieldFont());
+        nomField = createStyledTextField();
         contentPanel.add(nomField, gbc);
 
         // Contact
@@ -136,6 +137,7 @@ public class AdvancedSearchDialog extends JDialog {
         gbc.gridx = 1;
         contactField = new JTextField(20);
         contactField.setFont(Fonts.textFieldFont());
+        contactField = createStyledTextField();
         contentPanel.add(contactField, gbc);
 
         // Statut
@@ -150,6 +152,8 @@ public class AdvancedSearchDialog extends JDialog {
         statutCombo.insertItemAt(null, 0); // Option vide
         statutCombo.setSelectedIndex(0);
         statutCombo.setFont(Fonts.textFieldFont());
+        styleComboBox(statutCombo);
+
         contentPanel.add(statutCombo, gbc);
 
         // Date d'inscription (De)
@@ -247,5 +251,61 @@ public class AdvancedSearchDialog extends JDialog {
         }
 
         return criteria;
+    }
+
+    private JTextField createStyledTextField() {
+        JTextField field = new JTextField(20);
+        field.setFont(Fonts.textFieldFont());
+        field.setBackground(Colors.CURRENT_INPUT_BACKGROUND);
+        field.setForeground(Colors.CURRENT_TEXT);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+
+        // Effet de survol pour le champ de texte
+        field.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+        });
+
+        return field;
+    }
+    private void styleComboBox(JComboBox<?> comboBox) {
+        comboBox.setFont(Fonts.textFieldFont());
+        comboBox.setBackground(Colors.CURRENT_INPUT_BACKGROUND);
+        comboBox.setForeground(Colors.CURRENT_TEXT);
+        comboBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+
+        // Effet de survol pour la comboBox
+        comboBox.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                comboBox.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_PRIMARY),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                comboBox.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+            }
+        });
     }
 }
