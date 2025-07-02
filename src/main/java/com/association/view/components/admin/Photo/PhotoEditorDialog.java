@@ -29,6 +29,8 @@ public class PhotoEditorDialog extends JDialog {
     private boolean isFlippedHorizontal = false;
     private boolean isFlippedVertical = false;
     private Point lastDragPoint;
+    private JPanel imagePanel; // Déplacez cette déclaration ici
+
 
 
     public PhotoEditorDialog(JFrame parent, byte[] photoData) {
@@ -48,58 +50,65 @@ public class PhotoEditorDialog extends JDialog {
         setLayout(new BorderLayout());
 
         // Panel pour l'image avec MouseListener pour le recadrage et le glissement
-        JPanel imagePanel = new JPanel(new BorderLayout()) {
+        imagePanel = new JPanel() { // Pas besoin de BorderLayout ici
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                if (isCropping && cropRect != null) {
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    if (displayedImage != null) {
-                        g2d.drawImage(displayedImage, 0, 0, this);
+                if (displayedImage != null) {
+                    // Centre l'image dans le panel
+                    int x = (getWidth() - displayedImage.getWidth()) / 2;
+                    int y = (getHeight() - displayedImage.getHeight()) / 2;
+                    g.drawImage(displayedImage, x, y, this);
+
+                    // Dessin du rectangle de recadrage
+                    if (isCropping && cropRect != null) {
+                        Graphics2D g2d = (Graphics2D) g.create();
+                        g2d.setColor(Colors.CURRENT_PRIMARY);
+                        g2d.setStroke(new BasicStroke(2));
+                        g2d.drawRect(x + cropRect.x, y + cropRect.y,
+                                cropRect.width, cropRect.height);
+
+                        // Zones assombries
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                        g2d.setColor(new Color(0, 0, 0, 150));
+                        g2d.fillRect(0, 0, getWidth(), y + cropRect.y);
+                        g2d.fillRect(0, y + cropRect.y, x + cropRect.x, cropRect.height);
+                        g2d.fillRect(x + cropRect.x + cropRect.width, y + cropRect.y,
+                                getWidth() - (x + cropRect.x + cropRect.width), cropRect.height);
+                        g2d.fillRect(0, y + cropRect.y + cropRect.height,
+                                getWidth(), getHeight() - (y + cropRect.y + cropRect.height));
+                        g2d.dispose();
                     }
-                    g2d.setColor(Colors.CURRENT_PRIMARY);
-                    g2d.setStroke(new BasicStroke(2));
-                    g2d.drawRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height);
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-                    g2d.setColor(new Color(0, 0, 0, 150));
-                    g2d.fillRect(0, 0, getWidth(), cropRect.y);
-                    g2d.fillRect(0, cropRect.y, cropRect.x, cropRect.height);
-                    g2d.fillRect(cropRect.x + cropRect.width, cropRect.y,
-                            getWidth() - cropRect.x - cropRect.width, cropRect.height);
-                    g2d.fillRect(0, cropRect.y + cropRect.height,
-                            getWidth(), getHeight() - cropRect.y - cropRect.height);
-                    g2d.dispose();
                 }
+            }
+
+            @Override
+            public Dimension getPreferredSize() {
+                if (displayedImage == null) {
+                    return new Dimension(0, 0);
+                }
+                return new Dimension(displayedImage.getWidth(), displayedImage.getHeight());
             }
         };
         imagePanel.setBackground(Colors.CURRENT_BACKGROUND);
 
-        imageLabel = new JLabel(new ImageIcon(originalImage)) {
-            @Override
-            public Dimension getPreferredSize() {
-                if (displayedImage == null) return new Dimension(0, 0);
-                return new Dimension(displayedImage.getWidth(), displayedImage.getHeight());
-            }
-        };
-        imageLabel.setHorizontalAlignment(JLabel.CENTER);
-        imageLabel.setVerticalAlignment(JLabel.CENTER);
-
         JScrollPane scrollPane = new JScrollPane(imagePanel);
         scrollPane.getViewport().setBackground(Colors.CURRENT_BACKGROUND);
-        imagePanel.add(imageLabel, BorderLayout.CENTER);
+//        imagePanel.add(imageLabel, BorderLayout.CENTER);
 
         // Gestion des événements de souris
         MouseAdapter mouseAdapter = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                lastDragPoint = e.getPoint();
-                if (isCropping) {
-                    dragStart = e.getPoint();
-                    cropRect = new Rectangle(dragStart);
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    lastDragPoint = e.getPoint();
+                    if (isCropping) {
+                        dragStart = e.getPoint();
+                        cropRect = new Rectangle(dragStart);
+                    }
                 }
-            }
 
-            @Override
+
+                @Override
             public void mouseReleased(MouseEvent e) {
                 if (isCropping && cropRect != null) {
                     if (cropRect.width < 0) {
@@ -123,8 +132,9 @@ public class PhotoEditorDialog extends JDialog {
                         int width = Math.abs(e.getX() - dragStart.x);
                         int height = Math.abs(e.getY() - dragStart.y);
 
-                        width = Math.min(width, imageLabel.getWidth() - x);
-                        height = Math.min(height, imageLabel.getHeight() - y);
+                        // Utilisez les dimensions de l'image affichée
+                        width = Math.min(width, displayedImage.getWidth() - x);
+                        height = Math.min(height, displayedImage.getHeight() - y);
 
                         cropRect.setBounds(x, y, width, height);
                         imagePanel.repaint();
@@ -272,17 +282,16 @@ public class PhotoEditorDialog extends JDialog {
         customizeButton(resetButton);
         resetButton.addActionListener(e -> {
             rotationAngle = 0;
-            rotationAngle = Math.toRadians(rotateSlider.getValue());
             scaleFactor = 1.0;
             isFlippedHorizontal = false;
             isFlippedVertical = false;
             zoomSlider.setValue(100);
             rotateSlider.setValue(0);
             displayedImage = originalImage;
-            imageLabel.setIcon(new ImageIcon(displayedImage));
             isCropping = false;
             cropButton.setToolTipText("Recadrer");
             cropRect = null;
+            imagePanel.revalidate();
             imagePanel.repaint();
         });
 
@@ -413,21 +422,19 @@ public class PhotoEditorDialog extends JDialog {
     }
 
     private void updateImage() {
-        // Calculer la nouvelle taille en conservant les proportions
+        // Calculer la nouvelle taille
         int newWidth = (int)(originalImage.getWidth() * scaleFactor);
         int newHeight = (int)(originalImage.getHeight() * scaleFactor);
 
-        // Créer une nouvelle image transformée
         BufferedImage transformedImage = new BufferedImage(
                 newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
 
         Graphics2D g2d = transformedImage.createGraphics();
         AffineTransform transform = new AffineTransform();
 
-        // Appliquer le zoom
+        // Appliquer les transformations
         transform.scale(scaleFactor, scaleFactor);
 
-        // Appliquer les retournements
         if (isFlippedHorizontal || isFlippedVertical) {
             double flipX = isFlippedHorizontal ? -1 : 1;
             double flipY = isFlippedVertical ? -1 : 1;
@@ -439,7 +446,6 @@ public class PhotoEditorDialog extends JDialog {
             transform.translate(-px, -py);
         }
 
-        // Appliquer la rotation autour du centre de l'image
         transform.translate(newWidth/2.0, newHeight/2.0);
         transform.rotate(rotationAngle);
         transform.translate(-originalImage.getWidth()/2.0, -originalImage.getHeight()/2.0);
@@ -448,16 +454,14 @@ public class PhotoEditorDialog extends JDialog {
         g2d.dispose();
 
         displayedImage = transformedImage;
-        imageLabel.setIcon(new ImageIcon(displayedImage));
-        imageLabel.revalidate();
-        imageLabel.repaint();
+        imagePanel.revalidate(); // Important pour mettre à jour la taille
+        imagePanel.repaint();
     }
 
     private void applyCrop() {
         if (cropRect == null || cropRect.width <= 0 || cropRect.height <= 0) return;
 
         try {
-            // Créer une nouvelle image avec la partie recadrée
             BufferedImage croppedImage = new BufferedImage(
                     cropRect.width, cropRect.height, BufferedImage.TYPE_INT_ARGB);
 
@@ -469,11 +473,13 @@ public class PhotoEditorDialog extends JDialog {
             g.dispose();
 
             displayedImage = croppedImage;
-            originalImage = displayedImage; // Mettre à jour l'original pour les nouvelles transformations
+            originalImage = displayedImage;
             rotationAngle = 0;
             scaleFactor = 1.0;
             zoomSlider.setValue(100);
-            imageLabel.setIcon(new ImageIcon(displayedImage));
+            rotateSlider.setValue(0);
+            imagePanel.revalidate();
+            imagePanel.repaint();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                     "Erreur lors du recadrage: " + e.getMessage(),

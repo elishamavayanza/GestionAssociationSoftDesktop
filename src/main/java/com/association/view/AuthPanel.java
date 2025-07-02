@@ -221,7 +221,9 @@ public class AuthPanel extends JPanel {
 
         // Gestionnaire d'événements
         loginButton.addActionListener(new LoginAction());
-        passwordField.addActionListener(new LoginAction());
+        if (passwordField != null) {
+            passwordField.addActionListener(new LoginAction());
+        }
     }
 
     private void showForgotPasswordDialog() {
