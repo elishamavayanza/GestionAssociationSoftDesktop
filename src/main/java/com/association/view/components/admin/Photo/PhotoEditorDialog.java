@@ -261,18 +261,39 @@ public class PhotoEditorDialog extends JDialog {
 
         // Bouton de recadrage
         cropButton = new JButton();
-        cropButton.setIcon(IconManager.getIcon("crop.svg", 20));
-        cropButton.setToolTipText("Recadrer");
+        updateCropButtonUI(); // Applique l'icône et le style selon l'état
+        cropButton.setToolTipText("Définir une zone de recadrage");
         customizeButton(cropButton);
+
+// Gestion du clic
         cropButton.addActionListener(e -> {
             isCropping = !isCropping;
-            cropButton.setToolTipText(isCropping ? "Valider recadrage" : "Recadrer");
+            updateCropButtonUI(); // Met à jour l'icône et le style
+
             if (!isCropping && cropRect != null) {
-                applyCrop();
+                applyCrop(); // Applique le recadrage si validation
+            } else if (!isCropping) {
+                // Annulation sans recadrer
+                cropRect = null;
             }
-            cropRect = null;
             imagePanel.repaint();
         });
+
+// Permet d'annuler avec ESC
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "cancelCrop");
+        getRootPane().getActionMap().put("cancelCrop", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isCropping) {
+                    isCropping = false;
+                    cropRect = null;
+                    updateCropButtonUI();
+                    imagePanel.repaint();
+                }
+            }
+        });
+
 
 
         // Bouton de réinitialisation
@@ -517,4 +538,18 @@ public class PhotoEditorDialog extends JDialog {
         }
     }
 
+    // Méthode pour mettre à jour l'apparence du bouton
+    private void updateCropButtonUI() {
+        if (isCropping) {
+            cropButton.setIcon(IconManager.getIcon("check-bold.svg", 20)); // Icône de validation
+            cropButton.setToolTipText("Valider le recadrage (ESC pour annuler)");
+            cropButton.setBackground(Colors.CURRENT_PRIMARY); // Mise en évidence
+            cropButton.setForeground(Color.WHITE);
+        } else {
+            cropButton.setIcon(IconManager.getIcon("crop.svg", 20)); // Icône par défaut
+            cropButton.setToolTipText("Recadrer l'image");
+            cropButton.setBackground(Colors.CURRENT_CARD_BACKGROUND); // Retour au style normal
+            cropButton.setForeground(Colors.CURRENT_TEXT);
+        }
+    }
 }
