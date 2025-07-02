@@ -197,9 +197,26 @@ public class MemberListPanel extends JPanel implements Observer {
         advancedSearchButton.setMargin(new Insets(0, 0, 0, 0));
         advancedSearchButton.addActionListener(e -> showAdvancedSearchDialog());
 
-        // Ajout des composants au panel d'outils
+        // Nouveau bouton personnalisé
+        JButton customButton = new JButton();
+        customButton.setIcon(IconManager.getIcon("person_add.svg", 16)); // Remplacez par votre icône
+        customButton.setToolTipText("Description du bouton");
+        customButton.setFocusPainted(false);
+        customButton.setContentAreaFilled(false);
+        customButton.setBorder(roundedBorder);
+        customButton.setOpaque(false);
+        customButton.setMargin(new Insets(0, 0, 0, 0));
+        customButton.addActionListener(e -> showAjouterMembreDialog());
+
+// Panel pour les boutons à droite
+        JPanel rightButtonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        rightButtonsPanel.setBackground(Colors.BACKGROUND);
+        rightButtonsPanel.add(advancedSearchButton);
+        rightButtonsPanel.add(customButton); // Ajout du nouveau bouton
+
+// Modifiez l'ajout des composants au panel d'outils
         toolsPanel.add(searchPanel, BorderLayout.CENTER);
-        toolsPanel.add(advancedSearchButton, BorderLayout.EAST);
+        toolsPanel.add(rightButtonsPanel, BorderLayout.EAST);
 
         // Ajout des composants au panel d'en-tête
         headerPanel.add(titleLabel, BorderLayout.WEST);
@@ -312,6 +329,12 @@ public class MemberListPanel extends JPanel implements Observer {
 
         add(contentPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private void showAjouterMembreDialog() {
+        AjouterMembreDialog ajouterMembreDialog = new AjouterMembreDialog(parentFrame);
+        ajouterMembreDialog.setVisible(true);
+
     }
 
     private void performSearch(ActionEvent e) {

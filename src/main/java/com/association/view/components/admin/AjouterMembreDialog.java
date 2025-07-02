@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Date;
 
-public class AjouterMembrePanel extends JPanel {
+public class AjouterMembreDialog extends JDialog {
     // Composants UI
     private JTextField nomField;
     private JTextField contactField;
@@ -34,12 +34,10 @@ public class AjouterMembrePanel extends JPanel {
     // Données et services
     private final MembreManager membreManager;
     private byte[] photoData;
-    private final JFrame parentFrame;
-    private JPanel circlePanel; // Ajoutez cette ligne
+    private JPanel circlePanel;
 
-
-    public AjouterMembrePanel(JFrame parentFrame) {
-        this.parentFrame = parentFrame;
+    public AjouterMembreDialog(JFrame parentFrame) {
+        super(parentFrame, "Ajouter un nouveau membre", true);
 
         // Initialisation des services
         FileStorageService fileStorageService = new RealFileStorageService();
@@ -47,134 +45,46 @@ public class AjouterMembrePanel extends JPanel {
 
         // Configuration globale des composants
         UIManager.put("ScrollBar.width", 6);
-        UIManager.put("SplitPane.dividerSize", 1);
 
         initUI();
+        pack();
+        setLocationRelativeTo(parentFrame);
     }
 
     private void initUI() {
         setLayout(new BorderLayout());
         setBackground(Colors.CURRENT_BACKGROUND);
-        setBorder(new EmptyBorder(15, 15, 15, 15));
+        ((JComponent)getContentPane()).setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        mainSplitPane.setDividerSize(1);
-        mainSplitPane.setResizeWeight(0.8);
-        mainSplitPane.setBorder(BorderFactory.createEmptyBorder());
-        mainSplitPane.setContinuousLayout(true);
-
-        JSplitPane topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        topSplitPane.setDividerSize(1);
-        topSplitPane.setResizeWeight(0.3);
-        topSplitPane.setBorder(BorderFactory.createEmptyBorder());
-        topSplitPane.setContinuousLayout(true);
-
-        topSplitPane.setLeftComponent(createListPanel());
-        topSplitPane.setRightComponent(createMainPanel());
-
-        mainSplitPane.setTopComponent(topSplitPane);
-        mainSplitPane.setBottomComponent(createBottomPanel());
-
-        add(mainSplitPane, BorderLayout.CENTER);
-    }
-
-    private JPanel createListPanel() {
-        ListeMemberbyName listeMemberbyName = new ListeMemberbyName();
-        JScrollPane scrollPane = new JScrollPane(listeMemberbyName);
-
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.getViewport().setBackground(Colors.CURRENT_BACKGROUND);
-
-        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
-        verticalScrollBar.setBackground(Colors.CURRENT_BACKGROUND);
-        verticalScrollBar.setForeground(Colors.CURRENT_BORDER);
-
-        JPanel listPanel = new JPanel(new BorderLayout());
-        listPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        listPanel.add(scrollPane, BorderLayout.CENTER);
-        listPanel.setPreferredSize(new Dimension(250, getHeight()));
-
-        return listPanel;
-    }
-
-    private JPanel createMainPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Panel principal avec formulaire et photo
-        JPanel contentPanel = new JPanel(new GridBagLayout());
+        // Panel principal avec BoxLayout pour organiser verticalement
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        contentPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Titre
+        // Titre centré en haut
         JLabel titleLabel = new JLabel("Ajouter un nouveau membre");
         titleLabel.setFont(Fonts.titleFont());
         titleLabel.setForeground(Colors.CURRENT_TEXT);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        contentPanel.add(titleLabel, gbc);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createVerticalStrut(30));
 
-        // Panel pour les champs de formulaire
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        GridBagConstraints formGbc = new GridBagConstraints();
-        formGbc.insets = new Insets(8, 8, 8, 8);
-        formGbc.fill = GridBagConstraints.HORIZONTAL;
-        formGbc.anchor = GridBagConstraints.LINE_END;
-
-        // Champ Nom
-        addFormField(formPanel, formGbc, 0, "Nom:", nomField = createStyledTextField());
-
-        // Champ Contact
-        addFormField(formPanel, formGbc, 1, "Contact:", contactField = createStyledTextField());
-
-        // Champ Statut
-        formGbc.gridy = 2;
-        formGbc.gridx = 0;
-        JLabel statutLabel = new JLabel("Statut:");
-        statutLabel.setFont(Fonts.labelFont());
-        statutLabel.setForeground(Colors.CURRENT_TEXT);
-        formPanel.add(statutLabel, formGbc);
-
-        formGbc.gridx = 1;
-        formGbc.anchor = GridBagConstraints.LINE_START;
-        statutComboBox = new JComboBox<>(StatutMembre.values());
-        statutComboBox.setSelectedItem(StatutMembre.ACTIF);
-        styleComboBox(statutComboBox);
-        formPanel.add(statutComboBox, formGbc);
-
-        // Ajout du formulaire au contentPanel
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0.7;
-        gbc.fill = GridBagConstraints.BOTH;
-        contentPanel.add(formPanel, gbc);
-
-        // Panel pour la photo
-        JPanel photoPanel = new JPanel(new BorderLayout());
+        // Panel pour la photo et le bouton
+        JPanel photoPanel = new JPanel();
+        photoPanel.setLayout(new BoxLayout(photoPanel, BoxLayout.Y_AXIS));
         photoPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        photoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        photoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Bouton Photo
-        photoButton = new JButton("Ajouter une photo");
-        styleButton(photoButton, false);
-        photoButton.addActionListener(this::choisirPhoto);
-        photoButton.setPreferredSize(new Dimension(180, 40));
-
-        // Aperçu de la photo - maintenant dans un cercle
+        // Aperçu de la photo dans un cercle
         photoPreviewLabel = new JLabel();
         photoPreviewLabel.setHorizontalAlignment(SwingConstants.CENTER);
         photoPreviewLabel.setPreferredSize(new Dimension(150, 150));
 
-        // Remplacer la déclaration locale par l'utilisation de la variable de classe
         circlePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -187,12 +97,10 @@ public class AjouterMembrePanel extends JPanel {
                     int x = (getWidth() - diameter) / 2;
                     int y = (getHeight() - diameter) / 2;
 
-                    // Dessiner l'image
                     Shape circle = new Ellipse2D.Double(x, y, diameter, diameter);
                     g2.setClip(circle);
                     photoPreviewLabel.getIcon().paintIcon(this, g2, x, y);
 
-                    // Dessiner la bordure
                     g2.setClip(null);
                     g2.setStroke(new BasicStroke(2));
                     g2.setColor(Colors.CURRENT_BORDER);
@@ -203,30 +111,76 @@ public class AjouterMembrePanel extends JPanel {
             }
         };
         circlePanel.setPreferredSize(new Dimension(150, 150));
+        circlePanel.setMaximumSize(new Dimension(150, 150));
         circlePanel.setBackground(Colors.CURRENT_BACKGROUND);
+        circlePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        photoPanel.add(circlePanel);
 
-        photoPanel.add(photoButton, BorderLayout.NORTH);
-        photoPanel.add(circlePanel, BorderLayout.CENTER);
+        // Bouton Photo
+        photoButton = new JButton("Ajouter une photo");
+        styleButton(photoButton, false);
+        photoButton.addActionListener(this::choisirPhoto);
+        photoButton.setPreferredSize(new Dimension(180, 40));
+        photoButton.setMaximumSize(new Dimension(180, 40));
+        photoButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        photoPanel.add(Box.createVerticalStrut(15));
+        photoPanel.add(photoButton);
 
-        // Ajout du panel photo au contentPanel
-        gbc.gridx = 1;
-        gbc.weightx = 0.3;
-        contentPanel.add(photoPanel, gbc);
+        contentPanel.add(photoPanel);
+        contentPanel.add(Box.createVerticalStrut(30));
 
-        // Panel des boutons en bas
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.CENTER;
-        contentPanel.add(createButtonPanel(), gbc);
+        // Panel pour les champs de formulaire (disposés horizontalement)
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        formPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        formPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
-        mainPanel.add(contentPanel, BorderLayout.CENTER);
-        return mainPanel;
-    }
+        // Champ Nom
+        JPanel nomPanel = new JPanel(new BorderLayout(5, 5));
+        nomPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        JLabel nomLabel = new JLabel("Nom:");
+        nomLabel.setFont(Fonts.labelFont());
+        nomLabel.setForeground(Colors.CURRENT_TEXT);
+        nomPanel.add(nomLabel, BorderLayout.NORTH);
+        nomField = createStyledTextField();
+        nomField.setPreferredSize(new Dimension(200, 30));
+        nomPanel.add(nomField, BorderLayout.CENTER);
+        formPanel.add(nomPanel);
 
-    private JPanel createButtonPanel() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        // Champ Contact
+        JPanel contactPanel = new JPanel(new BorderLayout(5, 5));
+        contactPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        JLabel contactLabel = new JLabel("Contact:");
+        contactLabel.setFont(Fonts.labelFont());
+        contactLabel.setForeground(Colors.CURRENT_TEXT);
+        contactPanel.add(contactLabel, BorderLayout.NORTH);
+        contactField = createStyledTextField();
+        contactField.setPreferredSize(new Dimension(200, 30));
+        contactPanel.add(contactField, BorderLayout.CENTER);
+        formPanel.add(contactPanel);
+
+        // Champ Statut
+        JPanel statutPanel = new JPanel(new BorderLayout(5, 5));
+        statutPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        JLabel statutLabel = new JLabel("Statut:");
+        statutLabel.setFont(Fonts.labelFont());
+        statutLabel.setForeground(Colors.CURRENT_TEXT);
+        statutPanel.add(statutLabel, BorderLayout.NORTH);
+        statutComboBox = new JComboBox<>(StatutMembre.values());
+        statutComboBox.setSelectedItem(StatutMembre.ACTIF);
+        styleComboBox(statutComboBox);
+        statutComboBox.setPreferredSize(new Dimension(200, 30));
+        statutPanel.add(statutComboBox, BorderLayout.CENTER);
+        formPanel.add(statutPanel);
+
+        contentPanel.add(formPanel);
+        contentPanel.add(Box.createVerticalStrut(30));
+
+        // Panel des boutons Valider/Annuler
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
         buttonPanel.setBackground(Colors.CURRENT_BACKGROUND);
+        buttonPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         validerButton = new JButton("Valider");
         styleButton(validerButton, true);
@@ -235,29 +189,13 @@ public class AjouterMembrePanel extends JPanel {
 
         annulerButton = new JButton("Annuler");
         styleButton(annulerButton, false);
-        annulerButton.addActionListener(e -> parentFrame.dispose());
+        annulerButton.addActionListener(e -> dispose());
         buttonPanel.add(annulerButton);
 
-        return buttonPanel;
-    }
+        contentPanel.add(buttonPanel);
 
-    private JPanel createBottomPanel() {
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(Colors.CURRENT_BACKGROUND);
-        return bottomPanel;
-    }
-
-    private void addFormField(JPanel panel, GridBagConstraints gbc, int row, String labelText, JTextField field) {
-        gbc.gridy = row;
-        gbc.gridx = 0;
-        JLabel label = new JLabel(labelText);
-        label.setFont(Fonts.labelFont());
-        label.setForeground(Colors.CURRENT_TEXT);
-        panel.add(label, gbc);
-
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(field, gbc);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
+        add(mainPanel, BorderLayout.CENTER);
     }
 
     private JTextField createStyledTextField() {
@@ -326,7 +264,7 @@ public class AjouterMembrePanel extends JPanel {
                     return;
                 }
 
-                PhotoEditorDialog editor = new PhotoEditorDialog(parentFrame, originalPhotoData);
+                PhotoEditorDialog editor = new PhotoEditorDialog((JFrame) this.getParent(), originalPhotoData);
                 editor.setVisible(true);
                 photoData = editor.getEditedImageData();
 

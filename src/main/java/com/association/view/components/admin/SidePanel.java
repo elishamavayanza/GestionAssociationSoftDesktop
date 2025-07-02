@@ -99,12 +99,6 @@ public class SidePanel extends JPanel {
             adminInterface.setContentPanel(memberListPanel);
         });
 
-        HoverButton ajouterMembreBtn = gestionMembres.addSubMenuItem("Ajouter Membre", "person_add.svg");
-        ajouterMembreBtn.setDoubleClickAction(() -> {
-            AjouterMembrePanel ajouterMembrePanel = new AjouterMembrePanel(parentFrame);
-            adminInterface.setContentPanel(ajouterMembrePanel);
-        });
-
         gestionMembres.addSubMenuItem("Statuts Membres", "verified_user.svg");
 
         DropDownMenu gestionContributions = new DropDownMenu("Gestion Contributions", "payments.svg");
