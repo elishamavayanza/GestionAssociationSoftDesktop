@@ -333,14 +333,8 @@ public class AdminInterface implements RoleInterface, Observer {
 
             // Style de fond
             if (isSelected) {
-                label.setBackground(new Color(
-                        Colors.CURRENT_PRIMARY.getRed(),
-                        Colors.CURRENT_PRIMARY.getGreen(),
-                        Colors.CURRENT_PRIMARY.getBlue(),
-                        50)); // 50 pour une légère transparence
+                label.setBackground(Colors.SELECTION_BACKGROUND);
                 label.setForeground(Colors.CURRENT_TEXT);
-            } else {
-                label.setBackground(index % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
             }
 
             // Ajouter un indicateur visuel pour les notifications non lues
