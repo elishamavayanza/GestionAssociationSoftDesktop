@@ -73,15 +73,12 @@ public class NotificationDialog {
         panel.add(iconLabel, BorderLayout.WEST);
 
         // Ajouter le message avec un style amélioré
-        JTextArea messageArea = new JTextArea(message);
-        messageArea.setEditable(false);
-        messageArea.setLineWrap(true);
-        messageArea.setWrapStyleWord(true);
-        messageArea.setBackground(bgColor);
-        messageArea.setForeground(Color.WHITE);
-        messageArea.setFont(Fonts.labelFont());
-        messageArea.setBorder(new EmptyBorder(5, 5, 5, 5));
-        panel.add(messageArea, BorderLayout.CENTER);
+        JLabel messageLabel = new JLabel(message);  // message contient tes balises HTML
+        messageLabel.setFont(Fonts.labelFont());
+        messageLabel.setForeground(Color.WHITE);
+        messageLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        panel.add(messageLabel, BorderLayout.CENTER);
+
 
         // Ajouter un bouton de fermeture
         JLabel closeLabel = new JLabel(IconManager.getIcon("close.svg", 16));

@@ -3,6 +3,7 @@ package com.association.view.interfaces;
 import com.association.dao.DAOFactory;
 import com.association.dao.MembreDao;
 import com.association.model.Membre;
+import com.association.model.Notification;
 import com.association.model.access.Utilisateur;
 import com.association.view.AuthPanel;
 import com.association.view.LoginFrame;
@@ -14,6 +15,8 @@ import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,12 +28,16 @@ public class AdminInterface implements RoleInterface, Observer {
     private JPanel currentContentPanel;
     private JButton notificationButton;
     private int notificationCount = 0;
-    private List<String> notifications = new ArrayList<>(); // ← point-virgule ici
+    private List<Notification> notifications = new ArrayList<>();
+
+    private final String NOTIFICATION_FILE = "data/notifications.ser"; // Tu peux choisir un .json, .txt, .ser selon ton format
 
     public AdminInterface(Utilisateur utilisateur) {
         this.utilisateur = utilisateur;
 
         DAOFactory.getInstance(MembreDao.class).addObserver(this);
+
+        purgeOldNotificationsFile();
 
     }
 
@@ -64,6 +71,9 @@ public class AdminInterface implements RoleInterface, Observer {
         mainPanel.add(contentPanel, BorderLayout.CENTER);
 
         frame.setContentPane(mainPanel);
+
+        loadNotifications(); // ← Charger les anciennes notifications au démarrage
+
         return frame;
     }
 
@@ -136,20 +146,28 @@ public class AdminInterface implements RoleInterface, Observer {
 //    }
 
     // Méthode pour ajouter une notification
-    public void addNotification(String message, String type) {
-        notifications.add(0, message); // Ajoute en tête de liste
-        notificationCount++;
+    public void addNotification(String action, String message, String type) {
+        Notification notif = new Notification(action, message, type);
+        notifications.add(0, notif);
+        notificationCount = notifications.size();
         updateNotificationBadge();
-
-        // Afficher une notification toast
         showToastNotification(message, type);
+        saveNotifications();
     }
+
     private void showToastNotification(String message, String type) {
         SwingUtilities.invokeLater(() -> {
-            NotificationDialog.showNotification(frame, message, type);
+            String title = switch (type) {
+                case "warning" -> "Suppression";
+                case "info" -> "Ajout/Modification";
+                default -> "Notification";
+            };
+            String dateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+            NotificationDialog.showNotification(frame,
+                    "<html><b>" + title + "</b> - " + dateTime + "<br>" + message + "</html>",
+                    type);
         });
     }
-
     private JPanel createSidePanel() {
         return new SidePanel(frame, this);
     }
@@ -197,17 +215,19 @@ public class AdminInterface implements RoleInterface, Observer {
     public void update(Observable o, Object arg) {
         if (arg instanceof Membre) {
             Membre membre = (Membre) arg;
-            String message = "Membre ajouter: " + membre.getNom();
-            addNotification(message, "info");
+            String message = "Membre: " + membre.getNom();
+            addNotification("AJOUT", message, "info");
         } else if (arg instanceof Long) {
             String message = "Membre supprimé (ID: " + arg + ")";
-            addNotification(message, "warning");
+            addNotification("SUPPRESSION", message, "warning");
         } else {
-            addNotification("Changement dans la base de données", "info");
+            addNotification("MODIFICATION", "Changement dans la base de données", "info");
         }
     }
 
     private void showNotifications() {
+        System.out.println("Nombre de notifications avant affichage: " + notifications.size());
+
         if (notifications.isEmpty()) {
             NotificationDialog.showNotification(frame,
                     "Aucune nouvelle notification", "info");
@@ -226,8 +246,15 @@ public class AdminInterface implements RoleInterface, Observer {
         titleLabel.setFont(Fonts.titleFont());
         panel.add(titleLabel, BorderLayout.NORTH);
 
-        JList<String> list = new JList<>(notifications.toArray(new String[0]));
+        // Nouveau code
+        DefaultListModel<Notification> model = new DefaultListModel<>();
+        for (Notification n : notifications) {
+            model.addElement(n);
+        }
+        JList<Notification> list = new JList<>(model);
         list.setCellRenderer(new NotificationListRenderer());
+
+
         JScrollPane scrollPane = new JScrollPane(list);
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -238,6 +265,7 @@ public class AdminInterface implements RoleInterface, Observer {
             notifications.clear();
             notificationCount = 0;
             updateNotificationBadge();
+            saveNotifications(); // ← Vider aussi le fichier
             dialog.dispose();
         });
         panel.add(clearButton, BorderLayout.SOUTH);
@@ -255,22 +283,34 @@ public class AdminInterface implements RoleInterface, Observer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value,
                                                       int index, boolean isSelected, boolean cellHasFocus) {
+            Notification notif = (Notification) value;
             JLabel label = (JLabel) super.getListCellRendererComponent(
-                    list, value, index, isSelected, cellHasFocus);
+                    list, notif.getDisplayText(), index, isSelected, cellHasFocus);
 
-            label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-            label.setIcon(IconManager.getIcon("info.svg", 16));
+            // Choisir l’icône selon notif.getType()
+            switch (notif.getType().toLowerCase()) {
+                case "info":
+                    label.setIcon(IconManager.getIcon("infos.svg", 16)); break;
+                case "warning":
+                    label.setIcon(IconManager.getIcon("warning.svg", 16)); break;
+                case "error":
+                    label.setIcon(IconManager.getIcon("error.svg", 16)); break;
+                default:
+                    label.setIcon(IconManager.getIcon("add.svg", 16)); break;
+            }
 
+            // Alternance de fond
             if (isSelected) {
                 label.setBackground(Colors.CARD_BACKGROUND);
             } else {
-                label.setBackground(index % 2 == 0 ?
-                        Colors.BACKGROUND : Colors.CARD_BACKGROUND);
+                label.setBackground(index % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
             }
 
+            label.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
             return label;
         }
     }
+
     private void styleButton(JButton button, boolean primary) {
         button.setFont(Fonts.buttonFont());
         button.setFocusPainted(false);
@@ -313,5 +353,68 @@ public class AdminInterface implements RoleInterface, Observer {
             });
         }
     }
+    private void purgeOldNotificationsFile() {
+        File file = new File(NOTIFICATION_FILE);
+        if (file.exists()) {
+            // on peut lancer un essai pour détecter un List<String>
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                Object o = ois.readObject();
+                if (o instanceof List<?>) {
+                    List<?> l = (List<?>) o;
+                    if (!l.isEmpty() && l.get(0) instanceof String) {
+                        // on supprime : c’était l’ancien format
+                        file.delete();
+                    }
+                }
+            } catch (Exception e) {
+                // fichier corrompu ou nouvelle version, on laisse ou on supprime
+                file.delete();
+            }
+        }
+    }
+
+    private void loadNotifications() {
+        File file = new File(NOTIFICATION_FILE);
+        if (!file.exists()) {
+            notifications = new ArrayList<>();
+            return;
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            Object obj = ois.readObject();
+            if (obj instanceof List) {
+                notifications = (List<Notification>) obj;
+                notificationCount = notifications.size();
+                updateNotificationBadge();
+                System.out.println("Notifications chargées : " + notifications.size());
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Erreur de chargement des notifications : " + e.getMessage());
+            notifications = new ArrayList<>();
+            // Optionnel : créer une sauvegarde du fichier corrompu
+            file.renameTo(new File(NOTIFICATION_FILE + ".corrupted_" + System.currentTimeMillis()));
+        }
+    }
+
+    private void saveNotifications() {
+        try {
+            File file = new File(NOTIFICATION_FILE);
+            if (!file.getParentFile().exists()) {
+                if (!file.getParentFile().mkdirs()) {
+                    System.err.println("Impossible de créer le répertoire pour les notifications");
+                    return;
+                }
+            }
+
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+                oos.writeObject(notifications);
+                System.out.println("Notifications sauvegardées : " + notifications.size());
+            }
+        } catch (IOException e) {
+            System.err.println("Erreur de sauvegarde des notifications : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
 }
