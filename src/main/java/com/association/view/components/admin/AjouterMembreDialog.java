@@ -452,7 +452,7 @@ public class AjouterMembreDialog extends JDialog {
             );
 
             if (success) {
-                showSuccess("Membre ajouté avec succès", "Succès");
+//                showSuccess("Membre ajouté avec succès", "Succès");
                 resetForm();
             } else {
                 if (photoData != null && photoData.length > 0) {

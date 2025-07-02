@@ -14,11 +14,9 @@ import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.*;
 import java.util.ArrayList;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.List;
-import java.util.ArrayList;
 
 
 public class AdminInterface implements RoleInterface, Observer {
@@ -115,9 +113,9 @@ public class AdminInterface implements RoleInterface, Observer {
     private void updateNotificationBadge() {
         if (notificationCount > 0) {
             notificationButton.setIcon(IconManager.createBadgedIcon(
-                    "notifications.svg",
+                    "notification.svg",
                     String.valueOf(notificationCount),
-                    30,
+                    32,
                     Colors.DANGER
             ));
         } else {
@@ -199,7 +197,7 @@ public class AdminInterface implements RoleInterface, Observer {
     public void update(Observable o, Object arg) {
         if (arg instanceof Membre) {
             Membre membre = (Membre) arg;
-            String message = "Membre modifié: " + membre.getNom();
+            String message = "Membre ajouter: " + membre.getNom();
             addNotification(message, "info");
         } else if (arg instanceof Long) {
             String message = "Membre supprimé (ID: " + arg + ")";
@@ -234,6 +232,8 @@ public class AdminInterface implements RoleInterface, Observer {
         panel.add(scrollPane, BorderLayout.CENTER);
 
         JButton clearButton = new JButton("Tout effacer");
+        styleButton(clearButton , true);
+
         clearButton.addActionListener(e -> {
             notifications.clear();
             notificationCount = 0;
@@ -269,6 +269,48 @@ public class AdminInterface implements RoleInterface, Observer {
             }
 
             return label;
+        }
+    }
+    private void styleButton(JButton button, boolean primary) {
+        button.setFont(Fonts.buttonFont());
+        button.setFocusPainted(false);
+
+        if (primary) {
+            button.setBackground(Colors.CURRENT_PRIMARY);
+            button.setForeground(Color.WHITE);
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Colors.CURRENT_PRIMARY_DARK),
+                    BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            ));
+
+            // Effet de survol pour le bouton primaire
+            button.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_PRIMARY.darker());
+                }
+
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_PRIMARY);
+                }
+            });
+        } else {
+            button.setBackground(Colors.CURRENT_CARD_BACKGROUND);
+            button.setForeground(Colors.CURRENT_TEXT);
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                    BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            ));
+
+            // Effet de survol pour le bouton secondaire
+            button.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_BORDER);
+                }
+
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    button.setBackground(Colors.CURRENT_CARD_BACKGROUND);
+                }
+            });
         }
     }
 

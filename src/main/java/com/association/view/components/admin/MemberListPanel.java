@@ -300,32 +300,19 @@ public class MemberListPanel extends JPanel implements Observer {
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         buttonPanel.setBackground(Colors.BACKGROUND);
 
-        JButton refreshButton = new JButton("Actualiser");
         JButton exportButton = new JButton("Exporter");
         JButton printButton = new JButton("Imprimer");
-        JButton closeButton = new JButton("Fermer");
 
         // Style des boutons
-        for (JButton button : new JButton[]{refreshButton, exportButton, printButton, closeButton}) {
+        for (JButton button : new JButton[]{ exportButton, printButton}) {
             button.setFont(Fonts.buttonFont());
             button.setBackground(Colors.PRIMARY);
             button.setForeground(Color.WHITE);
             button.setFocusPainted(false);
         }
 
-        // Actions des boutons
-        refreshButton.addActionListener(e -> loadMemberData());
-        closeButton.addActionListener(e -> {
-            refreshTimer.stop(); // Arrêter le timer
-            parentFrame.getContentPane().remove(this);
-            parentFrame.revalidate();
-            parentFrame.repaint();
-        });
-
-        buttonPanel.add(refreshButton);
         buttonPanel.add(exportButton);
         buttonPanel.add(printButton);
-        buttonPanel.add(closeButton);
 
         add(contentPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
