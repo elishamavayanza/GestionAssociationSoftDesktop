@@ -38,7 +38,8 @@ public class Colors {
     public static final Color ERROR_BACKGROUND = new Color(255, 235, 238);
     public static final Color WARNING_BACKGROUND = new Color(255, 249, 196);
     public static final Color SUCCESS_BACKGROUND = new Color(237, 247, 237);
-
+    public static final Color PRIMARY_LIGHT = new Color(200, 230, 255); // Version claire de PRIMARY
+    public static final Color HOVER = new Color(230, 240, 255); // Déjà présent dans votre code
     // Dans la classe Colors
     public static final Color UNREAD_NOTIFICATION = new Color(0, 100, 200); // Bleu pour les non-lues
     public static Color CURRENT_UNREAD_NOTIFICATION = new Color(0, 100, 200); // Bleu par défaut
@@ -60,6 +61,7 @@ public class Colors {
             CURRENT_TEXT = DARK_TEXT;
             CURRENT_TEXT_SECONDARY = DARK_TEXT_SECONDARY;
             CURRENT_BORDER = DARK_BORDER;
+
         } else {
             CURRENT_UNREAD_NOTIFICATION = UNREAD_NOTIFICATION;
 

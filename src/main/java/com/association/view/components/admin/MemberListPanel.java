@@ -231,19 +231,8 @@ public class MemberListPanel extends JPanel implements Observer {
         contentPanel.setBackground(Colors.BACKGROUND);
 
         // Modèle de tableau
-        // Modèle de tableau
         String[] columnNames = {"ID", "Nom", "Contact", "Date Inscription", "Statut"};
         tableModel = new EditableTableModel(columnNames, 0);
-
-//
-
-//
-//        tableModel = new DefaultTableModel(columnNames, 0) {
-//            @Override
-//            public boolean isCellEditable(int row, int column) {
-//                return false;
-//            }
-//        };
 
 // Création de la table avec les personnalisations
         memberTable = new JTable(tableModel) {
@@ -407,16 +396,27 @@ public class MemberListPanel extends JPanel implements Observer {
         memberTable.getTableHeader().setForeground(Color.WHITE);
         memberTable.getTableHeader().setFont(Fonts.tableHeaderFont());
 
-        // Personnalisation des cellules
+        // Personnalisation des cellules avec effet de survol
         memberTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                                                           boolean isSelected, boolean hasFocus,
+                                                           int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-                // Couleur de fond alternée pour les lignes
-                if (!isSelected) {
+                // Effet de survol
+                if (table.isRowSelected(row)) {
+                    // Si la ligne est sélectionnée
+                    c.setBackground(Colors.PRIMARY_LIGHT);
+                    c.setForeground(Colors.TEXT);
+                } else if (isMouseOverRow(table, row)) {
+                    // Si la souris survole la ligne
+                    c.setBackground(Colors.HOVER);
+                    c.setForeground(Colors.TEXT);
+                } else {
+                    // Couleur de fond alternée pour les lignes normales
                     c.setBackground(row % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
+                    c.setForeground(Colors.TEXT);
                 }
 
                 // Personnalisation selon la colonne (ex: statut)
@@ -435,8 +435,6 @@ public class MemberListPanel extends JPanel implements Observer {
                         default:
                             c.setForeground(Colors.TEXT);
                     }
-                } else {
-                    c.setForeground(Colors.TEXT);
                 }
 
                 // Centrer le texte dans toutes les cellules
@@ -446,12 +444,30 @@ public class MemberListPanel extends JPanel implements Observer {
             }
         });
 
+        // Ajouter un MouseMotionListener pour détecter le survol
+        memberTable.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int row = memberTable.rowAtPoint(e.getPoint());
+                memberTable.repaint(); // Redessiner la table pour mettre à jour l'affichage
+            }
+        });
+
         // Largeur des colonnes
         memberTable.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
         memberTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Nom
         memberTable.getColumnModel().getColumn(2).setPreferredWidth(120); // Contact
         memberTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Date
         memberTable.getColumnModel().getColumn(4).setPreferredWidth(80);  // Statut
+    }
+
+    // Méthode pour vérifier si la souris survole une ligne
+    private boolean isMouseOverRow(JTable table, int row) {
+        Point mousePos = table.getMousePosition();
+        if (mousePos != null) {
+            return table.rowAtPoint(mousePos) == row;
+        }
+        return false;
     }
     private void customizeScrollBar(JScrollBar scrollBar) {
         // Définir la taille préférée pour rendre la barre plus fine
