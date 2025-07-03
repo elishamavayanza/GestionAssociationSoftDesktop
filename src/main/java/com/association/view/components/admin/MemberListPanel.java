@@ -418,9 +418,9 @@ public class MemberListPanel extends JPanel implements Observer {
 
         // Animation fluide seulement si le panneau n'était pas déjà visible
         if (splitPane.getDividerSize() == DIVIDER_SIZE) {
-            Timer timer = new Timer(10, new ActionListener() {
+            Timer timer = new Timer(15, new ActionListener() {
                 int currentDividerLocation = splitPane.getWidth();
-                int targetLocation = (int)(splitPane.getSize().width * 0.6);
+                int targetLocation = (int)(splitPane.getSize().width * 0.8);
 
                 @Override
                 public void actionPerformed(ActionEvent e) {

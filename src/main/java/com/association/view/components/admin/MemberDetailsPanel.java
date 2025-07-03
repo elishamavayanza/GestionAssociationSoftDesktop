@@ -13,6 +13,7 @@ import com.association.view.styles.Fonts;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -43,8 +44,9 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         membreDao.addObserver(this);
 
         initComponents();
-        loadMemberData();
         initFooter(); // Ajoutez cette ligne
+
+        loadMemberData();
 
     }
 
@@ -97,6 +99,7 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         mainPanel.add(nameLabel);
         mainPanel.add(Box.createVerticalStrut(20));
+
 
         // Section photo
         photoLabel = new JLabel();
@@ -166,18 +169,60 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Ajouter d'autres champs avec GridBagConstraints
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        infoPanel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1;
-        infoPanel.add(new JLabel("email@example.com"), gbc);
-
-        mainPanel.add(infoPanel);
 
         JScrollPane scrollPane = new JScrollPane(mainPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+// Personnalisation du style du JScrollPane
+        scrollPane.setBackground(Colors.CARD_BACKGROUND);
+        scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
+
+// Personnalisation des barres de défilement
+        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+        verticalScrollBar.setBackground(Colors.CARD_BACKGROUND);
+        verticalScrollBar.setForeground(Colors.BORDER);
+
+// Réduire l'épaisseur de la barre de défilement (8px ici)
+        verticalScrollBar.setPreferredSize(new Dimension(8, 0)); // Largeur réduite à 8px
+
+        verticalScrollBar.setUI(new BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = Colors.BORDER;
+                this.trackColor = Colors.CARD_BACKGROUND;
+            }
+
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                // Optionnel: Personnaliser le rendu du curseur
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(thumbColor);
+                // Arrondir les coins du curseur
+                g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 4, 4);
+                g2.dispose();
+            }
+
+            private JButton createZeroButton() {
+                JButton button = new JButton();
+                button.setPreferredSize(new Dimension(0, 0));
+                button.setMinimumSize(new Dimension(0, 0));
+                button.setMaximumSize(new Dimension(0, 0));
+                return button;
+            }
+        });
+
         add(scrollPane, BorderLayout.CENTER);
     }
 
