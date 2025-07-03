@@ -34,7 +34,15 @@ abstract class GenericDaoImpl<T extends Entity> extends Observable implements Ge
 
     @Override
     public Optional<T> findById(Long id) {
-        String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
+        String sql = """
+        SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path,
+               m.date_inscription, m.statut
+        FROM entities e
+        JOIN personnes p ON e.id = p.id
+        JOIN membres m ON p.id = m.id
+        WHERE e.id = ?
+    """;
+
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
@@ -48,20 +56,43 @@ abstract class GenericDaoImpl<T extends Entity> extends Observable implements Ge
         return Optional.empty();
     }
 
+
     @Override
     public List<T> findAll() {
-        List<T> entities = new ArrayList<>();
-        String sql = "SELECT * FROM " + tableName;
-        try (Connection conn = databaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                entities.add(mapResultSetToEntity(rs));
+        if (tableName.equals("membres")) {
+            // Special handling for Membre
+            List<T> entities = new ArrayList<>();
+            String sql = "SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, "
+                    + "m.date_inscription, m.statut "
+                    + "FROM entities e "
+                    + "JOIN personnes p ON e.id = p.id "
+                    + "JOIN membres m ON p.id = m.id";
+
+            try (Connection conn = databaseConfig.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    entities.add(mapResultSetToEntity(rs));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+            return entities;
+        } else {
+            // Default implementation for other entities
+            List<T> entities = new ArrayList<>();
+            String sql = "SELECT * FROM " + tableName;
+            try (Connection conn = databaseConfig.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    entities.add(mapResultSetToEntity(rs));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return entities;
         }
-        return entities;
     }
 
     @Override

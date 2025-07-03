@@ -7,6 +7,7 @@ import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import com.association.view.components.IconManager;
 import com.association.view.components.common.AdvancedSearchDialog;
+import com.association.view.components.common.EditableTableModel;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 import org.jetbrains.annotations.Contract;
@@ -232,12 +233,17 @@ public class MemberListPanel extends JPanel implements Observer {
         // Modèle de tableau
         // Modèle de tableau
         String[] columnNames = {"ID", "Nom", "Contact", "Date Inscription", "Statut"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
+        tableModel = new EditableTableModel(columnNames, 0);
+
+//
+
+//
+//        tableModel = new DefaultTableModel(columnNames, 0) {
+//            @Override
+//            public boolean isCellEditable(int row, int column) {
+//                return false;
+//            }
+//        };
 
 // Création de la table avec les personnalisations
         memberTable = new JTable(tableModel) {
@@ -246,6 +252,27 @@ public class MemberListPanel extends JPanel implements Observer {
                 return JTable.AUTO_RESIZE_OFF; // Retourne un int, pas un boolean
             }
         };
+
+        // Ajouter un écouteur pour gérer la suppression de ligne
+        memberTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    int row = memberTable.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        memberTable.setRowSelectionInterval(row, row);
+
+                        JPopupMenu popupMenu = new JPopupMenu();
+                        JMenuItem deleteItem = new JMenuItem("Supprimer");
+                        deleteItem.addActionListener(ev -> {
+                            ((EditableTableModel)tableModel).removeRow(row);
+                        });
+                        popupMenu.add(deleteItem);
+                        popupMenu.show(memberTable, e.getX(), e.getY());
+                    }
+                }
+            }
+        });
 
 // Configuration du style de la table
         memberTable.setShowHorizontalLines(true);
@@ -358,20 +385,9 @@ public class MemberListPanel extends JPanel implements Observer {
     }
 
     private void updateTable(List<Membre> membres) {
-        tableModel.setRowCount(0);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-
-        for (Membre membre : membres) {
-            Object[] rowData = {
-                    membre.getId(),
-                    membre.getNom(),
-                    membre.getContact(),
-                    membre.getDateInscription() != null ? dateFormat.format(membre.getDateInscription()) : "N/A",
-                    getStatusText(membre.getStatut())
-            };
-            tableModel.addRow(rowData);
-        }
+        ((EditableTableModel)tableModel).loadMemberData(membres);
     }
+
 
     private String getStatusText(StatutMembre statut) {
         if (statut == null) return "INCONNU";

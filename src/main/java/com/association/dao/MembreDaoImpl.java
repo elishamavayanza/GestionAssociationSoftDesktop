@@ -180,24 +180,35 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     @Override
     protected Membre mapResultSetToEntity(ResultSet rs) throws SQLException {
         Membre membre = new Membre();
-        membre.setId(rs.getLong("id"));
         try {
+            membre.setId(rs.getLong("id"));
             membre.setDateCreation(new Date(rs.getTimestamp("date_creation").getTime()));
+            membre.setNom(rs.getString("nom"));
+            membre.setContact(rs.getString("contact"));
+            membre.setPhoto(rs.getString("photo_path"));
+            membre.setDateInscription(rs.getDate("date_inscription"));
+
+            String statutStr = rs.getString("statut");
+            if (statutStr != null) {
+                membre.setStatut(StatutMembre.valueOf(statutStr));
+            }
         } catch (SQLException e) {
-            membre.setDateCreation(new Date()); // ou null selon votre besoin
+            logger.error("Erreur lors du mapping ResultSet vers Membre", e);
+            throw e;
         }
-        membre.setNom(rs.getString("nom"));
-        membre.setContact(rs.getString("contact"));
-        membre.setPhoto(rs.getString("photo_path"));
-        membre.setDateInscription(rs.getDate("date_inscription"));
-        membre.setStatut(StatutMembre.valueOf(rs.getString("statut")));
         return membre;
     }
 
     @Override
     public List<Membre> findByNom(String nom) {
         List<Membre> membres = new ArrayList<>();
-        String sql = "SELECT m.* FROM membres m JOIN personnes p ON m.id = p.id WHERE p.nom LIKE ?";
+        String sql = "SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, "
+                + "m.date_inscription, m.statut "
+                + "FROM entities e "
+                + "JOIN personnes p ON e.id = p.id "
+                + "JOIN membres m ON p.id = m.id "
+                + "WHERE p.nom LIKE ?";
+
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%" + nom + "%");
@@ -206,7 +217,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
                 membres.add(mapResultSetToEntity(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Erreur lors de la recherche par nom", e);
         }
         return membres;
     }
@@ -214,7 +225,14 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     @Override
     public List<Membre> findByDateInscription(Date date) {
         List<Membre> membres = new ArrayList<>();
-        String sql = "SELECT * FROM membres WHERE date_inscription = ?";
+        String sql = """
+        SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, 
+               m.date_inscription, m.statut 
+        FROM entities e 
+        JOIN personnes p ON e.id = p.id 
+        JOIN membres m ON p.id = m.id 
+        WHERE m.date_inscription = ?""";
+
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setDate(1, new java.sql.Date(date.getTime()));
@@ -227,6 +245,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
         }
         return membres;
     }
+
 
     @Override
     public boolean updatePhoto(Long membreId, String photoPath) {
@@ -261,12 +280,18 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     @Override
     public List<Membre> findTopContributors(int limit) {
         List<Membre> membres = new ArrayList<>();
-        String sql = "SELECT m.* FROM membres m " +
-                "JOIN transactions t ON m.id = t.membre_id " +
-                "WHERE t.transaction_type = 'CONTRIBUTION' " +
-                "GROUP BY m.id " +
-                "ORDER BY SUM(t.montant) DESC " +
-                "LIMIT ?";
+        String sql = """
+        SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, 
+               m.date_inscription, m.statut 
+        FROM membres m 
+        JOIN entities e ON m.id = e.id
+        JOIN personnes p ON m.id = p.id
+        JOIN transactions t ON m.id = t.membre_id 
+        WHERE t.transaction_type = 'CONTRIBUTION' 
+        GROUP BY m.id 
+        ORDER BY SUM(t.montant) DESC 
+        LIMIT ?""";
+
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, limit);
@@ -282,7 +307,12 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     @Override
     public List<Membre> findAll() {
         List<Membre> membres = new ArrayList<>();
-        String sql = "SELECT * FROM vue_membres_complets";
+        String sql = "SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, "
+                + "m.date_inscription, m.statut "
+                + "FROM entities e "
+                + "JOIN personnes p ON e.id = p.id "
+                + "JOIN membres m ON p.id = m.id";
+
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             ResultSet rs = stmt.executeQuery();
@@ -290,7 +320,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
                 membres.add(mapResultSetToEntity(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Erreur lors de la récupération de tous les membres", e);
         }
         return membres;
     }
@@ -353,8 +383,10 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     @Override
     public List<Membre> findByNameContaining(String name) {
         List<Membre> membres = new ArrayList<>();
-        String sql = "SELECT m.id, m.date_inscription, m.statut, p.nom, p.contact, p.photo_path " +
-                "FROM membres m JOIN personnes p ON m.id = p.id " +
+        String sql = "SELECT e.date_creation, m.id, m.date_inscription, m.statut, p.nom, p.contact, p.photo_path " +
+                "FROM membres m " +
+                "JOIN personnes p ON m.id = p.id " +
+                "JOIN entities e ON m.id = e.id " + // ← jointure manquante
                 "WHERE LOWER(p.nom) LIKE LOWER(?)";
 
         try (Connection conn = databaseConfig.getConnection();
