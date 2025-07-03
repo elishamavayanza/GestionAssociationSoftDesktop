@@ -144,17 +144,40 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         mainPanel.add(Box.createVerticalStrut(30));
 
         // Panel pour les 4 cartes
-        JPanel cardsPanel = new JPanel();
-        cardsPanel.setLayout(new GridLayout(2, 2, 15, 15));
+        JPanel cardsPanel = new JPanel(new GridBagLayout());
         cardsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardsPanel.setMaximumSize(new Dimension(600, 300));
+        cardsPanel.setMaximumSize(new Dimension(600, 400)); // Ajustez la hauteur si nécessaire
         cardsPanel.setBackground(Colors.CARD_BACKGROUND);
 
-        // Création des 4 cartes
-        cardsPanel.add(createInfoCard("Contribution", "0 FCFA"));
-        cardsPanel.add(createInfoCard("Emprunt", "0 FCFA"));
-        cardsPanel.add(createInfoCard("Bénéfice", "0 FCFA"));
-        cardsPanel.add(createInfoCard("Total", "0 FCFA"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); // Marge entre les composants
+        gbc.fill = GridBagConstraints.BOTH; // Remplir l'espace disponible
+        gbc.weightx = 1.0; // Permet l'expansion horizontale
+        gbc.weighty = 1.0; // Permet l'expansion verticale
+
+        // Première ligne (2 cartes)
+        // Première ligne (2 cartes)
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        cardsPanel.add(createInfoCard("Contribution", "0 FCFA", "Contribution"), gbc);
+
+        gbc.gridx = 1;
+        cardsPanel.add(createInfoCard("Emprunt", "0 FCFA", "Emprunt"), gbc);
+
+// Deuxième ligne (2 cartes)
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        cardsPanel.add(createInfoCard("Rempourcement", "0 FCFA", "Rempourcement"), gbc);
+
+        gbc.gridx = 1;
+        cardsPanel.add(createInfoCard("Total", "0 FCFA", null), gbc);
+
+// Troisième ligne (1 carte qui prend toute la largeur)
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        cardsPanel.add(createInfoCard("Bénéfice", "0 FCFA", null), gbc);
 
         mainPanel.add(cardsPanel);
         mainPanel.add(Box.createVerticalStrut(20));
@@ -164,10 +187,10 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         infoPanel.setLayout(new GridBagLayout());
         infoPanel.setBackground(Colors.CARD_BACKGROUND);
         infoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        GridBagConstraints gbcs = new GridBagConstraints();
+        gbcs.insets = new Insets(5, 5, 5, 5);
+        gbcs.anchor = GridBagConstraints.WEST;
+        gbcs.fill = GridBagConstraints.HORIZONTAL;
 
 
         JScrollPane scrollPane = new JScrollPane(mainPanel);
@@ -226,14 +249,18 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private JPanel createInfoCard(String title, String value) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+    private JPanel createInfoCard(String title, String value, String actionCommand) {
+        JPanel card = new JPanel(new BorderLayout());
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Colors.BORDER),
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         card.setBackground(Colors.CARD_BACKGROUND);
+
+        // Contenu centré
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(Colors.CARD_BACKGROUND);
 
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
         titleLabel.setFont(Fonts.labelFont());
@@ -243,11 +270,63 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         valueLabel.setFont(Fonts.titleFont());
         valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        card.add(titleLabel);
-        card.add(Box.createVerticalStrut(10));
-        card.add(valueLabel);
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(valueLabel);
+
+        card.add(contentPanel, BorderLayout.CENTER);
+
+        // Bouton en haut à droite
+        JButton cornerButton = new JButton();
+        cornerButton.setIcon(IconManager.getIcon("kebab-menu.svg", 20));
+        cornerButton.setBorder(BorderFactory.createEmptyBorder());
+        cornerButton.setContentAreaFilled(false);
+
+        // Ajouter l'action directement au bouton
+        if (actionCommand != null) {
+            cornerButton.setActionCommand(actionCommand);
+            cornerButton.addActionListener(e -> handleCardAction(actionCommand));
+        }
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(0, 0, 0, 0)); // Transparent
+        buttonPanel.add(cornerButton);
+
+        card.add(buttonPanel, BorderLayout.NORTH);
 
         return card;
+    }
+
+    private void handleCardAction(String actionCommand) {
+        switch (actionCommand) {
+            case "Contribution":
+                contributionAction();
+                break;
+            case "Emprunt":
+                empruntAction();
+                break;
+            case "Rempourcement":
+                rempourcementAction();
+                break;
+        }
+    }
+
+    private void contributionAction() {
+        JOptionPane.showMessageDialog(this,
+                "Ajout de contribution pour le membre " + membreId,
+                "Contribution", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void empruntAction() {
+        JOptionPane.showMessageDialog(this,
+                "Ajout d'emprunt pour le membre " + membreId,
+                "Emprunt", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void rempourcementAction() {
+        JOptionPane.showMessageDialog(this,
+                "Ajout de rempourcement pour le membre " + membreId,
+                "Rempourcement", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void loadMemberData() {
@@ -445,4 +524,5 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         });
         fadeOutTimer.start();
     }
+
 }
