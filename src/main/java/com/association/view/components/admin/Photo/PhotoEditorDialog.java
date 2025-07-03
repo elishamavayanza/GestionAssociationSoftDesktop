@@ -57,9 +57,9 @@ public class PhotoEditorDialog extends JDialog {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (displayedImage != null) {
-                    // Centre l'image dans le panel
-                    int x = (getWidth() - displayedImage.getWidth()) / 2;
-                    int y = (getHeight() - displayedImage.getHeight()) / 2;
+                    // Centre l'image dans le panel avec les offsets
+                    int x = (getWidth() - displayedImage.getWidth()) / 2 + offsetX;
+                    int y = (getHeight() - displayedImage.getHeight()) / 2 + offsetY;
                     g.drawImage(displayedImage, x, y, this);
 
                     // Dessin du rectangle de recadrage
@@ -493,22 +493,42 @@ public class PhotoEditorDialog extends JDialog {
         if (cropRect == null || cropRect.width <= 0 || cropRect.height <= 0) return;
 
         try {
+            // Calculer les coordonnées réelles en tenant compte du centrage
+            int panelWidth = imagePanel.getWidth();
+            int panelHeight = imagePanel.getHeight();
+            int imgX = (panelWidth - displayedImage.getWidth()) / 2;
+            int imgY = (panelHeight - displayedImage.getHeight()) / 2;
+
+            // Ajuster les coordonnées du rectangle par rapport à l'image
+            int x = Math.max(0, cropRect.x - imgX);
+            int y = Math.max(0, cropRect.y - imgY);
+            int width = Math.min(displayedImage.getWidth() - x, cropRect.width);
+            int height = Math.min(displayedImage.getHeight() - y, cropRect.height);
+
+            if (width <= 0 || height <= 0) return;
+
             BufferedImage croppedImage = new BufferedImage(
-                    cropRect.width, cropRect.height, BufferedImage.TYPE_INT_ARGB);
+                    width, height, BufferedImage.TYPE_INT_ARGB);
 
             Graphics2D g = croppedImage.createGraphics();
             g.drawImage(displayedImage,
-                    0, 0, cropRect.width, cropRect.height,
-                    cropRect.x, cropRect.y, cropRect.x + cropRect.width, cropRect.y + cropRect.height,
+                    0, 0, width, height,
+                    x, y, x + width, y + height,
                     null);
             g.dispose();
 
+            // Réinitialiser toutes les transformations
             displayedImage = croppedImage;
-            originalImage = displayedImage;
+            originalImage = croppedImage;
             rotationAngle = 0;
             scaleFactor = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+            isFlippedHorizontal = false;
+            isFlippedVertical = false;
             zoomSlider.setValue(100);
             rotateSlider.setValue(0);
+
             imagePanel.revalidate();
             imagePanel.repaint();
         } catch (Exception e) {
