@@ -32,6 +32,7 @@ public class PhotoEditorDialog extends JDialog {
     private JPanel imagePanel; // Déplacez cette déclaration ici
     private int offsetX = 0;
     private int offsetY = 0;
+    private boolean cancelled = false;
 
 
     public PhotoEditorDialog(JFrame parent, byte[] photoData) {
@@ -336,6 +337,7 @@ public class PhotoEditorDialog extends JDialog {
         cancelButton.setToolTipText("Annuler");
         customizeButton(cancelButton);
         cancelButton.addActionListener(e -> {
+            cancelled = true;
             displayedImage = originalImage;
             dispose();
         });
@@ -517,6 +519,9 @@ public class PhotoEditorDialog extends JDialog {
     }
 
     public byte[] getEditedImageData() {
+        if (cancelled) {
+            return null; // Retourne null si annulé
+        }
         return imageToBytes(displayedImage);
     }
 

@@ -5,8 +5,10 @@ import com.association.dao.MembreDao;
 import com.association.model.Membre;
 import com.association.util.file.FileStorageService;
 import com.association.util.file.RealFileStorageService;
+import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
+import com.association.view.components.admin.Photo.PhotoEditorDialog;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -66,6 +68,35 @@ public class MemberDetailsPanel extends JPanel {
 
         // Bouton modifier photo
         JButton editPhotoButton = new JButton("Modifier photo");
+
+        editPhotoButton.setFont(Fonts.buttonFont());
+        editPhotoButton.setFocusPainted(false);
+        editPhotoButton.setBackground(Colors.CURRENT_DANGER);
+        editPhotoButton.setForeground(Color.WHITE);
+
+        ImageIcon photoIcon = IconManager.getScaledIcon("photo_icon.svg", 20, 20);
+        if (photoIcon != null) {
+            editPhotoButton.setIcon(photoIcon);
+            editPhotoButton.setIconTextGap(10);
+        }
+
+        editPhotoButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.CURRENT_DANGER.darker()),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+        ));
+
+// Effet de survol
+        editPhotoButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                editPhotoButton.setBackground(Colors.CURRENT_DANGER.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                editPhotoButton.setBackground(Colors.CURRENT_DANGER);
+            }
+        });
+
+
         editPhotoButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         editPhotoButton.addActionListener(this::editPhotoAction);
         mainPanel.add(editPhotoButton);
@@ -187,23 +218,34 @@ public class MemberDetailsPanel extends JPanel {
             try {
                 byte[] photoBytes = Files.readAllBytes(fileChooser.getSelectedFile().toPath());
 
-                // Stocker la nouvelle photo
-                String newPhotoPath = fileStorageService.storeFile(photoBytes, "membres/photos");
-                if (newPhotoPath != null) {
-                    // Mettre à jour dans la base de données
-                    if (membreDao.updatePhoto(membreId, newPhotoPath)) {
-                        // Supprimer l'ancienne photo si elle existe
-                        if (currentPhotoPath != null && !currentPhotoPath.isEmpty()) {
-                            fileStorageService.deleteFile(currentPhotoPath);
-                        }
+                // Ouvrir l'éditeur de photo
+                PhotoEditorDialog editor = new PhotoEditorDialog(parentFrame, photoBytes);
+                editor.setVisible(true);
 
-                        currentPhotoPath = newPhotoPath;
-                        updatePhotoDisplay();
-                        JOptionPane.showMessageDialog(this, "Photo mise à jour avec succès");
-                    } else {
-                        // Si l'update échoue, supprimer la nouvelle photo stockée
-                        fileStorageService.deleteFile(newPhotoPath);
-                        JOptionPane.showMessageDialog(this, "Échec de la mise à jour de la photo", "Erreur", JOptionPane.ERROR_MESSAGE);
+                // Récupérer la photo modifiée
+                byte[] editedPhotoBytes = editor.getEditedImageData();
+                if (editedPhotoBytes == null) {
+                    return; // L'utilisateur a annulé, ne rien faire
+                }
+                if (editedPhotoBytes != null) {
+                    // Stocker la nouvelle photo modifiée
+                    String newPhotoPath = fileStorageService.storeFile(editedPhotoBytes, "membres/photos");
+                    if (newPhotoPath != null) {
+                        // Mettre à jour dans la base de données
+                        if (membreDao.updatePhoto(membreId, newPhotoPath)) {
+                            // Supprimer l'ancienne photo si elle existe
+                            if (currentPhotoPath != null && !currentPhotoPath.isEmpty()) {
+                                fileStorageService.deleteFile(currentPhotoPath);
+                            }
+
+                            currentPhotoPath = newPhotoPath;
+                            updatePhotoDisplay();
+                            JOptionPane.showMessageDialog(this, "Photo mise à jour avec succès");
+                        } else {
+                            // Si l'update échoue, supprimer la nouvelle photo stockée
+                            fileStorageService.deleteFile(newPhotoPath);
+                            JOptionPane.showMessageDialog(this, "Échec de la mise à jour de la photo", "Erreur", JOptionPane.ERROR_MESSAGE);
+                        }
                     }
                 }
             } catch (IOException ex) {

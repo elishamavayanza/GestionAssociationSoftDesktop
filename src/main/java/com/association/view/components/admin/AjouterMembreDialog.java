@@ -410,18 +410,22 @@ public class AjouterMembreDialog extends JDialog {
 
                 PhotoEditorDialog editor = new PhotoEditorDialog((JFrame) this.getParent(), originalPhotoData);
                 editor.setVisible(true);
-                photoData = editor.getEditedImageData();
 
-                if (photoData != null) {
-                    ImageIcon icon = new ImageIcon(photoData);
-                    // Créer une version circulaire de l'image
-                    ImageIcon circularIcon = CircularImageUtil.createCircularIcon(icon.getImage(), 150);
-                    photoPreviewLabel.setIcon(circularIcon);
-                    photoButton.setText("Changer de photo");
-
-                    // Rafraîchir directement le circlePanel
-                    circlePanel.repaint();
+                // Modification clé ici - vérifier si l'utilisateur a annulé
+                byte[] editedPhotoData = editor.getEditedImageData();
+                if (editedPhotoData == null) {
+                    // L'utilisateur a annulé, ne rien faire
+                    return;
                 }
+
+                // Seulement mettre à jour si l'utilisateur a confirmé
+                photoData = editedPhotoData;
+                ImageIcon icon = new ImageIcon(photoData);
+                ImageIcon circularIcon = CircularImageUtil.createCircularIcon(icon.getImage(), 150);
+                photoPreviewLabel.setIcon(circularIcon);
+                photoButton.setText("Changer de photo");
+                circlePanel.repaint();
+
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this,
                         "Erreur lors de la lecture de la photo: " + ex.getMessage(),
