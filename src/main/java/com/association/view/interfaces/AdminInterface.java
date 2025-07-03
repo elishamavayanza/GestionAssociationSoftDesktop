@@ -356,6 +356,7 @@ public class AdminInterface implements RoleInterface, Observer {
         }
     }
 
+
     private void styleButton(JButton button, boolean primary) {
         button.setFont(Fonts.buttonFont());
         button.setFocusPainted(false);

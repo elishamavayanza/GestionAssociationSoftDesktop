@@ -16,8 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicScrollBarUI;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 
 
 import javax.swing.*;
@@ -25,10 +24,6 @@ import javax.swing.border.Border;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -41,6 +36,10 @@ public class MemberListPanel extends JPanel implements Observer {
     private JButton advancedSearchButton;
     private JTextField searchField;
     private javax.swing.Timer refreshTimer;
+    private JSplitPane splitPane;
+    private static final int DIVIDER_SIZE = 0; // Diviseur invisible au démarrage
+    private MemberDetailsPanel currentDetailsPanel = null;
+    private Long currentlyDisplayedMemberId = null;
 
     public MemberListPanel(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -242,6 +241,22 @@ public class MemberListPanel extends JPanel implements Observer {
             }
         };
 
+        // Ajouter un écouteur pour le double-clic
+        memberTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = memberTable.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        Long membreId = (Long) memberTable.getValueAt(row, 0);
+                        showMemberDetailsPanel(membreId);
+                    }
+                }
+            }
+        });
+        memberTable.setRowMargin(0); // Réduit l'espace entre les lignes
+        memberTable.setShowGrid(false); // Cache les lignes de la grille
+
         // Ajouter un écouteur pour gérer la suppression de ligne
         memberTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -298,20 +313,16 @@ public class MemberListPanel extends JPanel implements Observer {
         JScrollPane scrollPane = new JScrollPane(memberTable);
         scrollPane.setBackground(Colors.BACKGROUND);
 
-// Optionnel: supprimer la bordure si vous voulez un look plus minimaliste
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
-// Personnalisation de la barre de défilement
         JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
         JScrollBar horizontalScrollBar = scrollPane.getHorizontalScrollBar();
 
-// Appliquer le style aux barres de défilement
         customizeScrollBar(verticalScrollBar);
         customizeScrollBar(horizontalScrollBar);
 
         contentPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel de boutons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         buttonPanel.setBackground(Colors.BACKGROUND);
@@ -319,19 +330,111 @@ public class MemberListPanel extends JPanel implements Observer {
         JButton exportButton = new JButton("Exporter");
         JButton printButton = new JButton("Imprimer");
 
-        // Style des boutons
         for (JButton button : new JButton[]{ exportButton, printButton}) {
             button.setFont(Fonts.buttonFont());
             button.setBackground(Colors.PRIMARY);
             button.setForeground(Color.WHITE);
             button.setFocusPainted(false);
         }
-
         buttonPanel.add(exportButton);
         buttonPanel.add(printButton);
 
-        add(contentPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+        splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setLeftComponent(contentPanel); // Le panel avec la table
+        splitPane.setRightComponent(new JPanel()); // Panel vide initialement
+        splitPane.setDividerLocation(1.0); // Tout l'espace pour la table (diviseur à droite)
+        splitPane.setDividerSize(DIVIDER_SIZE); // Diviseur invisible
+        splitPane.setResizeWeight(1.0); // Tout l'espace pour la partie gauche
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setOneTouchExpandable(false); // Désactive le bouton d'expansion
+
+        JPanel mainContentPanel = new JPanel(new BorderLayout());
+        mainContentPanel.add(splitPane, BorderLayout.CENTER);
+        mainContentPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        add(headerPanel, BorderLayout.NORTH);
+        add(mainContentPanel, BorderLayout.CENTER);
+    }
+
+    private void showMemberDetailsPanel(Long membreId) {
+        // Si le panneau existe déjà, simplement mettre à jour son contenu
+        if (membreId.equals(currentlyDisplayedMemberId)) {
+            return;
+        }
+
+        currentlyDisplayedMemberId = membreId;
+
+        if (currentDetailsPanel != null) {
+            currentDetailsPanel.updateMemberData(membreId);
+            return;
+        }
+
+        currentDetailsPanel = new MemberDetailsPanel(parentFrame, membreId);
+
+        JPanel closePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton closeButton = new JButton("Fermer");
+        for (JButton button : new JButton[]{ closeButton}) {
+            button.setFont(Fonts.buttonFont());
+            button.setBackground(Colors.PRIMARY);
+            button.setForeground(Color.WHITE);
+            button.setFocusPainted(false);
+        }
+        closeButton.addActionListener(e -> {
+            splitPane.setRightComponent(new JPanel());
+            splitPane.setDividerSize(DIVIDER_SIZE);
+            splitPane.setDividerLocation(1.0);
+            currentDetailsPanel = null;
+            currentlyDisplayedMemberId = null;
+        });
+        closePanel.add(closeButton);
+
+        JPanel container = new JPanel(new BorderLayout());
+        container.add(closePanel, BorderLayout.NORTH);
+        container.add(currentDetailsPanel, BorderLayout.CENTER);
+
+        // Afficher dans le splitPane
+        if (splitPane.getRightComponent() == null || splitPane.getDividerSize() == DIVIDER_SIZE) {
+            splitPane.setRightComponent(container);
+            splitPane.setDividerSize(5);
+
+            // Calcul dynamique de la position du diviseur
+            int totalWidth = splitPane.getWidth();
+            int tableWidth = (int)(totalWidth * 0.6); // 60% pour la table
+            splitPane.setDividerLocation(tableWidth);
+
+            // Ajouter un écouteur de redimensionnement
+            splitPane.addComponentListener(new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    // Maintenir le ratio lors du redimensionnement
+                    int newTotalWidth = splitPane.getWidth();
+                    int newTableWidth = (int)(newTotalWidth * 0.6);
+                    splitPane.setDividerLocation(newTableWidth);
+                }
+            });
+        } else {
+            splitPane.setRightComponent(container);
+        }
+
+        // Animation fluide seulement si le panneau n'était pas déjà visible
+        if (splitPane.getDividerSize() == DIVIDER_SIZE) {
+            Timer timer = new Timer(10, new ActionListener() {
+                int currentDividerLocation = splitPane.getWidth();
+                int targetLocation = (int)(splitPane.getSize().width * 0.6);
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (currentDividerLocation > targetLocation) {
+                        currentDividerLocation -= 20;
+                        splitPane.setDividerLocation(currentDividerLocation);
+                        if (currentDividerLocation <= targetLocation) {
+                            ((Timer)e.getSource()).stop();
+                        }
+                    }
+                }
+            });
+            timer.start();
+        }
     }
 
     private void showAjouterMembreDialog() {
