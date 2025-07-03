@@ -4,6 +4,7 @@ import com.association.dao.GenericDao;
 import com.association.model.Entity;
 
 import java.util.List;
+import java.util.Observer;
 import java.util.Optional;
 
 public abstract class BaseManager<T extends Entity> {

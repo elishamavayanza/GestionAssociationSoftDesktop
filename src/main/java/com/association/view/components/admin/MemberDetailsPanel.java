@@ -6,9 +6,9 @@ import com.association.model.Membre;
 import com.association.util.file.FileStorageService;
 import com.association.util.file.RealFileStorageService;
 import com.association.view.components.IconManager;
+import com.association.view.components.admin.Photo.PhotoEditorDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
-import com.association.view.components.admin.Photo.PhotoEditorDialog;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -19,8 +19,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Observable;
+import java.util.Observer;
 
-public class MemberDetailsPanel extends JPanel {
+public class MemberDetailsPanel extends JPanel implements Observer {
     private final JFrame parentFrame;
     private Long membreId;
     private final MembreDao membreDao;
@@ -34,6 +36,8 @@ public class MemberDetailsPanel extends JPanel {
         this.membreId = membreId;
         this.membreDao = DAOFactory.getInstance(MembreDao.class);
         this.fileStorageService = new RealFileStorageService();
+
+        membreDao.addObserver(this);
 
         initComponents();
         loadMemberData();
@@ -258,5 +262,27 @@ public class MemberDetailsPanel extends JPanel {
     public void updateMemberData(Long newMembreId) {
         this.membreId = newMembreId;
         loadMemberData();
+    }
+
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if (arg instanceof Membre) {
+            Membre updatedMembre = (Membre) arg;
+            if (updatedMembre.getId().equals(membreId)) {
+                // Rafraîchir les données si c'est le membre actuellement affiché
+                SwingUtilities.invokeLater(() -> {
+                    nameLabel.setText(updatedMembre.getNom());
+                    currentPhotoPath = updatedMembre.getPhoto();
+                    updatePhotoDisplay();
+                });
+            }
+        } else if (arg instanceof Long) {
+            Long updatedMembreId = (Long) arg;
+            if (updatedMembreId.equals(membreId)) {
+                // Rafraîchir les données si c'est le membre actuellement affiché
+                SwingUtilities.invokeLater(this::loadMemberData);
+            }
+        }
     }
 }

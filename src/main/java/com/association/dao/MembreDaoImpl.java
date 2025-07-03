@@ -254,9 +254,15 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, photoPath);
             stmt.setLong(2, membreId);
-            return stmt.executeUpdate() > 0;
+
+            boolean updated = stmt.executeUpdate() > 0;
+            if (updated) {
+                // Notifier les observateurs avec l'ID du membre mis à jour
+                notifyObservers(membreId);
+            }
+            return updated;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Erreur lors de la mise à jour de la photo du membre ID: " + membreId, e);
             return false;
         }
     }
