@@ -16,7 +16,13 @@ public class NotificationDialog {
     private static final int NOTIFICATION_HEIGHT = 80;
     private static final int DISPLAY_TIME = 5000; // 5 secondes
 
+    // Méthode existante (gardée pour compatibilité)
     public static void showNotification(JFrame parent, String message, String type) {
+        showNotification(parent, message, type, null);
+    }
+
+    // Nouvelle méthode avec paramètre d'icône
+    public static void showNotification(JFrame parent, String message, String type, String iconName) {
         // Créer une icône basée sur le type de notification
         Icon icon;
         Color bgColor;
@@ -24,24 +30,39 @@ public class NotificationDialog {
         playBeepSound(type);
 
 
+        if (iconName != null) {
+            icon = IconManager.getIcon(iconName, 24);
+        } else {
+            switch(type.toLowerCase()) {
+                case "success":
+                    icon = IconManager.getIcon("check_circles.svg", 24);
+                    break;
+                case "warning":
+                    icon = IconManager.getIcon("warning.svg", 24);
+                    break;
+                case "error":
+                    icon = IconManager.getIcon("error.svg", 24);
+                    break;
+                default:
+                    icon = IconManager.getIcon("info.svg", 24);
+            }
+        }
+
+        // Couleurs selon le type
         switch(type.toLowerCase()) {
             case "success":
-                icon = IconManager.getIcon("check_circles.svg", 24);
                 bgColor = Colors.SUCCESS;
                 borderColor = Colors.SUCCESS.darker();
                 break;
             case "warning":
-                icon = IconManager.getIcon("warning.svg", 24);
                 bgColor = Colors.WARNING;
                 borderColor = Colors.WARNING.darker();
                 break;
             case "error":
-                icon = IconManager.getIcon("error.svg", 24);
                 bgColor = Colors.DANGER;
                 borderColor = Colors.DANGER.darker();
                 break;
             default:
-                icon = IconManager.getIcon("info.svg", 24);
                 bgColor = Colors.INFO;
                 borderColor = Colors.INFO.darker();
         }

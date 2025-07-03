@@ -257,8 +257,7 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
 
             boolean updated = stmt.executeUpdate() > 0;
             if (updated) {
-                // Notifier les observateurs avec l'ID du membre mis à jour
-                notifyObservers(membreId);
+                notifyObservers("UPDATE_PHOTO:" + membreId);
             }
             return updated;
         } catch (SQLException e) {

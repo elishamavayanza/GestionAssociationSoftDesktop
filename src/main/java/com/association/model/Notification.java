@@ -9,17 +9,15 @@ public class Notification implements Serializable {
     private String action;
     private String message;
     private String type;
-    private String date;
+    private Date date;  // Stocké comme Date
     private boolean read;
-
 
     public Notification(String action, String message, String type) {
         this.action = action;
         this.message = message;
         this.type = type;
-        this.date = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+        this.date = new Date();
         this.read = false;
-
     }
 
     public String getAction() {
@@ -34,22 +32,32 @@ public class Notification implements Serializable {
         return type;
     }
 
-    public String getDate() {
+    // Changé pour retourner Date au lieu de String
+    public Date getDate() {
         return date;
     }
 
     public String getDisplayText() {
-        String displayText = action + " - " + date + " : " + message;
-        if (!read) {
-            displayText = "● " + displayText; // Ajoute un point pour les non lues
-        }
-        return displayText;
+        String prefix = switch (action) {
+            case "AJOUT" -> "[Ajout] ";
+            case "SUPPRESSION" -> "[Suppression] ";
+            case "MODIFICATION" -> "[Modification] ";
+            default -> "";
+        };
+
+        return prefix + message + " - " + new SimpleDateFormat("HH:mm").format(date);
+    }
+
+    // Pour obtenir la date formatée en String
+    public String getFormattedDate() {
+        return new SimpleDateFormat("dd/MM/yyyy HH:mm").format(date);
     }
 
     @Override
     public String toString() {
         return getDisplayText();
     }
+
     public boolean isRead() {
         return read;
     }
@@ -57,5 +65,4 @@ public class Notification implements Serializable {
     public void markAsRead() {
         this.read = true;
     }
-
 }

@@ -152,13 +152,25 @@ public class AdminInterface implements RoleInterface, Observer {
         SwingUtilities.invokeLater(() -> {
             String title = switch (type) {
                 case "warning" -> "Suppression";
-                case "info" -> "Ajout/Modification";
+                case "info" ->
+                        message.contains("nouveau") || message.contains("Nouveau") ? "Ajout" :
+                                message.contains("modifié") || message.contains("modifiée") ? "Modification" : "Mise à jour";
                 default -> "Notification";
             };
+
+            String icon = switch (type) {
+                case "warning" -> "warning.svg";
+                case "info" -> title.equals("Ajout") ? "add.svg" : "edit.svg";
+                default -> "info.svg";
+            };
+
             String dateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
-            NotificationDialog.showNotification(frame,
+            NotificationDialog.showNotification(
+                    frame,
                     "<html><b>" + title + "</b> - " + dateTime + "<br>" + message + "</html>",
-                    type);
+                    type,
+                    icon
+            );
         });
     }
     private JPanel createSidePanel() {
@@ -206,18 +218,40 @@ public class AdminInterface implements RoleInterface, Observer {
 
     @Override
     public void update(Observable o, Object arg) {
+
         if (arg instanceof Membre) {
             Membre membre = (Membre) arg;
-            String message = "Membre: " + membre.getNom();
-            addNotification("AJOUT", message, "info");
+
+            // Nouvelle approche pour détecter les ajouts vs modifications
+            if (membre.getId() == null || membre.getId() == 0) {
+                // Cas d'un nouvel ajout
+                String message = "Nouveau membre: " + membre.getNom();
+                addNotification("AJOUT", message, "info");
+            } else {
+                // Cas d'une modification
+                String message = "Membre modifié: " + membre.getNom();
+
+                // Détection spécifique de la modification de photo
+                if (arg instanceof String && ((String)arg).startsWith("UPDATE_PHOTO:")) {
+                    Long membreId = Long.parseLong(((String)arg).split(":")[1]);
+                    message = "Photo du membre ID " + membreId + " modifiée";
+                }
+
+                addNotification("MODIFICATION", message, "info");
+            }
         } else if (arg instanceof Long) {
+            // Cas d'une suppression
             String message = "Membre supprimé (ID: " + arg + ")";
             addNotification("SUPPRESSION", message, "warning");
-        } else {
-            addNotification("MODIFICATION", "Changement dans la base de données", "info");
+        } else if (arg instanceof String) {
+            String operation = (String) arg;
+            if (operation.startsWith("UPDATE_PHOTO:")) {
+                Long membreId = Long.parseLong(operation.split(":")[1]);
+                String message = "Photo du membre ID " + membreId + " modifiée";
+                addNotification("MODIFICATION", message, "info");
+            }
         }
     }
-
     private void showNotifications() {
         System.out.println("Nombre de notifications avant affichage: " + notifications.size());
 
@@ -302,9 +336,30 @@ public class AdminInterface implements RoleInterface, Observer {
                                                       int index, boolean isSelected, boolean cellHasFocus) {
             Notification notif = (Notification) value;
 
-            // Utiliser le rendu par défaut comme base
+            // Déterminer l'icône et le style en fonction du type et de l'action
+            String iconName;
+            Color foreground;
+
+            if (notif.getAction().equals("SUPPRESSION")) {
+                iconName = "delete.svg";
+                foreground = Colors.CURRENT_DANGER;
+            } else if (notif.getAction().equals("AJOUT")) {
+                iconName = "add.svg";
+                foreground = Colors.CURRENT_SUCCESS;
+            } else {
+                iconName = "edit.svg";
+                foreground = Colors.CURRENT_INFO;
+            }
+
+            if (!notif.isRead()) {
+                foreground = foreground.darker();
+            }
+
             JLabel label = (JLabel) super.getListCellRendererComponent(
                     list, notif.getDisplayText(), index, isSelected, cellHasFocus);
+
+            label.setIcon(IconManager.getIcon(iconName, 16));
+            label.setForeground(foreground);
 
             // Style différent selon si la notification est lue ou non
             if (!notif.isRead()) {
