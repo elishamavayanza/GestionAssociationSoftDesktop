@@ -5,7 +5,6 @@ import com.association.dao.MembreDao;
 import com.association.manager.MembreManager;
 import com.association.model.enums.StatutMembre;
 import com.association.util.file.FileStorageService;
-import com.association.util.file.FileStorageServiceAdapter;
 import com.association.util.file.RealFileStorageService;
 import com.association.view.components.IconManager;
 import com.association.view.components.admin.Photo.PhotoEditorDialog;

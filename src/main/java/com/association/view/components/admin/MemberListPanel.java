@@ -547,6 +547,10 @@ public class MemberListPanel extends JPanel implements Observer {
             }
         });
 
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        memberTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+
         // Ajouter un MouseMotionListener pour détecter le survol
         memberTable.addMouseMotionListener(new MouseAdapter() {
             @Override
