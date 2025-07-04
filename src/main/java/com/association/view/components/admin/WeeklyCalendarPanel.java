@@ -5,21 +5,38 @@ import com.association.dao.DAOFactory;
 import com.association.dao.MembreDao;
 import com.association.manager.ContributionManager;
 import com.association.manager.MembreManager;
+import com.association.model.transaction.Contribution;
+import com.association.util.constants.AppConstants;
+import com.association.util.utils.DateUtil;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.Color;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.TextStyle;
-import java.util.Locale;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import javax.swing.JOptionPane;
+
+import com.association.util.constants.DatePattern; // si tu gères les formats dans un enum
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.mysql.cj.conf.PropertyKey.logger;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import java.awt.*;
+
+import java.time.format.TextStyle;
+import java.util.Locale;
+
 
 public class WeeklyCalendarPanel extends JPanel {
     private LocalDate currentDate;
@@ -98,6 +115,7 @@ public class WeeklyCalendarPanel extends JPanel {
         double[][] contributions = getContributions();
         LocalDate startOfWeek = currentDate.with(DayOfWeek.MONDAY);
         boolean hasError = false;
+        boolean hasWarning = false;
 
         for (int day = 0; day < 7; day++) {
             LocalDate contributionDate = startOfWeek.plusDays(day);
@@ -106,16 +124,28 @@ public class WeeklyCalendarPanel extends JPanel {
                 double montant = contributions[day][cont];
                 if (montant > 0) {
                     try {
-                        boolean success = contributionManager.enregistrerContribution(membreId, BigDecimal.valueOf(montant), contributionDate);
+                        // Vérification du montant minimum
+                        if (montant < AppConstants.MIN_CONTRIBUTION.doubleValue()) {
+                            contributionFields[day][cont].setBackground(Colors.WARNING.brighter());
+                            hasWarning = true;
+                            continue;
+                        }
+
+                        boolean success = contributionManager.enregistrerContribution(
+                                membreId,
+                                BigDecimal.valueOf(montant),
+                                contributionDate
+                        );
 
                         if (success) {
                             contributionFields[day][cont].setBackground(Colors.SUCCESS.brighter());
+                            contributionFields[day][cont].setEditable(false);
                         } else {
-                            contributionFields[day][cont].setBackground(Colors.SUCCESS.brighter());
+                            contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
                             hasError = true;
                         }
                     } catch (Exception e) {
-                        contributionFields[day][cont].setBackground(Colors.SUCCESS.brighter());
+                        contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
                         hasError = true;
                         logger.error("Erreur lors de l'enregistrement", e);
                     }
@@ -124,9 +154,25 @@ public class WeeklyCalendarPanel extends JPanel {
         }
 
         if (hasError) {
-            JOptionPane.showMessageDialog(this, "Certaines contributions n'ont pas pu être enregistrées", "Erreur", JOptionPane.ERROR_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this, "Toutes les contributions ont été enregistrées avec succès!", "Succès", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Certaines contributions n'ont pas pu être enregistrées",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+
+        if (hasWarning) {
+            JOptionPane.showMessageDialog(this,
+                    "Certaines contributions sont inférieures au minimum (" +
+                            AppConstants.MIN_CONTRIBUTION + ")",
+                    "Avertissement",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+
+        if (!hasError && !hasWarning) {
+            JOptionPane.showMessageDialog(this,
+                    "Toutes les contributions ont été enregistrées avec succès!",
+                    "Succès",
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -210,7 +256,123 @@ public class WeeklyCalendarPanel extends JPanel {
         gridPanel.setBackground(Colors.CARD_BACKGROUND);
         return gridPanel;
     }
+    private void loadContributionsForWeek() {
+        // Vérification de l'ID membre
+        if (membreId == null) {
+            return;
+        }
 
+        // Détermination de la période (semaine courante)
+        LocalDate startOfWeek = currentDate.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = startOfWeek.plusDays(6);
+
+        try {
+            // Récupération des contributions depuis le manager
+            List<Contribution> contributions = contributionManager.getContributionsBetweenDates(
+                    java.sql.Date.valueOf(startOfWeek),
+                    java.sql.Date.valueOf(endOfWeek)
+            );
+
+            // Réinitialisation de l'interface
+            resetContributionFields();
+
+            // Traitement des contributions
+            processContributions(contributions);
+        } catch (Exception e) {
+            // Gestion des erreurs
+            logger.error("Erreur lors du chargement des contributions", e);
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors du chargement des contributions",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Méthode pour réinitialiser les champs de contribution
+    private void resetContributionFields() {
+        for (int day = 0; day < 7; day++) {
+            for (int cont = 0; cont < 5; cont++) {
+                contributionFields[day][cont].setText("");
+                contributionFields[day][cont].setBackground(Color.WHITE);
+                contributionFields[day][cont].setEditable(true);
+                contributionFields[day][cont].setToolTipText(null);
+            }
+        }
+    }
+
+    // Méthode pour traiter les contributions
+    private void processContributions(List<Contribution> contributions) {
+        for (Contribution contribution : contributions) {
+            try {
+                // Vérification de la validité de la contribution
+                if (isValidContribution(contribution)) {
+                    LocalDate contributionDate = convertToLocalDate(contribution.getDateTransaction());
+                    int dayOfWeek = contributionDate.getDayOfWeek().getValue() - 1; // 0=lundi, 6=dimanche
+
+                    // Ajout de la contribution à l'interface
+                    addContributionToField(dayOfWeek, contribution);
+                }
+            } catch (Exception e) {
+                logger.warn("Contribution invalide ignorée: " + contribution, e);
+            }
+        }
+    }
+
+    // Méthode pour vérifier si une contribution est valide
+    private boolean isValidContribution(Contribution contribution) {
+        return contribution != null
+                && contribution.getDateTransaction() != null
+                && contribution.getMembre() != null
+                && contribution.getMembre().getId() != null
+                && contribution.getMembre().getId().equals(membreId)
+                && contribution.getMontant() != null;
+    }
+
+    // Méthode pour convertir une Date en LocalDate
+    private LocalDate convertToLocalDate(Date date) {
+        if (date == null) {
+            throw new IllegalArgumentException("La date ne peut pas être null");
+        }
+
+        if (date instanceof java.sql.Date) {
+            return ((java.sql.Date) date).toLocalDate();
+        }
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    // Méthode pour ajouter une contribution à un champ spécifique
+    private void addContributionToField(int dayOfWeek, Contribution contribution) {
+        // Vérifier que le montant respecte le minimum
+        if (contribution.getMontant().compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
+            logger.warn("Contribution trop faible ignorée: " + contribution.getMontant());
+            return;
+        }
+
+        for (int i = 0; i < 5; i++) {
+            if (contributionFields[dayOfWeek][i].getText().isEmpty()) {
+                contributionFields[dayOfWeek][i].setText(formatAmount(contribution.getMontant()));
+                contributionFields[dayOfWeek][i].setBackground(Colors.SUCCESS.brighter());
+                contributionFields[dayOfWeek][i].setEditable(false);
+                contributionFields[dayOfWeek][i].setToolTipText(
+                        "Contribution du " + formatDate(contribution.getDateTransaction()) +
+                                "\nMontant: " + contribution.getMontant() +
+                                (contribution.getDescription() != null ?
+                                        "\nDescription: " + contribution.getDescription() : "")
+                );
+                break;
+            }
+        }
+    }
+
+    // Méthode utilitaire pour formater un montant
+    private String formatAmount(BigDecimal amount) {
+        return NumberFormat.getCurrencyInstance().format(amount);
+    }
+
+    // Méthode utilitaire pour formater une date
+    private String formatDate(Date date) {
+        return DateUtil.formatDate(date, DatePattern.SHORT_DATE);
+    }
     public void updateCalendar() {
         // Mettre à jour le label du mois/année
         String monthYear = currentDate.getMonth().getDisplayName(TextStyle.FULL, Locale.FRENCH) + " " + currentDate.getYear();
@@ -231,6 +393,9 @@ public class WeeklyCalendarPanel extends JPanel {
 
         calendarGridPanel.revalidate();
         calendarGridPanel.repaint();
+
+        // Charger les contributions pour cette semaine
+        loadContributionsForWeek();
     }
 
     private JPanel createDayPanel(LocalDate date, int dayIndex) {
@@ -265,18 +430,38 @@ public class WeeklyCalendarPanel extends JPanel {
             JPanel contributionRow = new JPanel(new BorderLayout());
             contributionRow.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
-            // Créer un champ de texte pour la contribution
             JTextField contributionField = new JTextField();
-            contributionField.setHorizontalAlignment(JTextField.CENTER);
-            contributionField.setFont(Fonts.textFieldFont());
-            contributionField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Colors.BORDER), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+            // ... (configuration existante)
 
-            // Stocker la référence au champ de texte
+            // Ajout d'un DocumentFilter pour valider la saisie
+            ((AbstractDocument)contributionField.getDocument()).setDocumentFilter(new DocumentFilter() {
+                @Override
+                public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                        throws BadLocationException {
+                    String newText = fb.getDocument().getText(0, fb.getDocument().getLength()) + text;
+
+                    try {
+                        if (!newText.isEmpty()) {
+                            double value = Double.parseDouble(newText);
+                            if (value < AppConstants.MIN_CONTRIBUTION.doubleValue()) {
+                                contributionField.setBackground(Colors.ERRER.brighter());
+                            } else {
+                                contributionField.setBackground(Color.WHITE);
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        // Ignorer les saisies non numériques (seront bloquées après)
+                    }
+
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            });
+
             contributionFields[dayIndex][i] = contributionField;
-
             contributionRow.add(contributionField, BorderLayout.CENTER);
             contributionsPanel.add(contributionRow);
         }
+
 
         dayPanel.add(contributionsPanel, BorderLayout.CENTER);
 
@@ -329,6 +514,6 @@ public class WeeklyCalendarPanel extends JPanel {
                 DAOFactory.getInstance(ContributionDao.class),
                 new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
         );
-        updateCalendar();
+        updateCalendar(); // Cela appellera loadContributionsForWeek()
     }
 }

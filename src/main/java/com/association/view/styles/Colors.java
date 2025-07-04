@@ -25,6 +25,8 @@ public class Colors {
     public static final Color DARK_SECONDARY = new Color(152, 161, 169);
     public static final Color DARK_SUCCESS = new Color(48, 175, 79);
     public static final Color DARK_DANGER = new Color(230, 63, 79);
+    public static final Color ERRER = new Color(230, 63, 79);
+
     public static final Color DARK_WARNING = new Color(255, 203, 27);
     public static final Color DARK_INFO = new Color(33, 172, 194);
 

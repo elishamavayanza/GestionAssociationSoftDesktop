@@ -17,7 +17,16 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
     protected Contribution mapResultSetToEntity(ResultSet rs) throws SQLException {
         Contribution contribution = new Contribution();
         contribution.setId(rs.getLong("id"));
-        // Remplir les autres propriétés
+        contribution.setDateTransaction(rs.getDate("date_transaction"));
+        contribution.setMontant(rs.getBigDecimal("montant"));
+        contribution.setDescription(rs.getString("description"));
+
+        // Mapper le membre
+        Membre membre = new Membre();
+        membre.setId(rs.getLong("membre_id"));
+        // Charger d'autres propriétés du membre si nécessaire
+        contribution.setMembre(membre);
+
         return contribution;
     }
 
@@ -43,7 +52,7 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
     @Override
     public List<Contribution> findByDateBetween(Date start, Date end) {
         List<Contribution> contributions = new ArrayList<>();
-        String sql = "SELECT c.* FROM contributions c " +
+        String sql = "SELECT c.*, t.* FROM contributions c " +
                 "JOIN transactions t ON c.id = t.id " +
                 "WHERE t.date_transaction BETWEEN ? AND ?";
         try (Connection conn = databaseConfig.getConnection();
@@ -52,7 +61,9 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
             stmt.setDate(2, new java.sql.Date(end.getTime()));
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                contributions.add(mapResultSetToEntity(rs));
+                Contribution contribution = mapResultSetToEntity(rs);
+                // Ajouter la logique pour mapper le membre
+                contributions.add(contribution);
             }
         } catch (SQLException e) {
             e.printStackTrace();
