@@ -33,7 +33,8 @@ public class MemberDetailsPanel extends JPanel implements Observer {
     private JLabel nameLabel;
     private JLabel photoLabel;
     private String currentPhotoPath;
-    private JLabel footerEmailLabel; // Nouveau champ pour l'email dans le footer
+    private JLabel footerEmailLabel;
+    private JTabbedPane tabbedPane;
 
     public MemberDetailsPanel(JFrame parentFrame, Long membreId) {
         this.parentFrame = parentFrame;
@@ -44,10 +45,9 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         membreDao.addObserver(this);
 
         initComponents();
-        initFooter(); // Ajoutez cette ligne
+        initFooter();
 
         loadMemberData();
-
     }
 
     private void initFooter() {
@@ -59,14 +59,12 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         ));
 
         footerEmailLabel = new JLabel();
-        footerEmailLabel.setFont(Fonts.textFieldFont()); // Utilisez la même police que les champs de texte
+        footerEmailLabel.setFont(Fonts.textFieldFont());
         footerEmailLabel.setForeground(Colors.TEXT);
 
-        // Aligner à droite avec une icône d'email
         JPanel emailContainer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         emailContainer.setBackground(Colors.CARD_BACKGROUND);
 
-        // Ajouter une icône d'email avant le texte
         ImageIcon emailIcon = IconManager.getIcon("gmail.svg", 16);
         if (emailIcon != null) {
             JLabel iconLabel = new JLabel(emailIcon);
@@ -100,7 +98,6 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         mainPanel.add(nameLabel);
         mainPanel.add(Box.createVerticalStrut(20));
 
-
         // Section photo
         photoLabel = new JLabel();
         photoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -109,7 +106,6 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 
         // Bouton modifier photo
         JButton editPhotoButton = new JButton("Modifier photo");
-
         editPhotoButton.setFont(Fonts.buttonFont());
         editPhotoButton.setFocusPainted(false);
         editPhotoButton.setBackground(Colors.CURRENT_DANGER);
@@ -126,7 +122,6 @@ public class MemberDetailsPanel extends JPanel implements Observer {
                 BorderFactory.createEmptyBorder(5, 15, 5, 15)
         ));
 
-// Effet de survol
         editPhotoButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 editPhotoButton.setBackground(Colors.CURRENT_DANGER.darker());
@@ -137,77 +132,125 @@ public class MemberDetailsPanel extends JPanel implements Observer {
             }
         });
 
-
         editPhotoButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         editPhotoButton.addActionListener(this::editPhotoAction);
         mainPanel.add(editPhotoButton);
         mainPanel.add(Box.createVerticalStrut(30));
 
-        // Panel pour les 4 cartes
-        JPanel cardsPanel = new JPanel(new GridBagLayout());
-        cardsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardsPanel.setMaximumSize(new Dimension(600, 400)); // Ajustez la hauteur si nécessaire
-        cardsPanel.setBackground(Colors.CARD_BACKGROUND);
+        // Création du JTabbedPane
+        // Création du JTabbedPane
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        tabbedPane.setFont(Fonts.labelFont());
+        tabbedPane.setBackground(Colors.CARD_BACKGROUND);
+        tabbedPane.setForeground(Colors.TEXT);
+
+// Force les onglets à avoir une largeur minimale et maximale égale
+        tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+
+// Personnalisation de l'apparence des onglets
+        tabbedPane.setUI(new javax.swing.plaf.metal.MetalTabbedPaneUI() {
+            @Override
+            protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
+                                          int x, int y, int w, int h, boolean isSelected) {
+                // Pas de bordure
+            }
+
+            @Override
+            protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
+                // Pas de bordure autour du contenu
+            }
+
+            @Override
+            protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
+                // Force une largeur égale pour tous les onglets
+                int width = super.calculateTabWidth(tabPlacement, tabIndex, metrics);
+                return Math.max(width, 100); // 100px de largeur minimale par onglet
+            }
+        });
+
+// Style supplémentaire pour les onglets
+        UIManager.put("TabbedPane.tabAreaInsets", new Insets(0, 0, 0, 0));
+        UIManager.put("TabbedPane.tabInsets", new Insets(5, 10, 5, 10));
+        UIManager.put("TabbedPane.selectedTabPadInsets", new Insets(0, 0, 0, 0));
+        UIManager.put("TabbedPane.tabHeight", 30);
+
+// ICI - AJOUT DES ICÔNES AUX ONGLETS
+// Création des icônes pour chaque onglet
+        ImageIcon summaryIcon = IconManager.getScaledIcon("summary_icon.svg", 16, 16);
+        ImageIcon contribIcon = IconManager.getScaledIcon("contrib_icon.svg", 16, 16);
+        ImageIcon loanIcon = IconManager.getScaledIcon("loan_icon.svg", 16, 16);
+        ImageIcon repayIcon = IconManager.getScaledIcon("repay_icon.svg", 16, 16);
+
+// Onglet 1: Résumé (contient les 5 cartes originales)
+        JPanel summaryPanel = new JPanel(new GridBagLayout());
+        summaryPanel.setBackground(Colors.CARD_BACKGROUND);
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5); // Marge entre les composants
-        gbc.fill = GridBagConstraints.BOTH; // Remplir l'espace disponible
-        gbc.weightx = 1.0; // Permet l'expansion horizontale
-        gbc.weighty = 1.0; // Permet l'expansion verticale
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
 
-        // Première ligne (2 cartes)
-        // Première ligne (2 cartes)
+// Première ligne (2 cartes)
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
-        cardsPanel.add(createInfoCard("Contribution", "0 FCFA", "Contribution"), gbc);
+        summaryPanel.add(createInfoCard("Contribution", "0 FCFA", "Contribution"), gbc);
 
         gbc.gridx = 1;
-        cardsPanel.add(createInfoCard("Emprunt", "0 FCFA", "Emprunt"), gbc);
+        summaryPanel.add(createInfoCard("Emprunt", "0 FCFA", "Emprunt"), gbc);
 
 // Deuxième ligne (2 cartes)
         gbc.gridx = 0;
         gbc.gridy = 1;
-        cardsPanel.add(createInfoCard("Rempourcement", "0 FCFA", "Rempourcement"), gbc);
+        summaryPanel.add(createInfoCard("Rempourcement", "0 FCFA", "Rempourcement"), gbc);
 
         gbc.gridx = 1;
-        cardsPanel.add(createInfoCard("Total", "0 FCFA", null), gbc);
+        summaryPanel.add(createInfoCard("Total", "0 FCFA", null), gbc);
 
 // Troisième ligne (1 carte qui prend toute la largeur)
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 2;
-        cardsPanel.add(createInfoCard("Bénéfice", "0 FCFA", null), gbc);
+        summaryPanel.add(createInfoCard("Bénéfice", "0 FCFA", null), gbc);
 
-        mainPanel.add(cardsPanel);
+// Ajout de l'onglet avec icône
+        tabbedPane.addTab("Résumé", summaryIcon, summaryPanel);
+
+// Onglet 2: Contribution
+        JPanel contributionPanel = new JPanel();
+        contributionPanel.setBackground(Colors.CARD_BACKGROUND);
+        contributionPanel.add(new JLabel("Contenu des contributions"));
+// Ajout de l'onglet avec icône et texte court
+        tabbedPane.addTab("Contrib", contribIcon, contributionPanel);
+
+// Onglet 3: Emprunt
+        JPanel empruntPanel = new JPanel();
+        empruntPanel.setBackground(Colors.CARD_BACKGROUND);
+        empruntPanel.add(new JLabel("Contenu des emprunts"));
+// Ajout de l'onglet avec icône
+        tabbedPane.addTab("Emprunt", loanIcon, empruntPanel);
+
+// Onglet 4: Rempourcement
+        JPanel rempourcementPanel = new JPanel();
+        rempourcementPanel.setBackground(Colors.CARD_BACKGROUND);
+        rempourcementPanel.add(new JLabel("Contenu des rempourcements"));
+// Ajout de l'onglet avec icône et texte court
+        tabbedPane.addTab("Rembt", repayIcon, rempourcementPanel);
+
+        mainPanel.add(tabbedPane);
         mainPanel.add(Box.createVerticalStrut(20));
-
-        // Section d'informations supplémentaires
-        JPanel infoPanel = new JPanel();
-        infoPanel.setLayout(new GridBagLayout());
-        infoPanel.setBackground(Colors.CARD_BACKGROUND);
-        infoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        GridBagConstraints gbcs = new GridBagConstraints();
-        gbcs.insets = new Insets(5, 5, 5, 5);
-        gbcs.anchor = GridBagConstraints.WEST;
-        gbcs.fill = GridBagConstraints.HORIZONTAL;
-
 
         JScrollPane scrollPane = new JScrollPane(mainPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-
-// Personnalisation du style du JScrollPane
         scrollPane.setBackground(Colors.CARD_BACKGROUND);
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
 
-// Personnalisation des barres de défilement
         JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
         verticalScrollBar.setBackground(Colors.CARD_BACKGROUND);
         verticalScrollBar.setForeground(Colors.BORDER);
-
-// Réduire l'épaisseur de la barre de défilement (8px ici)
-        verticalScrollBar.setPreferredSize(new Dimension(8, 0)); // Largeur réduite à 8px
+        verticalScrollBar.setPreferredSize(new Dimension(8, 0));
 
         verticalScrollBar.setUI(new BasicScrollBarUI() {
             @Override
@@ -228,11 +271,9 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 
             @Override
             protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
-                // Optionnel: Personnaliser le rendu du curseur
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(thumbColor);
-                // Arrondir les coins du curseur
                 g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 4, 4);
                 g2.dispose();
             }
@@ -257,7 +298,6 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         ));
         card.setBackground(Colors.CARD_BACKGROUND);
 
-        // Contenu centré
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(Colors.CARD_BACKGROUND);
@@ -276,20 +316,18 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 
         card.add(contentPanel, BorderLayout.CENTER);
 
-        // Bouton en haut à droite
         JButton cornerButton = new JButton();
         cornerButton.setIcon(IconManager.getIcon("kebab-menu.svg", 20));
         cornerButton.setBorder(BorderFactory.createEmptyBorder());
         cornerButton.setContentAreaFilled(false);
 
-        // Ajouter l'action directement au bouton
         if (actionCommand != null) {
             cornerButton.setActionCommand(actionCommand);
             cornerButton.addActionListener(e -> handleCardAction(actionCommand));
         }
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(new Color(0, 0, 0, 0)); // Transparent
+        buttonPanel.setBackground(new Color(0, 0, 0, 0));
         buttonPanel.add(cornerButton);
 
         card.add(buttonPanel, BorderLayout.NORTH);
