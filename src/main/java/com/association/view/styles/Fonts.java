@@ -35,4 +35,9 @@ public class Fonts {
     public static Font footerFont() {
         return new Font("Arial", Font.BOLD, 14);
     }
+
+    public static Font labelFontBold() {
+        return new Font("Arial", Font.BOLD, 14);
+
+    }
 }

@@ -218,9 +218,9 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         tabbedPane.addTab("Résumé", summaryIcon, summaryPanel);
 
 // Onglet 2: Contribution
-        JPanel contributionPanel = new JPanel();
+        JPanel contributionPanel = new JPanel(new BorderLayout());
         contributionPanel.setBackground(Colors.CARD_BACKGROUND);
-        contributionPanel.add(new JLabel("Contenu des contributions"));
+        contributionPanel.add(new WeeklyCalendarPanel(membreId), BorderLayout.CENTER);
 // Ajout de l'onglet avec icône et texte court
         tabbedPane.addTab("Contrib", contribIcon, contributionPanel);
 
@@ -489,6 +489,20 @@ public class MemberDetailsPanel extends JPanel implements Observer {
     public void updateMemberData(Long newMembreId) {
         this.membreId = newMembreId;
         loadMemberData();
+
+        // Mettre à jour le WeeklyCalendarPanel dans l'onglet Contributions
+        Component[] tabs = tabbedPane.getComponents();
+        for (Component tab : tabs) {
+            if (tab instanceof JPanel) {
+                Component[] components = ((JPanel)tab).getComponents();
+                for (Component comp : components) {
+                    if (comp instanceof WeeklyCalendarPanel) {
+                        ((WeeklyCalendarPanel)comp).setMembreId(newMembreId);
+                        ((WeeklyCalendarPanel)comp).updateCalendar();
+                    }
+                }
+            }
+        }
     }
 
 

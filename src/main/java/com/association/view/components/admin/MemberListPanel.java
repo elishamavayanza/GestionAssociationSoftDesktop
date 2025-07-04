@@ -897,4 +897,5 @@ public class MemberListPanel extends JPanel implements Observer {
         };
         worker.execute();
     }
+
 }

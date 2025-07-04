@@ -83,6 +83,13 @@ public class Colors {
         }
     }
 
+    public static Color lighter(Color color, float factor) {
+        int red = (int) ((color.getRed() * (1 - factor) / 255 + factor) * 255);
+        int green = (int) ((color.getGreen() * (1 - factor) / 255 + factor) * 255);
+        int blue = (int) ((color.getBlue() * (1 - factor) / 255 + factor) * 255);
+        return new Color(red, green, blue);
+    }
+
     // Current theme colors (default to light theme)
     public static Color CURRENT_PRIMARY = PRIMARY;
     public static Color CURRENT_PRIMARY_DARK = PRIMARY_DARK;

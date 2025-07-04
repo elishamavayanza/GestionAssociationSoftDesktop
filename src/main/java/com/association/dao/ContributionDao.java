@@ -12,4 +12,5 @@ public interface ContributionDao extends GenericDao<Contribution> {
     BigDecimal calculerTotalContributions();
     BigDecimal calculerTotalContributionsMembre(Long membreId);
     List<Membre> findTopContributors(Date startDate, Date endDate, int limit);
+
 }

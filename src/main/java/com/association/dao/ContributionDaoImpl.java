@@ -120,7 +120,71 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
 
     // Implémentations des autres méthodes de GenericDao
     @Override
-    public boolean create(Contribution t) { return false; }
+    public boolean create(Contribution contribution) {
+        String sql = "INSERT INTO entities (date_creation, entity_type) VALUES (?, 'TRANSACTION')";
+        String sqlTransaction = "INSERT INTO transactions (id, membre_id, date_transaction, montant, description, transaction_type) " +
+                "VALUES (?, ?, ?, ?, ?, 'CONTRIBUTION')";
+        String sqlContribution = "INSERT INTO contributions (id, type_contribution) VALUES (?, ?)";
+
+        Connection conn = null;
+        try {
+            conn = databaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            // Insert into entities
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
+                int affectedRows = stmt.executeUpdate();
+
+                if (affectedRows == 0) {
+                    conn.rollback();
+                    return false;
+                }
+
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        contribution.setId(generatedKeys.getLong(1));
+
+                        // Insert into transactions
+                        try (PreparedStatement tStmt = conn.prepareStatement(sqlTransaction)) {
+                            tStmt.setLong(1, contribution.getId());
+                            tStmt.setLong(2, contribution.getMembre().getId());
+                            tStmt.setTimestamp(3, new Timestamp(contribution.getDateTransaction().getTime()));
+                            tStmt.setBigDecimal(4, contribution.getMontant());
+                            tStmt.setString(5, contribution.getDescription());
+
+                            tStmt.executeUpdate();
+                        }
+
+                        // Insert into contributions
+                        try (PreparedStatement cStmt = conn.prepareStatement(sqlContribution)) {
+                            cStmt.setLong(1, contribution.getId());
+                            cStmt.setString(2, contribution.getTypeContribution().toString());
+
+                            cStmt.executeUpdate();
+                        }
+
+                        conn.commit();
+                        return true;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            e.printStackTrace();
+        } finally {
+            try {
+                if (conn != null) conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
     @Override
     public boolean update(Contribution t) { return false; }
     @Override

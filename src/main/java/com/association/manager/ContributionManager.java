@@ -2,8 +2,10 @@ package com.association.manager;
 
 import com.association.dao.ContributionDao;
 import com.association.model.Membre;
+import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -17,12 +19,14 @@ public class ContributionManager extends BaseManager<Contribution> {
         this.membreManager = membreManager;
     }
 
-    public boolean enregistrerContribution(Long membreId, BigDecimal montant) {
+    public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution) {
         return membreManager.findById(membreId).map(membre -> {
             Contribution contribution = new Contribution();
             contribution.setMembre(membre);
             contribution.setMontant(montant);
-            contribution.setDateTransaction(new Date());
+            contribution.setDateTransaction(java.sql.Date.valueOf(dateContribution));
+            contribution.setTypeContribution(TypeContribution.MENSUEL); // Adaptez selon votre logique
+            contribution.setDescription("Contribution hebdomadaire");
             return create(contribution);
         }).orElse(false);
     }
@@ -42,4 +46,5 @@ public class ContributionManager extends BaseManager<Contribution> {
     public BigDecimal getTotalContributionsMembre(Long membreId) {
         return contributionDao.calculerTotalContributionsMembre(membreId);
     }
+
 }
