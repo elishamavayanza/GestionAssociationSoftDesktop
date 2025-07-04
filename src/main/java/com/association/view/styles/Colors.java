@@ -44,6 +44,8 @@ public class Colors {
     public static final Color UNREAD_NOTIFICATION = new Color(0, 100, 200); // Bleu pour les non-lues
     public static Color CURRENT_UNREAD_NOTIFICATION = new Color(0, 100, 200); // Bleu par défaut
     public static final Color SELECTION_BACKGROUND = new Color(0, 123, 255, 50);
+
+    public static final Color WARNING_LIGHT = new Color(255, 243, 205); // Jaune clair pour les modifications
     // Utility method to toggle between themes
     public static void setDarkTheme(boolean enabled) {
         if (enabled) {

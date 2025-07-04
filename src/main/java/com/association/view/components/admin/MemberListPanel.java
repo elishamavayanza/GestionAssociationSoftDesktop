@@ -25,6 +25,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -40,6 +41,8 @@ public class MemberListPanel extends JPanel implements Observer {
     private static final int DIVIDER_SIZE = 0; // Diviseur invisible au démarrage
     private MemberDetailsPanel currentDetailsPanel = null;
     private Long currentlyDisplayedMemberId = null;
+    private JButton saveButton;
+    private JButton cancelButton;
 
     public MemberListPanel(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -267,10 +270,81 @@ public class MemberListPanel extends JPanel implements Observer {
                         memberTable.setRowSelectionInterval(row, row);
 
                         JPopupMenu popupMenu = new JPopupMenu();
-                        JMenuItem deleteItem = new JMenuItem("Supprimer");
+                        popupMenu.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+
+                        // Style pour le menu contextuel
+                        UIManager.put("PopupMenu.background", Colors.BACKGROUND);
+                        UIManager.put("MenuItem.background", Colors.BACKGROUND);
+                        UIManager.put("MenuItem.foreground", Colors.TEXT);
+                        UIManager.put("MenuItem.selectionBackground", Colors.PRIMARY_LIGHT);
+                        UIManager.put("MenuItem.selectionForeground", Colors.TEXT);
+                        SwingUtilities.updateComponentTreeUI(popupMenu);
+
+                        JMenuItem deleteItem = new JMenuItem("Supprimer", IconManager.getIcon("delete.svg", 16));
+                        deleteItem.setHorizontalTextPosition(SwingConstants.RIGHT);
+                        deleteItem.setIconTextGap(8);
+                        deleteItem.setFont(Fonts.tableFont());
+                        deleteItem.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
                         deleteItem.addActionListener(ev -> {
-                            ((EditableTableModel)tableModel).removeRow(row);
+                            // Créer un JDialog personnalisé
+                            JDialog confirmDialog = new JDialog(parentFrame, "Confirmation de suppression", true);
+                            confirmDialog.setLayout(new BorderLayout());
+                            confirmDialog.setSize(400, 200);
+                            confirmDialog.setLocationRelativeTo(MemberListPanel.this);
+                            confirmDialog.getContentPane().setBackground(Colors.BACKGROUND);
+
+                            // Panel pour le message et l'icône
+                            JPanel messagePanel = new JPanel(new BorderLayout(10, 10));
+                            messagePanel.setBackground(Colors.BACKGROUND);
+                            messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+                            // Icône d'avertissement
+                            JLabel iconLabel = new JLabel(IconManager.getIcon("warning.svg", 48));
+                            iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                            messagePanel.add(iconLabel, BorderLayout.WEST);
+
+                            // Message de confirmation
+                            JLabel messageLabel = new JLabel("<html><div style='text-align: center;'>"
+                                    + "Êtes-vous sûr de vouloir supprimer ce membre ?<br>"
+                                    + "Cette action est irréversible.</div></html>");
+                            messageLabel.setFont(Fonts.textFieldFont());
+                            messageLabel.setForeground(Colors.TEXT);
+                            messagePanel.add(messageLabel, BorderLayout.CENTER);
+
+                            confirmDialog.add(messagePanel, BorderLayout.CENTER);
+
+                            // Panel pour les boutons
+                            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+                            buttonPanel.setBackground(Colors.BACKGROUND);
+
+                            // Bouton Oui
+                            JButton yesButton = new JButton("Oui", IconManager.getIcon("yes.svg", 16));
+                            yesButton.setFont(Fonts.buttonFont());
+                            yesButton.setBackground(Colors.DANGER); // Rouge pour indiquer une action critique
+                            yesButton.setForeground(Color.WHITE);
+                            yesButton.setFocusPainted(false);
+                            yesButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+                            yesButton.addActionListener(ey -> {
+                                ((EditableTableModel) tableModel).removeRow(row);
+                                confirmDialog.dispose();
+                            });
+
+                            // Bouton Non
+                            JButton noButton = new JButton("Non", IconManager.getIcon("no.svg", 16));
+                            noButton.setFont(Fonts.buttonFont());
+                            noButton.setBackground(Colors.SECONDARY); // Gris pour une action neutre
+                            noButton.setForeground(Color.WHITE);
+                            noButton.setFocusPainted(false);
+                            noButton.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+                            noButton.addActionListener(ey -> confirmDialog.dispose());
+
+                            buttonPanel.add(yesButton);
+                            buttonPanel.add(noButton);
+                            confirmDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+                            confirmDialog.setVisible(true);
                         });
+
                         popupMenu.add(deleteItem);
                         popupMenu.show(memberTable, e.getX(), e.getY());
                     }
@@ -308,6 +382,8 @@ public class MemberListPanel extends JPanel implements Observer {
             }
         });
 
+
+
         customizeTableAppearance(); // Applique les autres personnalisations
 
         JScrollPane scrollPane = new JScrollPane(memberTable);
@@ -327,10 +403,48 @@ public class MemberListPanel extends JPanel implements Observer {
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         buttonPanel.setBackground(Colors.BACKGROUND);
 
-        JButton exportButton = new JButton("Exporter");
-        JButton printButton = new JButton("Imprimer");
+        JButton exportButton = new JButton("Exporter", IconManager.getIcon("export.svg", 16));
+        JButton printButton = new JButton("Imprimer", IconManager.getIcon("printer.svg", 16));
 
-        for (JButton button : new JButton[]{ exportButton, printButton}) {
+
+// Après avoir créé les boutons
+        saveButton = new JButton("Save", IconManager.getIcon("save.svg", 16));
+        cancelButton = new JButton("Cancel", IconManager.getIcon("undo.svg", 16));
+
+// Désactiver initialement
+        saveButton.setEnabled(false);
+        cancelButton.setEnabled(false);
+
+// Ajouter l'écouteur de modifications
+        ((EditableTableModel)tableModel).addPropertyChangeListener(evt -> {
+            if ("pendingChanges".equals(evt.getPropertyName())) {
+                boolean hasChanges = !((Map<?, ?>)evt.getNewValue()).isEmpty();
+                saveButton.setEnabled(hasChanges);
+                cancelButton.setEnabled(hasChanges);
+            }
+        });
+
+// Modifier les actions des boutons pour désactiver après usage
+        saveButton.addActionListener(e -> {
+            if (((EditableTableModel)memberTable.getModel()).commitChanges()) {
+                JOptionPane.showMessageDialog(this, "Modifications enregistrées avec succès");
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Erreur lors de l'enregistrement",
+                        "Erreur",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        cancelButton.addActionListener(e -> {
+            ((EditableTableModel)memberTable.getModel()).rollbackChanges();
+        });
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(saveButton);
+
+
+        for (JButton button : new JButton[]{ exportButton, printButton, cancelButton, saveButton}) {
             button.setFont(Fonts.buttonFont());
             button.setBackground(Colors.PRIMARY);
             button.setForeground(Color.WHITE);
@@ -499,7 +613,7 @@ public class MemberListPanel extends JPanel implements Observer {
         memberTable.getTableHeader().setForeground(Color.WHITE);
         memberTable.getTableHeader().setFont(Fonts.tableHeaderFont());
 
-        // Personnalisation des cellules avec effet de survol
+        // Personnalisation des cellules avec effet de survol et mise en évidence des modifications
         memberTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -507,19 +621,30 @@ public class MemberListPanel extends JPanel implements Observer {
                                                            int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-                // Effet de survol
-                if (table.isRowSelected(row)) {
-                    // Si la ligne est sélectionnée
-                    c.setBackground(Colors.PRIMARY_LIGHT);
-                    c.setForeground(Colors.TEXT);
-                } else if (isMouseOverRow(table, row)) {
-                    // Si la souris survole la ligne
-                    c.setBackground(Colors.HOVER);
-                    c.setForeground(Colors.TEXT);
+                // Récupérer l'ID du membre et le modèle
+                Long membreId = (Long) table.getValueAt(row, 0);
+                EditableTableModel model = (EditableTableModel) table.getModel();
+
+                // Mettre en évidence les cellules modifiées
+                if (model.pendingChanges.containsKey(membreId) &&
+                        model.pendingChanges.get(membreId).containsKey(column)) {
+                    c.setBackground(Colors.WARNING_LIGHT); // Couleur pour les modifications
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
                 } else {
-                    // Couleur de fond alternée pour les lignes normales
-                    c.setBackground(row % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
-                    c.setForeground(Colors.TEXT);
+                    // Style normal pour les cellules non modifiées
+                    if (table.isRowSelected(row)) {
+                        // Si la ligne est sélectionnée
+                        c.setBackground(Colors.PRIMARY_LIGHT);
+                        c.setForeground(Colors.TEXT);
+                    } else if (isMouseOverRow(table, row)) {
+                        // Si la souris survole la ligne
+                        c.setBackground(Colors.HOVER);
+                        c.setForeground(Colors.TEXT);
+                    } else {
+                        // Couleur de fond alternée pour les lignes normales
+                        c.setBackground(row % 2 == 0 ? Colors.BACKGROUND : Colors.CARD_BACKGROUND);
+                        c.setForeground(Colors.TEXT);
+                    }
                 }
 
                 // Personnalisation selon la colonne (ex: statut)
