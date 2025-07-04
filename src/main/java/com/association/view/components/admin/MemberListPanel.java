@@ -427,12 +427,95 @@ public class MemberListPanel extends JPanel implements Observer {
 // Modifier les actions des boutons pour désactiver après usage
         saveButton.addActionListener(e -> {
             if (((EditableTableModel)memberTable.getModel()).commitChanges()) {
-                JOptionPane.showMessageDialog(this, "Modifications enregistrées avec succès");
+                // Création d'une boîte de dialogue personnalisée pour le succès
+                JDialog successDialog = new JDialog();
+                successDialog.setTitle("Succès");
+                successDialog.setModal(true);
+                successDialog.setLayout(new BorderLayout());
+                successDialog.setSize(400, 200);
+                successDialog.setLocationRelativeTo(null);
+                successDialog.getContentPane().setBackground(Colors.BACKGROUND);
+
+                // Panel du message
+                JPanel messagePanel = new JPanel(new BorderLayout(10, 10));
+                messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                messagePanel.setBackground(Colors.BACKGROUND);
+
+                // Icône de succès
+                JLabel iconLabel = new JLabel(IconManager.getIcon("success.svg", 48));
+                iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                messagePanel.add(iconLabel, BorderLayout.WEST);
+
+                // Message
+                JLabel messageLabel = new JLabel("<html><div style='text-align: center;'>"
+                        + "Modifications enregistrées<br>avec succès</div></html>");
+                messageLabel.setFont(Fonts.textFieldFont());
+                messageLabel.setForeground(Colors.TEXT);
+                messagePanel.add(messageLabel, BorderLayout.CENTER);
+
+                successDialog.add(messagePanel, BorderLayout.CENTER);
+
+                // Panel du bouton OK
+                JPanel buttonPanel1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+                buttonPanel1.setBackground(Colors.BACKGROUND);
+
+                // Bouton OK
+                JButton okButton = new JButton("OK", IconManager.getIcon("yes.svg", 16));
+                okButton.setFont(Fonts.buttonFont());
+                okButton.setBackground(Colors.PRIMARY);
+                okButton.setForeground(Color.WHITE);
+                okButton.setFocusPainted(false);
+                okButton.addActionListener(ev -> successDialog.dispose());
+
+                buttonPanel1.add(okButton);
+                successDialog.add(buttonPanel1, BorderLayout.SOUTH);
+
+                successDialog.setVisible(true);
             } else {
-                JOptionPane.showMessageDialog(this,
-                        "Erreur lors de l'enregistrement",
-                        "Erreur",
-                        JOptionPane.ERROR_MESSAGE);
+                // Création d'une boîte de dialogue personnalisée pour l'erreur
+                JDialog errorDialog = new JDialog();
+                errorDialog.setTitle("Erreur");
+                errorDialog.setModal(true);
+                errorDialog.setLayout(new BorderLayout());
+                errorDialog.setSize(400, 200);
+                errorDialog.setLocationRelativeTo(null);
+                errorDialog.getContentPane().setBackground(Colors.BACKGROUND);
+
+                // Panel du message
+                JPanel messagePanel = new JPanel(new BorderLayout(10, 10));
+                messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                messagePanel.setBackground(Colors.BACKGROUND);
+
+                // Icône d'erreur
+                JLabel iconLabel = new JLabel(IconManager.getIcon("error.svg", 48));
+                iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                messagePanel.add(iconLabel, BorderLayout.WEST);
+
+                // Message
+                JLabel messageLabel = new JLabel("<html><div style='text-align: center;'>"
+                        + "Erreur lors de<br>l'enregistrement</div></html>");
+                messageLabel.setFont(Fonts.textFieldFont());
+                messageLabel.setForeground(Colors.TEXT);
+                messagePanel.add(messageLabel, BorderLayout.CENTER);
+
+                errorDialog.add(messagePanel, BorderLayout.CENTER);
+
+                // Panel du bouton OK
+                JPanel buttonPanel1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+                buttonPanel1.setBackground(Colors.BACKGROUND);
+
+                // Bouton OK
+                JButton okButton = new JButton("OK", IconManager.getIcon("close.svg", 16));
+                okButton.setFont(Fonts.buttonFont());
+                okButton.setBackground(Colors.SECONDARY);
+                okButton.setForeground(Color.WHITE);
+                okButton.setFocusPainted(false);
+                okButton.addActionListener(ev -> errorDialog.dispose());
+
+                buttonPanel1.add(okButton);
+                errorDialog.add(buttonPanel1, BorderLayout.SOUTH);
+
+                errorDialog.setVisible(true);
             }
         });
 

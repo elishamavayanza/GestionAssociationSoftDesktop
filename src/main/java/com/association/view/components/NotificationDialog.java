@@ -33,7 +33,7 @@ public class NotificationDialog {
         if (iconName != null) {
             icon = IconManager.getIcon(iconName, 24);
         } else {
-            switch(type.toLowerCase()) {
+            switch (type.toLowerCase()) {
                 case "success":
                     icon = IconManager.getIcon("check_circles.svg", 24);
                     break;
@@ -49,7 +49,7 @@ public class NotificationDialog {
         }
 
         // Couleurs selon le type
-        switch(type.toLowerCase()) {
+        switch (type.toLowerCase()) {
             case "success":
                 bgColor = Colors.SUCCESS;
                 borderColor = Colors.SUCCESS.darker();
@@ -88,6 +88,23 @@ public class NotificationDialog {
         ));
         panel.setBackground(bgColor);
         panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                panel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(borderColor.brighter(), 2),
+                        new EmptyBorder(10, 15, 10, 15)
+                ));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                panel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(borderColor, 1),
+                        new EmptyBorder(10, 15, 10, 15)
+                ));
+            }
+        });
 
         // Ajouter l'icône
         JLabel iconLabel = new JLabel(icon);
@@ -132,10 +149,14 @@ public class NotificationDialog {
         // Animation d'apparition
         new Thread(() -> {
             try {
-                for (float opacity = 0; opacity <= 1; opacity += 0.1f) {
+                float opacity = 0;
+                while (opacity < 1) {
+                    opacity += 0.05f;
+                    if (opacity > 1) opacity = 1;
+
                     final float finalOpacity = opacity;
                     SwingUtilities.invokeLater(() -> dialog.setOpacity(finalOpacity));
-                    Thread.sleep(30);
+                    Thread.sleep(20);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -146,34 +167,42 @@ public class NotificationDialog {
     private static void playBeepSound(String type) {
         new Thread(() -> {
             try {
-                int frequency = 500;
-                int duration = 500;
+                Clip clip = AudioSystem.getClip();
+                AudioFormat format = new AudioFormat(44100, 8, 1, true, false);
 
-                switch(type.toLowerCase()) {
+                byte[] data;
+                switch (type.toLowerCase()) {
                     case "success":
-                        frequency = 800;
-                        duration = 300;
+                        data = generateTone(800, 300, format);
                         break;
                     case "warning":
-                        frequency = 600;
-                        duration = 400;
+                        data = generateTone(600, 400, format);
                         break;
                     case "error":
-                        frequency = 400;
-                        duration = 600;
+                        data = generateTone(400, 600, format);
                         break;
                     default:
-                        frequency = 500;
-                        duration = 200;
+                        data = generateTone(500, 200, format);
                 }
 
-                Toolkit.getDefaultToolkit().beep(); // Son système
-                // Si tu veux un son généré (par onde sinusoïdale), il faut coder ou utiliser un fichier WAV.
-
+                clip.open(format, data, 0, data.length);
+                clip.start();
             } catch (Exception e) {
-                System.err.println("Erreur sonore: " + e.getMessage());
+                Toolkit.getDefaultToolkit().beep(); // Fallback
             }
         }).start();
+    }
+
+    private static byte[] generateTone(int freq, int durationMs, AudioFormat format) {
+        int samples = (int) (durationMs * format.getSampleRate() / 1000);
+        byte[] data = new byte[samples];
+
+        for (int i = 0; i < samples; i++) {
+            double angle = 2.0 * Math.PI * freq * i / format.getSampleRate();
+            data[i] = (byte) (Math.sin(angle) * 127.0);
+        }
+
+        return data;
     }
 
 
