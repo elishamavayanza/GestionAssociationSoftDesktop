@@ -218,7 +218,7 @@ public class EditableTableModel extends DefaultTableModel {
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
             buttonPanel.setBackground(Colors.BACKGROUND);
 
-            // Bouton Oui
+            // Bouton Oui - Correction ici
             JButton yesButton = new JButton("Oui", IconManager.getIcon("yes.svg", 16));
             yesButton.setFont(Fonts.buttonFont());
             yesButton.setBackground(Colors.PRIMARY);
@@ -227,7 +227,7 @@ public class EditableTableModel extends DefaultTableModel {
             yesButton.addActionListener(e -> {
                 rollbackChanges();
                 confirmDialog.dispose();
-                loadDataAfterConfirmation(membres);
+                SwingUtilities.invokeLater(() -> loadDataAfterConfirmation(membres));
             });
 
             // Bouton Non
@@ -236,10 +236,7 @@ public class EditableTableModel extends DefaultTableModel {
             noButton.setBackground(Colors.SECONDARY);
             noButton.setForeground(Color.WHITE);
             noButton.setFocusPainted(false);
-            noButton.addActionListener(e -> {
-                confirmDialog.dispose();
-                // Ne pas charger les nouvelles données
-            });
+            noButton.addActionListener(e -> confirmDialog.dispose());
 
             buttonPanel.add(yesButton);
             buttonPanel.add(noButton);
@@ -249,6 +246,7 @@ public class EditableTableModel extends DefaultTableModel {
             return;
         }
 
+        // Si pas de modifications en attente, charger directement
         loadDataAfterConfirmation(membres);
     }
 
