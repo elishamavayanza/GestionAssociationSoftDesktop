@@ -56,9 +56,12 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
     @Override
     public List<Contribution> findByDateBetween(Date start, Date end) {
         List<Contribution> contributions = new ArrayList<>();
-        String sql = "SELECT c.*, t.* FROM contributions c " +
+        String sql = "SELECT DISTINCT c.id, c.type_contribution, " +
+                "t.id as transaction_id, t.membre_id, t.date_transaction, t.montant, t.description " +
+                "FROM contributions c " +
                 "JOIN transactions t ON c.id = t.id " +
                 "WHERE t.date_transaction BETWEEN ? AND ? " +
+                "ORDER BY t.date_transaction, t.montant " +
                 "LIMIT 1000";
 
         for (int attempt = 0; attempt < 3; attempt++) {

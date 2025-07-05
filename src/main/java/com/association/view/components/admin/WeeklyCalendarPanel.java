@@ -38,7 +38,7 @@ import java.util.Observer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WeeklyCalendarPanel extends JPanel implements Observer {
+public class WeeklyCalendarPanel extends JPanel {
     // ... code existant ...
    private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
     private static final int MAX_CONTRIBUTIONS_PER_DAY = 5;
@@ -71,9 +71,6 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
                     new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
             );
 
-            // Enregistrement comme observateur
-            contributionDao.addObserver(this);
-            contributionManager.addObserver(this); // Maintenant cela fonctionnera
 
             initComponents();
         }
@@ -364,10 +361,15 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
         LocalDate endOfWeek = startOfWeek.plusDays(DAYS_IN_WEEK - 1);
 
         try {
+            logger.debug("Chargement des contributions pour la période {} à {}", startOfWeek, endOfWeek);
+
             List<Contribution> contributions = contributionManager.getContributionsBetweenDates(
                     java.sql.Date.valueOf(startOfWeek),
                     java.sql.Date.valueOf(endOfWeek)
             );
+
+            logger.debug("Nombre de contributions chargées: {}", contributions.size());
+            contributions.forEach(c -> logger.debug("Contribution: {} - {}", c.getDateTransaction(), c.getMontant()));
 
             resetContributionFields();
             processContributions(contributions);
@@ -387,41 +389,54 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
     private void resetContributionFields() {
         for (int day = 0; day < DAYS_IN_WEEK; day++) {
             for (int cont = 0; cont < MAX_CONTRIBUTIONS_PER_DAY; cont++) {
-                JTextField field = contributionFields[day][cont];
-                if (field != null) {
-                    field.setText("");
-                    field.setBackground(Color.WHITE);
-                    field.setEditable(true);
-                    field.setToolTipText(null);
+                if (contributionFields[day][cont] != null) {
+                    contributionFields[day][cont].setText("");
+                    contributionFields[day][cont].setBackground(Color.WHITE);
+                    contributionFields[day][cont].setEditable(true);
+                    contributionFields[day][cont].setToolTipText(null);
                 }
             }
         }
     }
 
     private void processContributions(List<Contribution> contributions) {
+        resetContributionFields();
+        if (contributions == null) return;
+
+        LocalDate startOfWeek = getStartOfWeek();
+        Map<LocalDate, Set<BigDecimal>> uniqueContributions = new HashMap<>(); // Pour vérifier l'unicité
+
         for (Contribution contribution : contributions) {
             try {
-                if (isValidContribution(contribution)) {
-                    LocalDate contributionDate = convertToLocalDate(contribution.getDateTransaction());
-                    int dayOfWeek = contributionDate.getDayOfWeek().getValue() - 1; // 0=lundi, 6=dimanche
-                    addContributionToField(dayOfWeek, contribution);
+                if (!isValidContribution(contribution)) {
+                    continue;
                 }
+
+                LocalDate contributionDate = convertToLocalDate(contribution.getDateTransaction());
+                BigDecimal amount = contribution.getMontant();
+
+                // Vérifier l'unicité par date et montant
+                if (!uniqueContributions.computeIfAbsent(contributionDate, k -> new HashSet<>()).add(amount)) {
+                    continue; // Doublon détecté, on ignore
+                }
+
+                int dayOfWeek = contributionDate.getDayOfWeek().getValue() - 1;
+                addContributionToField(dayOfWeek, contribution);
             } catch (Exception e) {
-                logger.warn("Contribution invalide ignorée: " + contribution, e);
+                logger.warn("Erreur lors du traitement d'une contribution", e);
             }
         }
     }
-
-
     private boolean isValidContribution(Contribution contribution) {
         return contribution != null
+                && contribution.getId() != null
                 && contribution.getDateTransaction() != null
                 && contribution.getMembre() != null
                 && contribution.getMembre().getId() != null
                 && contribution.getMembre().getId().equals(membreId)
-                && contribution.getMontant() != null;
+                && contribution.getMontant() != null
+                && contribution.getMontant().compareTo(BigDecimal.ZERO) > 0;
     }
-
     private LocalDate convertToLocalDate(Date date) {
         if (date == null) {
             throw new IllegalArgumentException("La date ne peut pas être null");
@@ -434,23 +449,24 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
     }
 
     private void addContributionToField(int dayOfWeek, Contribution contribution) {
-        if (contribution.getMontant().compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
-            logger.warn("Contribution trop faible ignorée: " + contribution.getMontant());
-            return;
-        }
 
         for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
-            if (contributionFields[dayOfWeek][i].getText().isEmpty()) {
-                JTextField field = contributionFields[dayOfWeek][i];
-                BigDecimal amount = contribution.getMontant();
+            JTextField field = contributionFields[dayOfWeek][i];
+            if (field.getToolTipText() != null &&
+                    field.getToolTipText().contains(contribution.getMontant().toString())) {
+                return; // Contribution déjà présente
+            }
+        }
 
-                // Convertir en devise courante si nécessaire
+        // VÉRIFIER SI LE CHAMP EST DÉJÀ UTILISÉ
+        for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
+            JTextField field = contributionFields[dayOfWeek][i];
+            if (field.getText().isEmpty()) {
+                BigDecimal amount = contribution.getMontant();
                 if (currentCurrency.equals(CURRENCY_USD)) {
                     amount = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
                 }
-
                 field.setText(amount.toString());
-                field.setBackground(Colors.SUCCESS.brighter());
                 field.setEditable(false);
                 field.setToolTipText(createContributionTooltip(contribution));
                 break;
@@ -578,14 +594,20 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
     private JPanel createContributionsPanel(int dayIndex) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(0, 0, 0, 0)); // Transparent
+        panel.setBackground(new Color(0, 0, 0, 0));
+
+        // RÉINITIALISER LES CHAMPS POUR CE JOUR
+        for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
+            contributionFields[dayIndex][i] = null; // Réinitialiser les références
+        }
 
         for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
             JPanel row = new JPanel(new BorderLayout());
             row.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
+            // TOUJOURS CRÉER UN NOUVEAU CHAMP
             JTextField field = createContributionTextField();
-            contributionFields[dayIndex][i] = field;
+            contributionFields[dayIndex][i] = field; // Mettre à jour la référence
             row.add(field, BorderLayout.CENTER);
             panel.add(row);
         }
@@ -652,27 +674,6 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
                 new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
         );
         updateCalendar();
-    }
-
-    @Override
-    public void update(Observable o, Object arg) {
-        // Réagir seulement si le changement concerne le membre actuellement affiché
-        if (arg instanceof Contribution) {
-            Contribution contribution = (Contribution) arg;
-            if (contribution.getMembre() != null &&
-                    contribution.getMembre().getId().equals(membreId)) {
-                SwingUtilities.invokeLater(() -> {
-                    logger.info("Mise à jour de l'interface pour contribution: {}", contribution.getId());
-                    updateCalendar();
-                });
-            }
-        } else if (arg instanceof Long) {
-            // Pour les suppressions, on rafraîchit tout par précaution
-            SwingUtilities.invokeLater(() -> {
-                logger.info("Mise à jour de l'interface après suppression");
-                updateCalendar();
-            });
-        }
     }
 
     private class NumericDocumentFilter extends DocumentFilter {
@@ -752,4 +753,5 @@ public class WeeklyCalendarPanel extends JPanel implements Observer {
             }
         }
     }
+
 }
