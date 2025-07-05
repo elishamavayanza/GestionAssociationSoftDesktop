@@ -15,6 +15,8 @@ import com.association.view.styles.Fonts;
 import com.association.util.constants.DatePattern;
 
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.DayOfWeek;
@@ -71,9 +73,13 @@ public class WeeklyCalendarPanel extends JPanel {
                     new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
             );
 
-
             initComponents();
-        }
+        createPopupMenu(); // Ajouter cette ligne
+
+    }
+
+    private void createPopupMenu() {
+    }
 
     private void initComponents() {
         setLayout(new BorderLayout());
@@ -474,7 +480,7 @@ public class WeeklyCalendarPanel extends JPanel {
         }
     }
 
-    private String createContributionTooltip(Contribution contribution) {
+    public String createContributionTooltip(Contribution contribution) {
         StringBuilder tooltip = new StringBuilder();
         tooltip.append("Contribution du ").append(formatDate(contribution.getDateTransaction()));
         tooltip.append("\nMontant: ").append(contribution.getMontant());
@@ -567,10 +573,49 @@ public class WeeklyCalendarPanel extends JPanel {
         dayPanel.add(dayNumberLabel, BorderLayout.NORTH);
 
         // Panel pour les contributions
-        JPanel contributionsPanel = createContributionsPanel(dayIndex);
-        dayPanel.add(contributionsPanel, BorderLayout.CENTER);
+        JPanel contributionsPanel = new JPanel();
+        contributionsPanel.setLayout(new BoxLayout(contributionsPanel, BoxLayout.Y_AXIS));
+        contributionsPanel.setBackground(new Color(0, 0, 0, 0));
 
+        for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
+            JPanel row = new JPanel(new BorderLayout());
+            row.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+
+            JTextField field = createContributionTextField();
+            contributionFields[dayIndex][i] = field;
+
+            // Ajouter le MouseListener pour le popup menu
+            field.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    maybeShowPopup(e, field, date);
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    maybeShowPopup(e, field, date);
+                }
+            });
+
+            row.add(field, BorderLayout.CENTER);
+            contributionsPanel.add(row);
+        }
+
+        dayPanel.add(contributionsPanel, BorderLayout.CENTER);
         return dayPanel;
+    }
+
+    private void maybeShowPopup(MouseEvent e, JTextField field, LocalDate date) {
+        if (e.isPopupTrigger() && !field.isEditable() && !field.getText().isEmpty()) {
+            ContributionPopupMenu popup = new ContributionPopupMenu(
+                    field,
+                    contributionManager,
+                    date,
+                    currentCurrency,
+                    this
+            );
+            popup.show(e.getComponent(), e.getX(), e.getY());
+        }
     }
 
     private JLabel createDayNumberLabel(LocalDate date) {
