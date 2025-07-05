@@ -7,8 +7,13 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements ContributionDao {
+
+    private static final Logger logger = Logger.getLogger(ContributionDaoImpl.class.getName());
+
     public ContributionDaoImpl() {
         super("contributions");
     }
@@ -24,7 +29,6 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
         // Mapper le membre
         Membre membre = new Membre();
         membre.setId(rs.getLong("membre_id"));
-        // Charger d'autres propriétés du membre si nécessaire
         contribution.setMembre(membre);
 
         return contribution;
@@ -44,7 +48,7 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 contributions.add(mapResultSetToEntity(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Erreur lors de la recherche des contributions par membre", e);
         }
         return contributions;
     }
@@ -54,19 +58,34 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
         List<Contribution> contributions = new ArrayList<>();
         String sql = "SELECT c.*, t.* FROM contributions c " +
                 "JOIN transactions t ON c.id = t.id " +
-                "WHERE t.date_transaction BETWEEN ? AND ?";
-        try (Connection conn = databaseConfig.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setDate(1, new java.sql.Date(start.getTime()));
-            stmt.setDate(2, new java.sql.Date(end.getTime()));
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                Contribution contribution = mapResultSetToEntity(rs);
-                // Ajouter la logique pour mapper le membre
-                contributions.add(contribution);
+                "WHERE t.date_transaction BETWEEN ? AND ? " +
+                "LIMIT 1000";
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try (Connection conn = databaseConfig.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                stmt.setDate(1, new java.sql.Date(start.getTime()));
+                stmt.setDate(2, new java.sql.Date(end.getTime()));
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        contributions.add(mapResultSetToEntity(rs));
+                    }
+                    return contributions;
+                }
+            } catch (SQLException e) {
+                if (attempt == 2) {
+                    logger.log(Level.SEVERE, "Échec après 3 tentatives de récupération des contributions", e);
+                    throw new RuntimeException("Failed to get contributions after 3 attempts", e);
+                }
+                try {
+                    Thread.sleep(1000 * (attempt + 1));
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Thread interrupted", ie);
+                }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return contributions;
     }
@@ -82,7 +101,7 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 return rs.getBigDecimal(1);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Erreur lors du calcul du total des contributions", e);
         }
         return BigDecimal.ZERO;
     }
@@ -99,7 +118,7 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 return rs.getBigDecimal(1);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Erreur lors du calcul du total des contributions par membre", e);
         }
         return BigDecimal.ZERO;
     }
@@ -124,12 +143,11 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 membres.add(new MembreDaoImpl().mapResultSetToEntity(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Erreur lors de la recherche des meilleurs contributeurs", e);
         }
         return membres;
     }
 
-    // Implémentations des autres méthodes de GenericDao
     @Override
     public boolean create(Contribution contribution) {
         String sql = "INSERT INTO entities (date_creation, entity_type) VALUES (?, 'TRANSACTION')";
@@ -142,12 +160,10 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
             conn = databaseConfig.getConnection();
             conn.setAutoCommit(false);
 
-            // Insert into entities
             try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
-                int affectedRows = stmt.executeUpdate();
 
-                if (affectedRows == 0) {
+                if (stmt.executeUpdate() == 0) {
                     conn.rollback();
                     return false;
                 }
@@ -156,50 +172,154 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                     if (generatedKeys.next()) {
                         contribution.setId(generatedKeys.getLong(1));
 
-                        // Insert into transactions
                         try (PreparedStatement tStmt = conn.prepareStatement(sqlTransaction)) {
                             tStmt.setLong(1, contribution.getId());
                             tStmt.setLong(2, contribution.getMembre().getId());
                             tStmt.setTimestamp(3, new Timestamp(contribution.getDateTransaction().getTime()));
                             tStmt.setBigDecimal(4, contribution.getMontant());
                             tStmt.setString(5, contribution.getDescription());
-
                             tStmt.executeUpdate();
                         }
 
-                        // Insert into contributions
                         try (PreparedStatement cStmt = conn.prepareStatement(sqlContribution)) {
                             cStmt.setLong(1, contribution.getId());
                             cStmt.setString(2, contribution.getTypeContribution().toString());
-
                             cStmt.executeUpdate();
                         }
 
                         conn.commit();
+                        notifyObservers(contribution); // Notification après création réussie
                         return true;
                     }
                 }
+            }
+
+            conn.rollback();
+            return false;
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                logger.log(Level.SEVERE, "Erreur lors du rollback", ex);
+            }
+            logger.log(Level.SEVERE, "Erreur lors de la création de la contribution", e);
+            return false;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Erreur lors de la fermeture de la connexion", e);
+            }
+        }
+    }
+
+    @Override
+    public boolean update(Contribution contribution) {
+        String sqlTransaction = "UPDATE transactions SET " +
+                "membre_id = ?, date_transaction = ?, montant = ?, description = ? " +
+                "WHERE id = ? AND transaction_type = 'CONTRIBUTION'";
+        String sqlContribution = "UPDATE contributions SET type_contribution = ? WHERE id = ?";
+
+        Connection conn = null;
+        try {
+            conn = databaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement tStmt = conn.prepareStatement(sqlTransaction)) {
+                tStmt.setLong(1, contribution.getMembre().getId());
+                tStmt.setTimestamp(2, new Timestamp(contribution.getDateTransaction().getTime()));
+                tStmt.setBigDecimal(3, contribution.getMontant());
+                tStmt.setString(4, contribution.getDescription());
+                tStmt.setLong(5, contribution.getId());
+
+                if (tStmt.executeUpdate() == 0) {
+                    conn.rollback();
+                    return false;
+                }
+
+                try (PreparedStatement cStmt = conn.prepareStatement(sqlContribution)) {
+                    cStmt.setString(1, contribution.getTypeContribution().toString());
+                    cStmt.setLong(2, contribution.getId());
+                    cStmt.executeUpdate();
+                }
+
+                conn.commit();
+                notifyObservers(contribution); // Notification après mise à jour réussie
+                return true;
             }
         } catch (SQLException e) {
             try {
                 if (conn != null) conn.rollback();
             } catch (SQLException ex) {
-                ex.printStackTrace();
+                logger.log(Level.SEVERE, "Erreur lors du rollback", ex);
             }
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Erreur lors de la mise à jour de la contribution", e);
+            return false;
         } finally {
             try {
-                if (conn != null) conn.setAutoCommit(true);
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
             } catch (SQLException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, "Erreur lors de la fermeture de la connexion", e);
             }
         }
-        return false;
     }
+
     @Override
-    public boolean update(Contribution t) { return false; }
+    public boolean delete(Long id) {
+        String sql = "DELETE FROM entities WHERE id = ?";
+
+        Connection conn = null;
+        try {
+            conn = databaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, id);
+
+                if (stmt.executeUpdate() > 0) {
+                    conn.commit();
+                    notifyObservers(id); // Notification après suppression réussie
+                    return true;
+                }
+
+                conn.rollback();
+                return false;
+            }
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                logger.log(Level.SEVERE, "Erreur lors du rollback", ex);
+            }
+            logger.log(Level.SEVERE, "Erreur lors de la suppression de la contribution", e);
+            return false;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Erreur lors de la fermeture de la connexion", e);
+            }
+        }
+    }
+
     @Override
-    public boolean delete(Long id) { return false; }
-    @Override
-    public boolean saveAll(Iterable<Contribution> entities) { return false; }
+    public boolean saveAll(Iterable<Contribution> entities) {
+        // Implémentation optionnelle pour sauvegarder plusieurs entités
+        boolean allSuccess = true;
+        for (Contribution contribution : entities) {
+            if (!create(contribution)) {
+                allSuccess = false;
+            }
+        }
+        return allSuccess;
+    }
 }

@@ -17,13 +17,25 @@ public class DatabaseConfig {
         config.setUsername("AvecSoft");
         config.setPassword("2004");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        config.setMaximumPoolSize(10);
-        config.setConnectionTimeout(30000);
-        config.setIdleTimeout(600000);
-        config.setMaxLifetime(1800000);
+
+        // Paramètres optimisés
+        config.setMaximumPoolSize(20); // Augmenté de 10 à 20
+        config.setMinimumIdle(5); // Ajouté
+        config.setConnectionTimeout(10000); // Réduit de 30000 à 10000 ms
+        config.setIdleTimeout(300000); // Réduit de 600000 à 300000 ms (5 min)
+        config.setMaxLifetime(900000); // Réduit de 1800000 à 900000 ms (15 min)
+        config.setLeakDetectionThreshold(5000); // Ajouté pour détecter les fuites
+
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
+        config.addDataSourceProperty("useLocalSessionState", "true");
+        config.addDataSourceProperty("rewriteBatchedStatements", "true");
+        config.addDataSourceProperty("cacheResultSetMetadata", "true");
+        config.addDataSourceProperty("cacheServerConfiguration", "true");
+        config.addDataSourceProperty("elideSetAutoCommits", "true");
+        config.addDataSourceProperty("maintainTimeStats", "false");
 
         this.dataSource = new HikariDataSource(config);
     }

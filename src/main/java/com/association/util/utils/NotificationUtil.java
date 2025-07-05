@@ -16,7 +16,12 @@ public class NotificationUtil {
     }
 
     public static String formatCurrencyNotification(BigDecimal amount) {
-        return MoneyUtil.format(amount);
+        // Utilisez Locale.FRENCH pour le format français
+        // Et spécifiez la devise (par exemple "CDF" ou "$")
+        return MoneyUtil.format(amount, Locale.FRENCH, "CDF");
+
+        // Ou si vous préférez utiliser le format devise par défaut :
+        // return MoneyUtil.format(amount, Locale.FRENCH);
     }
 
     public static String formatDateNotification(Date date) {

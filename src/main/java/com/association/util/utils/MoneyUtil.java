@@ -12,8 +12,12 @@ public class MoneyUtil {
         return NumberFormat.getCurrencyInstance(locale).format(montant);
     }
 
-    public static String format(BigDecimal montant) {
-        return format(montant, Locale.FRENCH);
+    public static String format(BigDecimal montant, Locale locale, String currencyCode) {
+        if (montant == null) return "";
+        NumberFormat format = NumberFormat.getNumberInstance(locale);
+        format.setMaximumFractionDigits(2);
+        format.setMinimumFractionDigits(2);
+        return format.format(montant) + " " + currencyCode;
     }
 
     public static Optional<BigDecimal> parse(String montantStr, Locale locale) {

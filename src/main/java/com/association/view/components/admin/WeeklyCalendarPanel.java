@@ -8,6 +8,8 @@ import com.association.manager.MembreManager;
 import com.association.model.transaction.Contribution;
 import com.association.util.constants.AppConstants;
 import com.association.util.utils.DateUtil;
+import com.association.util.utils.ExchangeRateUtil;
+import com.association.util.utils.MoneyUtil;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 import com.association.util.constants.DatePattern;
@@ -21,9 +23,8 @@ import java.time.ZoneId;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.AbstractDocument;
@@ -31,13 +32,21 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 
+import java.util.Observable;
+import java.util.Observer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WeeklyCalendarPanel extends JPanel {
-    private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
+public class WeeklyCalendarPanel extends JPanel implements Observer {
+    // ... code existant ...
+   private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
     private static final int MAX_CONTRIBUTIONS_PER_DAY = 5;
     private static final int DAYS_IN_WEEK = 7;
+
+    private static final String CURRENCY_CDF = "CDF";
+    private static final String CURRENCY_USD = "USD";
+    private String currentCurrency = CURRENCY_CDF; // Par défaut en Francs Congolais
 
     private LocalDate currentDate;
     private YearMonth currentYearMonth;
@@ -45,24 +54,29 @@ public class WeeklyCalendarPanel extends JPanel {
     private JLabel weekRangeLabel;
     private JPanel daysPanel;
     private JPanel calendarGridPanel;
-    private JTextField[][] contributionFields;
+    private final JTextField[][] contributionFields;
     private ContributionManager contributionManager;
     private Long membreId;
     private JButton saveButton;
 
     public WeeklyCalendarPanel(Long membreId) {
-        this.currentDate = LocalDate.now();
-        this.currentYearMonth = YearMonth.from(currentDate);
-        this.contributionFields = new JTextField[DAYS_IN_WEEK][MAX_CONTRIBUTIONS_PER_DAY];
-        this.membreId = membreId;
+            this.currentDate = LocalDate.now();
+            this.currentYearMonth = YearMonth.from(currentDate);
+            this.contributionFields = new JTextField[DAYS_IN_WEEK][MAX_CONTRIBUTIONS_PER_DAY];
+            this.membreId = membreId;
 
-        this.contributionManager = new ContributionManager(
-                DAOFactory.getInstance(ContributionDao.class),
-                new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
-        );
+            ContributionDao contributionDao = DAOFactory.getInstance(ContributionDao.class);
+            this.contributionManager = new ContributionManager(
+                    contributionDao,
+                    new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
+            );
 
-        initComponents();
-    }
+            // Enregistrement comme observateur
+            contributionDao.addObserver(this);
+            contributionManager.addObserver(this); // Maintenant cela fonctionnera
+
+            initComponents();
+        }
 
     private void initComponents() {
         setLayout(new BorderLayout());
@@ -86,6 +100,14 @@ public class WeeklyCalendarPanel extends JPanel {
 
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottomPanel.setBackground(Colors.CARD_BACKGROUND);
+
+
+        JButton currencyButton = createCurrencyToggleButton();
+
+        bottomPanel.setBackground(Colors.CARD_BACKGROUND);
+        bottomPanel.add(currencyButton); // Ajoutez ce bouton avant le saveButton
+        bottomPanel.add(saveButton);
+
         bottomPanel.add(saveButton);
 
         // Panel conteneur pour les éléments du bas
@@ -127,7 +149,14 @@ public class WeeklyCalendarPanel extends JPanel {
                 double montant = contributions[day][cont];
                 if (montant > 0) {
                     try {
-                        if (montant < AppConstants.MIN_CONTRIBUTION.doubleValue()) {
+                        BigDecimal amount = BigDecimal.valueOf(montant);
+
+                        // Convertir en CDF si on est en mode USD
+                        if (currentCurrency.equals(CURRENCY_USD)) {
+                            amount = ExchangeRateUtil.convert(amount, CURRENCY_USD, CURRENCY_CDF);
+                        }
+
+                        if (amount.compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
                             contributionFields[day][cont].setBackground(Colors.WARNING.brighter());
                             hasWarning = true;
                             continue;
@@ -135,13 +164,26 @@ public class WeeklyCalendarPanel extends JPanel {
 
                         boolean success = contributionManager.enregistrerContribution(
                                 membreId,
-                                BigDecimal.valueOf(montant),
+                                amount,
                                 contributionDate
                         );
 
                         if (success) {
+                            // Convertir le montant affiché si nécessaire
+                            BigDecimal displayAmount = amount;
+                            if (currentCurrency.equals(CURRENCY_USD)) {
+                                displayAmount = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
+                            }
+
+                            contributionFields[day][cont].setText(displayAmount.toString());
                             contributionFields[day][cont].setBackground(Colors.SUCCESS.brighter());
                             contributionFields[day][cont].setEditable(false);
+
+                            // Mettre à jour le tooltip avec la bonne devise
+                            Contribution contribution = new Contribution();
+                            contribution.setMontant(amount); // Toujours stocké en CDF
+                            contribution.setDateTransaction(java.sql.Date.valueOf(contributionDate));
+                            contributionFields[day][cont].setToolTipText(createContributionTooltip(contribution));
                         } else {
                             contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
                             hasError = true;
@@ -149,7 +191,14 @@ public class WeeklyCalendarPanel extends JPanel {
                     } catch (Exception e) {
                         contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
                         hasError = true;
-                        logger.error("Erreur lors de l'enregistrement", e);
+                        logger.error("Erreur lors de l'enregistrement pour le jour " + day +
+                                ", contribution " + cont, e);
+
+                        // Afficher un message d'erreur plus détaillé
+                        JOptionPane.showMessageDialog(this,
+                                "Erreur lors de l'enregistrement: " + e.getMessage(),
+                                "Erreur d'enregistrement",
+                                JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -363,6 +412,7 @@ public class WeeklyCalendarPanel extends JPanel {
         }
     }
 
+
     private boolean isValidContribution(Contribution contribution) {
         return contribution != null
                 && contribution.getDateTransaction() != null
@@ -392,7 +442,14 @@ public class WeeklyCalendarPanel extends JPanel {
         for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
             if (contributionFields[dayOfWeek][i].getText().isEmpty()) {
                 JTextField field = contributionFields[dayOfWeek][i];
-                field.setText(formatAmount(contribution.getMontant()));
+                BigDecimal amount = contribution.getMontant();
+
+                // Convertir en devise courante si nécessaire
+                if (currentCurrency.equals(CURRENCY_USD)) {
+                    amount = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
+                }
+
+                field.setText(amount.toString());
                 field.setBackground(Colors.SUCCESS.brighter());
                 field.setEditable(false);
                 field.setToolTipText(createContributionTooltip(contribution));
@@ -414,7 +471,13 @@ public class WeeklyCalendarPanel extends JPanel {
     }
 
     private String formatAmount(BigDecimal amount) {
-        return NumberFormat.getCurrencyInstance().format(amount);
+        NumberFormat format = NumberFormat.getCurrencyInstance();
+
+        if (currentCurrency.equals(CURRENCY_CDF)) {
+            return format.format(amount) + " CDF";
+        } else {
+            return format.format(amount) + " USD";
+        }
     }
 
     private String formatDate(Date date) {
@@ -591,6 +654,27 @@ public class WeeklyCalendarPanel extends JPanel {
         updateCalendar();
     }
 
+    @Override
+    public void update(Observable o, Object arg) {
+        // Réagir seulement si le changement concerne le membre actuellement affiché
+        if (arg instanceof Contribution) {
+            Contribution contribution = (Contribution) arg;
+            if (contribution.getMembre() != null &&
+                    contribution.getMembre().getId().equals(membreId)) {
+                SwingUtilities.invokeLater(() -> {
+                    logger.info("Mise à jour de l'interface pour contribution: {}", contribution.getId());
+                    updateCalendar();
+                });
+            }
+        } else if (arg instanceof Long) {
+            // Pour les suppressions, on rafraîchit tout par précaution
+            SwingUtilities.invokeLater(() -> {
+                logger.info("Mise à jour de l'interface après suppression");
+                updateCalendar();
+            });
+        }
+    }
+
     private class NumericDocumentFilter extends DocumentFilter {
         private final JTextField textField;
 
@@ -617,6 +701,55 @@ public class WeeklyCalendarPanel extends JPanel {
             }
 
             super.replace(fb, offset, length, text, attrs);
+        }
+    }
+
+    private JButton createCurrencyToggleButton() {
+        JButton button = new JButton("Afficher en USD");
+        button.setFont(Fonts.buttonFont());
+        button.setFocusPainted(false);
+        button.setBackground(Colors.INFO);
+        button.setForeground(Color.WHITE);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Colors.INFO.darker()),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)));
+
+        button.addActionListener(e -> {
+            if (currentCurrency.equals(CURRENCY_CDF)) {
+                currentCurrency = CURRENCY_USD;
+                button.setText("Afficher en CDF");
+            } else {
+                currentCurrency = CURRENCY_CDF;
+                button.setText("Afficher en USD");
+            }
+            updateCurrencyDisplay();
+        });
+
+        return button;
+    }
+    private void updateCurrencyDisplay() {
+        for (int day = 0; day < DAYS_IN_WEEK; day++) {
+            for (int cont = 0; cont < MAX_CONTRIBUTIONS_PER_DAY; cont++) {
+                JTextField field = contributionFields[day][cont];
+                String text = field.getText();
+
+                if (!text.isEmpty() && !field.isEditable()) {
+                    try {
+                        BigDecimal amount = new BigDecimal(text);
+                        if (currentCurrency.equals(CURRENCY_USD)) {
+                            // Convertir CDF vers USD
+                            BigDecimal converted = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
+                            field.setText(converted.toString());
+                        } else {
+                            // Convertir USD vers CDF (ou garder CDF)
+                            BigDecimal converted = ExchangeRateUtil.convert(amount, CURRENCY_USD, CURRENCY_CDF);
+                            field.setText(converted.toString());
+                        }
+                    } catch (NumberFormatException e) {
+                        logger.warn("Format de nombre invalide dans le champ: " + text, e);
+                    }
+                }
+            }
         }
     }
 }
