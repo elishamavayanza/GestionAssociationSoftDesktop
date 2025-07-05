@@ -706,7 +706,7 @@ public class WeeklyCalendarPanel extends JPanel {
     }
 
     private JButton createCurrencyToggleButton() {
-        JButton button = new JButton("Afficher en USD");
+        JButton button = new JButton("USD");
         button.setFont(Fonts.buttonFont());
         button.setFocusPainted(false);
         button.setBackground(Colors.INFO);
@@ -718,10 +718,12 @@ public class WeeklyCalendarPanel extends JPanel {
         button.addActionListener(e -> {
             if (currentCurrency.equals(CURRENCY_CDF)) {
                 currentCurrency = CURRENCY_USD;
-                button.setText("Afficher en CDF");
+                button.setText("USD");
+
             } else {
                 currentCurrency = CURRENCY_CDF;
-                button.setText("Afficher en USD");
+                button.setText("CDF");
+
             }
             updateCurrencyDisplay();
         });

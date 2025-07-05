@@ -9,9 +9,8 @@ public class ExchangeRateUtil {
     private static final Map<String, BigDecimal> EXCHANGE_RATES = new HashMap<>();
 
     static {
-        // Taux de change fictifs - à remplacer par des valeurs réelles
-        EXCHANGE_RATES.put("USD-CDF", new BigDecimal("2000")); // 1 USD = 2000 CDF
-        EXCHANGE_RATES.put("CDF-USD", new BigDecimal("0.0005")); // 1 CDF = 0.0005 USD
+        EXCHANGE_RATES.put("USD-CDF", new BigDecimal("3000")); // 1 USD = 3000 CDF
+        EXCHANGE_RATES.put("CDF-USD", new BigDecimal("0.000333")); // 1 CDF = 0.000333 USD (1/3000)
     }
 
     public static BigDecimal convert(BigDecimal amount, String fromCurrency, String toCurrency) {
