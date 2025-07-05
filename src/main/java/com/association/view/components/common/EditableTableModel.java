@@ -4,6 +4,7 @@ import com.association.dao.DAOFactory;
 import com.association.dao.MembreDao;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
+import com.association.util.utils.ValidationUtil;
 import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
@@ -55,6 +56,16 @@ public class EditableTableModel extends DefaultTableModel {
 
     @Override
     public void setValueAt(Object value, int row, int column) {
+
+        if (column == 2) {
+            String contact = value.toString().trim();
+            if (!ValidationUtil.isValidEmail(contact) && !ValidationUtil.isValidPhone(contact)) {
+                JOptionPane.showMessageDialog(null,
+                        "Le contact doit être un email valide ou un numéro de téléphone valide",
+                        "Format invalide", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
         Long membreId = (Long) getValueAt(row, 0);
         Object oldValue = getValueAt(row, column);
 
@@ -152,6 +163,7 @@ public class EditableTableModel extends DefaultTableModel {
     }
 
     private void rollbackRow(Long membreId) {
+
         if (!originalValues.containsKey(membreId)) return;
 
         // Trouver la ligne correspondant au membreId

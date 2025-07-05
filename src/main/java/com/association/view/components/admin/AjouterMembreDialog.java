@@ -6,6 +6,7 @@ import com.association.manager.MembreManager;
 import com.association.model.enums.StatutMembre;
 import com.association.util.file.FileStorageService;
 import com.association.util.file.RealFileStorageService;
+import com.association.util.utils.ValidationUtil;
 import com.association.view.components.IconManager;
 import com.association.view.components.admin.Photo.PhotoEditorDialog;
 import com.association.view.styles.Colors;
@@ -13,6 +14,8 @@ import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.geom.Ellipse2D;
@@ -195,7 +198,7 @@ public class AjouterMembreDialog extends JDialog {
         nomPanel.setBackground(Colors.CURRENT_BACKGROUND);
         nomPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         nomPanel.setMaximumSize(new Dimension(300, 60));
-        JLabel nomLabel = new JLabel("Nom:");
+        JLabel nomLabel = new JLabel("Nom et prénom :");
         nomLabel.setFont(Fonts.labelFont());
         nomLabel.setForeground(Colors.CURRENT_TEXT);
         styleLabel(nomLabel, true); // true pour activer l'effet de survol
@@ -211,7 +214,7 @@ public class AjouterMembreDialog extends JDialog {
         contactPanel.setBackground(Colors.CURRENT_BACKGROUND);
         contactPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contactPanel.setMaximumSize(new Dimension(300, 60));
-        JLabel contactLabel = new JLabel("Email :");
+        JLabel contactLabel = new JLabel("Contact (Email ou Téléphone) :");
         contactLabel.setFont(Fonts.labelFont());
         contactLabel.setForeground(Colors.CURRENT_TEXT);
         styleLabel(contactLabel, true);
@@ -220,6 +223,24 @@ public class AjouterMembreDialog extends JDialog {
         contactPanel.add(contactLabel, BorderLayout.NORTH);
         contactField = createStyledTextField();
         contactField.setPreferredSize(new Dimension(200, 30));
+
+        contactField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                validateContactField();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                validateContactField();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                validateContactField();
+            }
+        });
+        
         contactPanel.add(contactField, BorderLayout.CENTER);
         formPanel.add(contactPanel);
         formPanel.add(Box.createVerticalStrut(10));
@@ -267,6 +288,32 @@ public class AjouterMembreDialog extends JDialog {
         add(mainPanel, BorderLayout.CENTER);
     }
 
+    private void validateContactField() {
+        String contact = contactField.getText().trim();
+
+        // Ne pas valider si le champ est vide (le required est géré ailleurs)
+        if (contact.isEmpty() || contact.equals("Rechercher...")) {
+            contactField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Colors.CURRENT_BORDER),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+            return;
+        }
+
+        boolean isValid = ValidationUtil.isValidEmail(contact) || ValidationUtil.isValidPhone(contact);
+
+        if (isValid) {
+            contactField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Colors.SUCCESS),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+        } else {
+            contactField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Colors.DANGER),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+        }
+    }
     private JTextField createStyledTextField() {
         JTextField field = new JTextField(20);
         field.setFont(Fonts.textFieldFont());
@@ -440,8 +487,20 @@ public class AjouterMembreDialog extends JDialog {
         String contact = contactField.getText().trim();
         StatutMembre statut = (StatutMembre) statutComboBox.getSelectedItem();
 
+        // Validation des champs obligatoires
         if (nom.isEmpty() || contact.isEmpty()) {
             showWarning("Veuillez remplir tous les champs obligatoires", "Champs manquants");
+            return;
+        }
+
+        // Validation du format de contact (email ou téléphone)
+        boolean isEmail = ValidationUtil.isValidEmail(contact);
+        boolean isPhone = ValidationUtil.isValidPhone(contact);
+
+        if (!isEmail && !isPhone) {
+            showWarning("Le contact doit être un email valide (ex: exemple@domaine.com) " +
+                            "ou un numéro de téléphone valide (ex: +1234567890 ou 0123456789)",
+                    "Format de contact invalide");
             return;
         }
 
@@ -455,7 +514,7 @@ public class AjouterMembreDialog extends JDialog {
             );
 
             if (success) {
-//                showSuccess("Membre ajouté avec succès", "Succès");
+                showSuccess("Membre ajouté avec succès", "Succès");
                 resetForm();
             } else {
                 if (photoData != null && photoData.length > 0) {

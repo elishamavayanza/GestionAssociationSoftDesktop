@@ -17,6 +17,7 @@ public class ValidationUtil {
         return phone != null && Pattern.compile(PHONE_REGEX).matcher(phone).matches();
     }
 
+
     public static boolean isStrongPassword(String password, PasswordPolicy policy) {
         if (password == null || policy == null) return false;
 

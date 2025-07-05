@@ -82,6 +82,7 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         setBackground(Colors.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+
         // Panel principal avec défilement
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
