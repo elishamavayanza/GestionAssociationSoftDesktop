@@ -24,6 +24,12 @@ public class ExchangeRateUtil {
             throw new IllegalArgumentException("Taux de change non disponible pour " + key);
         }
 
+        // Pour CDF, on arrondit à l'entier le plus proche
+        if (toCurrency.equals("CDF")) {
+            return amount.multiply(rate).setScale(0, RoundingMode.HALF_UP);
+        }
+
+        // Pour USD, on garde 2 décimales
         return amount.multiply(rate).setScale(2, RoundingMode.HALF_UP);
     }
 }
