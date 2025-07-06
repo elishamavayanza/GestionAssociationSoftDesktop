@@ -24,13 +24,22 @@ public class ContributionsPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Colors.BACKGROUND);
 
+        contributionsTabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT) {
+            @Override
+            public Dimension getPreferredSize() {
+                // Ne forcer la taille que si un onglet est sélectionné
+                if (getSelectedComponent() != null) {
+                    return getSelectedComponent().getPreferredSize();
+                }
+                return super.getPreferredSize();
+            }
+        };
 
-        contributionsTabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         contributionsTabbedPane.setFont(Fonts.labelFont());
         contributionsTabbedPane.setBackground(Colors.CARD_BACKGROUND);
         contributionsTabbedPane.setForeground(Colors.TEXT);
 
-        // Personnalisation de l'apparence des onglets
+        // Personnalisation de l'apparence des onglets (identique à votre code original)
         contributionsTabbedPane.setUI(new javax.swing.plaf.metal.MetalTabbedPaneUI() {
             @Override
             protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
@@ -45,37 +54,53 @@ public class ContributionsPanel extends JPanel {
 
             @Override
             protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
-                // Force une largeur égale pour tous les onglets
                 int width = super.calculateTabWidth(tabPlacement, tabIndex, metrics);
-                return Math.max(width, 100); // 100px de largeur minimale par onglet
+                return Math.max(width, 100);
             }
         });
 
-        // Style supplémentaire pour les onglets
+        // Style supplémentaire pour les onglets (identique)
         UIManager.put("TabbedPane.tabAreaInsets", new Insets(0, 0, 0, 0));
         UIManager.put("TabbedPane.tabInsets", new Insets(5, 10, 5, 10));
         UIManager.put("TabbedPane.selectedTabPadInsets", new Insets(0, 0, 0, 0));
         UIManager.put("TabbedPane.tabHeight", 30);
 
-        // Création des icônes pour chaque onglet
+        // Création des icônes pour chaque onglet (identique)
         ImageIcon monthlyIcon = IconManager.getScaledIcon("calendar_monthly.svg", 16, 16);
         ImageIcon yearlyIcon = IconManager.getScaledIcon("calendar_yearly.svg", 16, 16);
         ImageIcon donationIcon = IconManager.getScaledIcon("donation_icon.svg", 16, 16);
 
-        // Onglet pour les contributions mensuelles
+        // Onglet pour les contributions mensuelles avec JScrollPane
         WeeklyCalendarPanel monthlyPanel = new WeeklyCalendarPanel(membreId, "MENSUEL");
-        contributionsTabbedPane.addTab("Mensuel", monthlyIcon, monthlyPanel);
+        JScrollPane monthlyScroll = new JScrollPane(monthlyPanel);
+        monthlyScroll.setBorder(BorderFactory.createEmptyBorder());
+        contributionsTabbedPane.addTab("Mensuel", monthlyIcon, monthlyScroll);
 
-        // Onglet pour les contributions annuelles
+        // Onglet pour les contributions annuelles avec JScrollPane
         AnnualContributionPanel yearlyPanel = new AnnualContributionPanel(membreId, contributionManager);
-        contributionsTabbedPane.addTab("Annuel", yearlyIcon, yearlyPanel);
+        JScrollPane yearlyScroll = new JScrollPane(yearlyPanel);
+        yearlyScroll.setBorder(BorderFactory.createEmptyBorder());
+        contributionsTabbedPane.addTab("Annuel", yearlyIcon, yearlyScroll);
 
-        // Onglet pour les dons
+        // Onglet pour les dons avec JScrollPane
         DonationPanel donationPanel = new DonationPanel(membreId);
-        contributionsTabbedPane.addTab("Dons", donationIcon, donationPanel);
+        JScrollPane donationScroll = new JScrollPane(donationPanel);
+        donationScroll.setBorder(BorderFactory.createEmptyBorder());
+        contributionsTabbedPane.addTab("Dons", donationIcon, donationScroll);
+
+        // Ajouter un listener pour ajuster la taille lors du changement d'onglet
+        contributionsTabbedPane.addChangeListener(e -> {
+            Component selected = contributionsTabbedPane.getSelectedComponent();
+            if (selected != null) {
+                selected.setPreferredSize(selected.getPreferredSize());
+                contributionsTabbedPane.revalidate();
+                contributionsTabbedPane.repaint();
+            }
+        });
 
         add(contributionsTabbedPane, BorderLayout.CENTER);
     }
+
 
     public void setMembreId(Long membreId) {
         this.membreId = membreId;

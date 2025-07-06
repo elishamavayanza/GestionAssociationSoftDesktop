@@ -151,7 +151,16 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         mainPanel.add(Box.createVerticalStrut(30));
 
         // Création du JTabbedPane
-        tabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT) {
+            @Override
+            public Dimension getPreferredSize() {
+                // Ne forcer la taille que si un onglet est sélectionné
+                if (getSelectedComponent() != null) {
+                    return getSelectedComponent().getPreferredSize();
+                }
+                return super.getPreferredSize();
+            }
+        };
         tabbedPane.setFont(Fonts.labelFont());
         tabbedPane.setBackground(Colors.CARD_BACKGROUND);
         tabbedPane.setForeground(Colors.TEXT);
@@ -197,6 +206,8 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         JPanel summaryPanel = new JPanel(new GridBagLayout());
         summaryPanel.setBackground(Colors.CARD_BACKGROUND);
 
+
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.BOTH;
@@ -227,24 +238,40 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         summaryPanel.add(createInfoCard("Bénéfice", "0 FCFA", null), gbc);
 
 // Ajout de l'onglet avec icône
-        tabbedPane.addTab("Résumé", summaryIcon, summaryPanel);
+        JScrollPane summaryScroll = new JScrollPane(summaryPanel);
+        summaryScroll.setBorder(BorderFactory.createEmptyBorder());
+        tabbedPane.addTab("Résumé", summaryIcon, summaryScroll);
 
 
         tabbedPane.addTab("Contrib", contribIcon, new ContributionsPanel(membreId, contributionManager));
+
+
 
 // Onglet 3: Emprunt
         JPanel empruntPanel = new JPanel();
         empruntPanel.setBackground(Colors.CARD_BACKGROUND);
         empruntPanel.add(new JLabel("Contenu des emprunts"));
-// Ajout de l'onglet avec icône
-        tabbedPane.addTab("Emprunt", loanIcon, empruntPanel);
+        JScrollPane empruntScroll = new JScrollPane(empruntPanel);
+        empruntScroll.setBorder(BorderFactory.createEmptyBorder());
+        tabbedPane.addTab("Emprunt", loanIcon, empruntScroll);
 
 // Onglet 4: Rempourcement
         JPanel rempourcementPanel = new JPanel();
         rempourcementPanel.setBackground(Colors.CARD_BACKGROUND);
         rempourcementPanel.add(new JLabel("Contenu des rempourcements"));
-// Ajout de l'onglet avec icône et texte court
-        tabbedPane.addTab("Rembt", repayIcon, rempourcementPanel);
+        JScrollPane rempourcementScroll = new JScrollPane(rempourcementPanel);
+        rempourcementScroll.setBorder(BorderFactory.createEmptyBorder());
+        tabbedPane.addTab("Rembt", repayIcon, rempourcementScroll);
+
+// Ajoutez un ChangeListener pour gérer le redimensionnement
+        tabbedPane.addChangeListener(e -> {
+            Component selected = tabbedPane.getSelectedComponent();
+            if (selected != null) {
+                selected.setPreferredSize(selected.getPreferredSize());
+                tabbedPane.revalidate();
+                tabbedPane.repaint();
+            }
+        });
 
         mainPanel.add(tabbedPane);
         mainPanel.add(Box.createVerticalStrut(20));
