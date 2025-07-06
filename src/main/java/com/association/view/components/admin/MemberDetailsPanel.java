@@ -124,6 +124,7 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         editPhotoButton.setBackground(Colors.CURRENT_DANGER);
         editPhotoButton.setForeground(Color.WHITE);
 
+
         ImageIcon photoIcon = IconManager.getScaledIcon("photo_icon.svg", 20, 20);
         if (photoIcon != null) {
             editPhotoButton.setIcon(photoIcon);
@@ -194,6 +195,25 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         UIManager.put("TabbedPane.tabInsets", new Insets(5, 10, 5, 10));
         UIManager.put("TabbedPane.selectedTabPadInsets", new Insets(0, 0, 0, 0));
         UIManager.put("TabbedPane.tabHeight", 30);
+
+
+        // Personnalisation du scrollbar des onglets
+        UIManager.put("TabbedPane.scrollButtonsPlacement", "trailing"); // ou "leading"
+        UIManager.put("TabbedPane.tabRunOverlay", 0);
+
+// Style mince pour le scrollbar des onglets
+        UIManager.put("ScrollBar.width", 6); // Épaisseur très mince
+        UIManager.put("ScrollBar.thumb", Colors.BORDER); // Couleur du curseur
+        UIManager.put("ScrollBar.track", Colors.CARD_BACKGROUND); // Couleur du fond
+        UIManager.put("ScrollBar.thumbDarkShadow", Colors.BORDER);
+        UIManager.put("ScrollBar.thumbHighlight", Colors.BORDER);
+        UIManager.put("ScrollBar.thumbShadow", Colors.BORDER);
+
+// Appliquer le style au tabbedPane
+        tabbedPane.putClientProperty("JTabbedPane.scrollButtonsPlacement", "trailing");
+        tabbedPane.putClientProperty("JTabbedPane.tabRunOverlay", 0);
+        tabbedPane.putClientProperty("JTabbedPane.tabClosable", false);
+        tabbedPane.putClientProperty("JTabbedPane.hasFullBorder", false);
 
 // ICI - AJOUT DES ICÔNES AUX ONGLETS
 // Création des icônes pour chaque onglet
