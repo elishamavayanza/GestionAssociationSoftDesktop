@@ -129,7 +129,6 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Colors.BACKGROUND);
 
-        // Panel de formulaire
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Colors.CARD_BACKGROUND);
         formPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -139,7 +138,8 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Montant
+// Ligne 1: Montant et Date côte à côte
+// Montant
         gbc.gridx = 0;
         gbc.gridy = 0;
         JLabel amountLabel = new JLabel("Montant:");
@@ -151,24 +151,25 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
         amountField.setFont(Fonts.textFieldFont());
         formPanel.add(amountField, gbc);
 
-        // Date
-        gbc.gridy++;
-        gbc.gridx = 0;
+// Date
+        gbc.gridx = 2;
+        gbc.gridy = 0;
         JLabel dateLabel = new JLabel("Date:");
         dateLabel.setFont(Fonts.labelFont());
         formPanel.add(dateLabel, gbc);
 
-        gbc.gridx = 1;
+        gbc.gridx = 3;
         dateField = new JFormattedTextField(java.text.DateFormat.getDateInstance());
         dateField.setValue(java.sql.Date.valueOf(LocalDate.now()));
         dateField.setFont(Fonts.textFieldFont());
         dateField.setColumns(15);
         formPanel.add(dateField, gbc);
 
-        // Bouton de soumission
-        gbc.gridy++;
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.EAST;
+// Bouton de soumission - placé en dessous, centré
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridwidth = 4; // Prend toute la largeur des 4 colonnes
+        gbc.anchor = GridBagConstraints.CENTER;
         submitButton = new JButton("Enregistrer", IconManager.getIcon("save.svg", 16));
         submitButton.setFont(Fonts.buttonFont());
         submitButton.setBackground(Colors.PRIMARY);
@@ -176,6 +177,8 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
         submitButton.addActionListener(this::submitContribution);
         formPanel.add(submitButton, gbc);
 
+// Réinitialiser gridwidth pour les autres composants
+        gbc.gridwidth = 1;
         mainPanel.add(formPanel, BorderLayout.NORTH);
 
         // Panel de tableau
@@ -302,7 +305,7 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
                                 contribution.getDateTransaction(),
                                 MoneyUtil.format(contribution.getMontant(), Locale.FRANCE),
                                 contribution.getTypeContribution().toString(),
-                                "Modifier|Supprimer" // Texte pour les boutons d'action
+                                null // Pas besoin de texte pour les boutons d'action
                         });
                     }
                 });
@@ -340,7 +343,7 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
                                 contribution.getDateTransaction(),
                                 MoneyUtil.format(contribution.getMontant(), Locale.FRANCE),
                                 contribution.getTypeContribution().toString(),
-                                "Modifier|Supprimer"
+                                null // Pas besoin de texte pour les boutons d'action
                         });
                     }
                 });
@@ -433,21 +436,19 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
             JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
             panel.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
 
-            String[] actions = value.toString().split("\\|");
-            for (String action : actions) {
-                JButton button = new JButton(action);
-                button.setFont(Fonts.tableFont());
-                button.setFocusPainted(false);
-                button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            // Création des boutons avec icônes
+            JButton editButton = new JButton(IconManager.getIcon("edits.svg", 16));
+            JButton deleteButton = new JButton(IconManager.getIcon("deletes.svg", 16));
 
-                if (action.equals("Modifier")) {
-                    button.setBackground(Colors.WARNING);
-                } else {
-                    button.setBackground(Colors.DANGER);
-                }
-                button.setForeground(Color.WHITE);
+            // Configuration des boutons
+            for (JButton button : new JButton[]{editButton, deleteButton}) {
+                button.setFocusPainted(false);
+                button.setContentAreaFilled(false);
+                button.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                button.setToolTipText(button == editButton ? "Modifier" : "Supprimer");
                 panel.add(button);
             }
+
             return panel;
         }
     }
@@ -461,24 +462,25 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
 
         public TableActionCellEditor() {
             panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+            panel.setBackground(Colors.BACKGROUND);
 
-            editButton = new JButton("Modifier");
-            editButton.setFont(Fonts.tableFont());
-            editButton.setBackground(Colors.WARNING);
-            editButton.setForeground(Color.WHITE);
+            // Bouton Modifier avec icône
+            editButton = new JButton(IconManager.getIcon("edt.svg", 16));
+            editButton.setToolTipText("Modifier");
             editButton.setFocusPainted(false);
-            editButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            editButton.setContentAreaFilled(false);
+            editButton.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             editButton.addActionListener(e -> {
                 editContribution(currentRow);
                 fireEditingStopped();
             });
 
-            deleteButton = new JButton("Supprimer");
-            deleteButton.setFont(Fonts.tableFont());
-            deleteButton.setBackground(Colors.DANGER);
-            deleteButton.setForeground(Color.WHITE);
+            // Bouton Supprimer avec icône
+            deleteButton = new JButton(IconManager.getIcon("delt.svg", 16));
+            deleteButton.setToolTipText("Supprimer");
             deleteButton.setFocusPainted(false);
-            deleteButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            deleteButton.setContentAreaFilled(false);
+            deleteButton.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             deleteButton.addActionListener(e -> {
                 deleteContribution(currentRow);
                 fireEditingStopped();
@@ -492,12 +494,13 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
         public Component getTableCellEditorComponent(JTable table, Object value,
                                                      boolean isSelected, int row, int column) {
             currentRow = row;
+            panel.setBackground(isSelected ? Colors.PRIMARY_LIGHT : Colors.BACKGROUND);
             return panel;
         }
 
         @Override
         public Object getCellEditorValue() {
-            return "Modifier|Supprimer";
+            return null; // Pas besoin de retourner une valeur pour les boutons d'action
         }
     }
 
