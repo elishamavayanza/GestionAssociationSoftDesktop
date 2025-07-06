@@ -13,6 +13,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import com.association.dao.ContributionDao;
+import com.association.model.enums.TypeContribution;
+import com.association.model.transaction.Contribution;
+import java.util.List;
 
 public class ContributionManager extends BaseManager<Contribution> implements Observer {
 
@@ -77,6 +81,10 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
             // Transmettre la notification aux observateurs du Manager
             notifyObservers(arg);
         }
+    }
+
+    public List<Contribution> findByMembreAndType(Long membreId, TypeContribution type) {
+        return contributionDao.findByMembreAndType(membreId, type);
     }
 
     public void addObserver(Observer o) {

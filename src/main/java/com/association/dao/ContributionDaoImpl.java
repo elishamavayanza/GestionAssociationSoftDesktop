@@ -326,6 +326,28 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
     }
 
     @Override
+    public List<Contribution> findByMembreAndType(Long membreId, TypeContribution type) {
+        List<Contribution> contributions = new ArrayList<>();
+        String sql = "SELECT * FROM vue_transactions_completes " +
+                "WHERE membre_id = ? AND type_contribution = ? " +
+                "ORDER BY date_transaction DESC";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, membreId);
+            stmt.setString(2, type.toString());
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                contributions.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Erreur lors de la recherche des contributions par membre et type", e);
+        }
+        return contributions;
+    }
+
+    @Override
     public boolean saveAll(Iterable<Contribution> entities) {
         // Implémentation optionnelle pour sauvegarder plusieurs entités
         boolean allSuccess = true;

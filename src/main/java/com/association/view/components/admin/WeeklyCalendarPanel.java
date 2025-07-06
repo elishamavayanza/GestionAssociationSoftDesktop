@@ -173,7 +173,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                                 membreId,
                                 amount,
                                 contributionDate,
-                                contributionType // Ajout du type
+                                TypeContribution.MENSUEL.name()
                         );
 
                         if (success) {

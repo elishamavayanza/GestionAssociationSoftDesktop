@@ -1,6 +1,7 @@
 package com.association.dao;
 
 import com.association.model.Membre;
+import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -12,5 +13,5 @@ public interface ContributionDao extends GenericDao<Contribution> {
     BigDecimal calculerTotalContributions();
     BigDecimal calculerTotalContributionsMembre(Long membreId);
     List<Membre> findTopContributors(Date startDate, Date endDate, int limit);
-
+    List<Contribution> findByMembreAndType(Long membreId, TypeContribution type);
 }

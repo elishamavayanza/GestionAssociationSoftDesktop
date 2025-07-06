@@ -111,6 +111,8 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
         return membreDao.findByNom(criteria.getNom());
     }
 
+
+
     @Override
     public void update(Observable o, Object arg) {
         if (arg instanceof Membre) {

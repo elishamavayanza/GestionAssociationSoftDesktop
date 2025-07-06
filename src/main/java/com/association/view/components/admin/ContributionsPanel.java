@@ -1,5 +1,6 @@
 package com.association.view.components.admin;
 
+import com.association.manager.ContributionManager;
 import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
@@ -10,15 +11,19 @@ import java.awt.*;
 public class ContributionsPanel extends JPanel {
     private JTabbedPane contributionsTabbedPane;
     private Long membreId;
+    private final ContributionManager contributionManager;
 
-    public ContributionsPanel(Long membreId) {
+
+    public ContributionsPanel(Long membreId, ContributionManager contributionManager) {
         this.membreId = membreId;
+        this.contributionManager = contributionManager;
         initComponents();
     }
 
     private void initComponents() {
         setLayout(new BorderLayout());
-        setBackground(Colors.CARD_BACKGROUND); // Même fond que le panneau principal
+        setBackground(Colors.BACKGROUND);
+
 
         contributionsTabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         contributionsTabbedPane.setFont(Fonts.labelFont());
@@ -62,7 +67,7 @@ public class ContributionsPanel extends JPanel {
         contributionsTabbedPane.addTab("Mensuel", monthlyIcon, monthlyPanel);
 
         // Onglet pour les contributions annuelles
-        WeeklyCalendarPanel yearlyPanel = new WeeklyCalendarPanel(membreId, "ANNUEL");
+        AnnualContributionPanel yearlyPanel = new AnnualContributionPanel(membreId, contributionManager);
         contributionsTabbedPane.addTab("Annuel", yearlyIcon, yearlyPanel);
 
         // Onglet pour les dons

@@ -1,7 +1,10 @@
 package com.association.view.components.admin;
 
+import com.association.dao.ContributionDao;
 import com.association.dao.DAOFactory;
 import com.association.dao.MembreDao;
+import com.association.manager.ContributionManager;
+import com.association.manager.MembreManager;
 import com.association.model.Membre;
 import com.association.util.file.FileStorageService;
 import com.association.util.file.RealFileStorageService;
@@ -25,6 +28,7 @@ import java.nio.file.Files;
 import java.util.Observable;
 import java.util.Observer;
 
+
 public class MemberDetailsPanel extends JPanel implements Observer {
     private final JFrame parentFrame;
     private Long membreId;
@@ -35,18 +39,26 @@ public class MemberDetailsPanel extends JPanel implements Observer {
     private String currentPhotoPath;
     private JLabel footerEmailLabel;
     private JTabbedPane tabbedPane;
+    private final MembreManager membreManager;
+    private ContributionManager contributionManager; // Add this line
+
 
     public MemberDetailsPanel(JFrame parentFrame, Long membreId) {
         this.parentFrame = parentFrame;
         this.membreId = membreId;
         this.membreDao = DAOFactory.getInstance(MembreDao.class);
         this.fileStorageService = new RealFileStorageService();
+        this.membreManager = new MembreManager(membreDao, fileStorageService);
+
+        // Initialize contributionManager properly
+        this.contributionManager = new ContributionManager(
+                DAOFactory.getInstance(ContributionDao.class),
+                this.membreManager  // Use the field we just initialized
+        );
 
         membreDao.addObserver(this);
-
         initComponents();
         initFooter();
-
         loadMemberData();
     }
 
@@ -217,12 +229,8 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 // Ajout de l'onglet avec icône
         tabbedPane.addTab("Résumé", summaryIcon, summaryPanel);
 
-// Onglet 2: Contribution
-//        JPanel contributionPanel = new JPanel(new BorderLayout());
-//        contributionPanel.setBackground(Colors.CARD_BACKGROUND);
-//        contributionPanel.add(new WeeklyCalendarPanel(membreId), BorderLayout.CENTER);
-// Ajout de l'onglet avec icône et texte court
-        tabbedPane.addTab("Contrib", contribIcon, new ContributionsPanel(membreId));
+
+        tabbedPane.addTab("Contrib", contribIcon, new ContributionsPanel(membreId, contributionManager));
 
 // Onglet 3: Emprunt
         JPanel empruntPanel = new JPanel();
