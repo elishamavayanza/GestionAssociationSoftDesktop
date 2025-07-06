@@ -49,6 +49,7 @@ public class ContributionPopupMenu extends JPopupMenu {
 
     private void modifyContribution(ActionEvent e) {
         String currentValue = contributionField.getText();
+        if (currentValue == null || currentValue.isEmpty()) return;
 
         String newValue = JOptionPane.showInputDialog(
                 parentPanel,
@@ -68,35 +69,42 @@ public class ContributionPopupMenu extends JPopupMenu {
                         Date.valueOf(contributionDate)
                 );
 
-                for (Contribution contrib : contributions) {
-                    BigDecimal contribAmount = contrib.getMontant();
-                    if (currentCurrency.equals(CURRENCY_USD)) {
-                        contribAmount = ExchangeRateUtil.convert(contribAmount, CURRENCY_CDF, CURRENCY_USD);
-                    }
+                if (contributions != null) {
+                    for (Contribution contrib : contributions) {
+                        BigDecimal contribAmount = contrib.getMontant();
+                        String contribAmountStr = currentCurrency.equals(CURRENCY_USD)
+                                ? ExchangeRateUtil.convert(contribAmount, CURRENCY_CDF, CURRENCY_USD).toString()
+                                : contribAmount.toString();
 
-                    if (contribAmount.toString().equals(currentValue)) {
-                        // Mettre à jour la contribution
-                        contrib.setMontant(newAmount);
+                        if (contribAmountStr.equals(currentValue)) {
+                            contrib.setMontant(newAmount);
+                            if (contrib.getTypeContribution() == null) {
+                                contrib.setTypeContribution(TypeContribution.MENSUEL);
+                            }
 
-                        // S'assurer que le typeContribution est défini
-                        if (contrib.getTypeContribution() == null) {
-                            contrib.setTypeContribution(TypeContribution.MENSUEL); // Valeur par défaut
+                            if (contributionManager.update(contrib)) {
+                                contributionField.setText(newValue);
+                                parentPanel.updateCalendar(); // Rafraîchir l'affichage
+                                showSuccessMessage("Contribution modifiée avec succès!");
+                            } else {
+                                showErrorMessage("Échec de la modification");
+                            }
+                            return;
                         }
-
-                        if (contributionManager.update(contrib)) {
-                            // ... reste du code ...
-                        }
-                        break;
                     }
                 }
+                showErrorMessage("Aucune contribution correspondante trouvée");
             } catch (NumberFormatException ex) {
                 showErrorMessage("Veuillez entrer un montant valide");
+            } catch (Exception ex) {
+                showErrorMessage("Erreur lors de la modification: " + ex.getMessage());
             }
         }
     }
 
     private void deleteContribution(ActionEvent e) {
         String currentValue = contributionField.getText();
+        if (currentValue == null || currentValue.isEmpty()) return;
 
         int confirm = JOptionPane.showConfirmDialog(
                 parentPanel,
@@ -106,28 +114,35 @@ public class ContributionPopupMenu extends JPopupMenu {
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
-            List<Contribution> contributions = contributionManager.getContributionsBetweenDates(
-                    Date.valueOf(contributionDate),
-                    Date.valueOf(contributionDate)
-            );
+            try {
+                List<Contribution> contributions = contributionManager.getContributionsBetweenDates(
+                        Date.valueOf(contributionDate),
+                        Date.valueOf(contributionDate)
+                );
 
-            for (Contribution contrib : contributions) {
-                BigDecimal contribAmount = contrib.getMontant();
-                if (currentCurrency.equals(CURRENCY_USD)) {
-                    contribAmount = ExchangeRateUtil.convert(contribAmount, CURRENCY_CDF, CURRENCY_USD);
-                }
+                if (contributions != null) {
+                    for (Contribution contrib : contributions) {
+                        BigDecimal contribAmount = contrib.getMontant();
+                        String contribAmountStr = currentCurrency.equals(CURRENCY_USD)
+                                ? ExchangeRateUtil.convert(contribAmount, CURRENCY_CDF, CURRENCY_USD).toString()
+                                : contribAmount.toString();
 
-                if (contribAmount.toString().equals(currentValue)) {
-                    if (contributionManager.delete(contrib.getId())) {
-                        contributionField.setText("");
-                        contributionField.setToolTipText(null);
-                        contributionField.setEditable(true);
-                        showSuccessMessage("Contribution supprimée avec succès!");
-                    } else {
-                        showErrorMessage("Erreur lors de la suppression");
+                        if (contribAmountStr.equals(currentValue)) {
+                            if (contributionManager.delete(contrib.getId())) {
+                                contributionField.setText("");
+                                contributionField.setToolTipText(null);
+                                parentPanel.updateCalendar(); // Rafraîchir l'affichage
+                                showSuccessMessage("Contribution supprimée avec succès!");
+                            } else {
+                                showErrorMessage("Échec de la suppression");
+                            }
+                            return;
+                        }
                     }
-                    break;
                 }
+                showErrorMessage("Aucune contribution correspondante trouvée");
+            } catch (Exception ex) {
+                showErrorMessage("Erreur lors de la suppression: " + ex.getMessage());
             }
         }
     }

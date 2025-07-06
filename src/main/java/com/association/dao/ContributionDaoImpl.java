@@ -265,11 +265,23 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 return true;
             }
         } catch (SQLException e) {
-            // Gestion des erreurs existante...
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                logger.log(Level.SEVERE, "Erreur lors du rollback", ex);
+            }
+            logger.log(Level.SEVERE, "Erreur lors de la mise à jour de la contribution", e);
+            return false;
         } finally {
-            // Fermeture de la connexion existante...
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Erreur lors de la fermeture de la connexion", e);
+            }
         }
-        return false;
     }
 
     @Override
