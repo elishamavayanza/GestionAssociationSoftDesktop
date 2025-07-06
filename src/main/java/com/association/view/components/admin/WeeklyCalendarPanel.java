@@ -46,7 +46,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
     private String contributionType; // Nouveau champ
 
     // ... code existant ...
-   private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
+    private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
     private static final int MAX_CONTRIBUTIONS_PER_DAY = 5;
     private static final int DAYS_IN_WEEK = 7;
 
