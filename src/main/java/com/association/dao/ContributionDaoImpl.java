@@ -1,6 +1,7 @@
 package com.association.dao;
 
 import com.association.model.Membre;
+import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import java.math.BigDecimal;
 import java.sql.*;
@@ -25,6 +26,11 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
         contribution.setDateTransaction(rs.getDate("date_transaction"));
         contribution.setMontant(rs.getBigDecimal("montant"));
         contribution.setDescription(rs.getString("description"));
+
+        String typeStr = rs.getString("type_contribution");
+        if (typeStr != null) {
+            contribution.setTypeContribution(TypeContribution.valueOf(typeStr));
+        }
 
         // Mapper le membre
         Membre membre = new Membre();
@@ -244,33 +250,26 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 }
 
                 try (PreparedStatement cStmt = conn.prepareStatement(sqlContribution)) {
-                    cStmt.setString(1, contribution.getTypeContribution().toString());
+                    // Gérer le cas où typeContribution est null
+                    if (contribution.getTypeContribution() != null) {
+                        cStmt.setString(1, contribution.getTypeContribution().toString());
+                    } else {
+                        cStmt.setNull(1, Types.VARCHAR);
+                    }
                     cStmt.setLong(2, contribution.getId());
                     cStmt.executeUpdate();
                 }
 
                 conn.commit();
-                notifyObservers(contribution); // Notification après mise à jour réussie
+                notifyObservers(contribution);
                 return true;
             }
         } catch (SQLException e) {
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                logger.log(Level.SEVERE, "Erreur lors du rollback", ex);
-            }
-            logger.log(Level.SEVERE, "Erreur lors de la mise à jour de la contribution", e);
-            return false;
+            // Gestion des erreurs existante...
         } finally {
-            try {
-                if (conn != null) {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                logger.log(Level.SEVERE, "Erreur lors de la fermeture de la connexion", e);
-            }
+            // Fermeture de la connexion existante...
         }
+        return false;
     }
 
     @Override

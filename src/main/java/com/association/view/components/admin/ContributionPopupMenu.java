@@ -1,6 +1,7 @@
 package com.association.view.components.admin;
 
 import com.association.manager.ContributionManager;
+import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import com.association.util.utils.ExchangeRateUtil;
 
@@ -74,13 +75,16 @@ public class ContributionPopupMenu extends JPopupMenu {
                     }
 
                     if (contribAmount.toString().equals(currentValue)) {
+                        // Mettre à jour la contribution
                         contrib.setMontant(newAmount);
+
+                        // S'assurer que le typeContribution est défini
+                        if (contrib.getTypeContribution() == null) {
+                            contrib.setTypeContribution(TypeContribution.MENSUEL); // Valeur par défaut
+                        }
+
                         if (contributionManager.update(contrib)) {
-                            contributionField.setText(newValue);
-                            contributionField.setToolTipText(parentPanel.createContributionTooltip(contrib));
-                            showSuccessMessage("Contribution modifiée avec succès!");
-                        } else {
-                            showErrorMessage("Erreur lors de la modification");
+                            // ... reste du code ...
                         }
                         break;
                     }

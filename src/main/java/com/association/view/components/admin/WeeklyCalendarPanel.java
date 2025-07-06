@@ -580,11 +580,11 @@ public class WeeklyCalendarPanel extends JPanel {
         for (int i = 0; i < MAX_CONTRIBUTIONS_PER_DAY; i++) {
             JPanel row = new JPanel(new BorderLayout());
             row.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30)); // Hauteur fixe
 
             JTextField field = createContributionTextField();
             contributionFields[dayIndex][i] = field;
 
-            // Ajouter le MouseListener pour le popup menu
             field.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
@@ -668,7 +668,12 @@ public class WeeklyCalendarPanel extends JPanel {
                 BorderFactory.createLineBorder(Colors.BORDER),
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
-        // Créer le filtre avec une référence au champ texte
+        // Ajoutez ces lignes pour fixer la taille
+        Dimension preferredSize = new Dimension(70, field.getPreferredSize().height);
+        field.setPreferredSize(preferredSize);
+        field.setMinimumSize(preferredSize);
+        field.setMaximumSize(preferredSize);
+
         ((AbstractDocument)field.getDocument()).setDocumentFilter(new NumericDocumentFilter(field));
         return field;
     }
