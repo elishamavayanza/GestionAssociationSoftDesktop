@@ -13,10 +13,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
-import com.association.dao.ContributionDao;
-import com.association.model.enums.TypeContribution;
-import com.association.model.transaction.Contribution;
-import java.util.List;
+
 
 public class ContributionManager extends BaseManager<Contribution> implements Observer {
 
@@ -39,6 +36,24 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
 
         // S'enregistrer comme observateur du DAO
     }
+
+    public boolean supprimerContribution(Long membreId, BigDecimal montant, LocalDate date, String typeContribution) {
+        // Convertir LocalDate en java.util.Date pour la comparaison
+        Date searchDate = java.sql.Date.valueOf(date);
+
+        // Trouver la contribution correspondante
+        List<Contribution> contributions = findByMembreAndType(membreId, TypeContribution.valueOf(typeContribution));
+
+        for (Contribution contribution : contributions) {
+            if (contribution.getMontant().compareTo(montant) == 0 &&
+                    contribution.getDateTransaction().equals(searchDate)) {
+                // Supprimer la contribution trouvée
+                return delete(contribution.getId());
+            }
+        }
+        return false;
+    }
+
 
     public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution, String typeContribution) {
         return membreManager.findById(membreId).map(membre -> {
