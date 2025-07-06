@@ -19,6 +19,13 @@ public class Colors {
     public static final Color TEXT_SECONDARY = new Color(108, 117, 125);
     public static final Color BORDER = new Color(206, 212, 218);
 
+    public static final Color TAB_SELECTED_BG = new Color(230, 245, 255);
+    public static final Color TAB_HOVER_BG = new Color(240, 240, 240);
+    // Couleurs supplémentaires pour le style libre
+    public static final Color BACKGROUND_LIGHT = new Color(245, 248, 250);
+    public static final Color BACKGROUND_LIGHTER = new Color(250, 252, 254);
+    public static final Color TEXT_DARK = new Color(30, 30, 30);
+    public static final Color ACCENT_LIGHT = new Color(100, 180, 255);
     // Dark Theme
     public static final Color DARK_PRIMARY = new Color(10, 132, 255);
     public static final Color DARK_PRIMARY_DARK = new Color(0, 96, 189);

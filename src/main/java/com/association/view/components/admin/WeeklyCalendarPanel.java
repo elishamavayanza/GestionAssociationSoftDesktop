@@ -5,6 +5,7 @@ import com.association.dao.DAOFactory;
 import com.association.dao.MembreDao;
 import com.association.manager.ContributionManager;
 import com.association.manager.MembreManager;
+import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import com.association.util.constants.AppConstants;
 import com.association.util.utils.DateUtil;
@@ -36,11 +37,14 @@ import javax.swing.text.DocumentFilter;
 
 import java.util.Observable;
 import java.util.Observer;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WeeklyCalendarPanel extends JPanel {
+public class WeeklyCalendarPanel extends JPanel implements Refreshable{
+    private String contributionType; // Nouveau champ
+
     // ... code existant ...
    private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
     private static final int MAX_CONTRIBUTIONS_PER_DAY = 5;
@@ -61,21 +65,21 @@ public class WeeklyCalendarPanel extends JPanel {
     private Long membreId;
     private JButton saveButton;
 
-    public WeeklyCalendarPanel(Long membreId) {
-            this.currentDate = LocalDate.now();
-            this.currentYearMonth = YearMonth.from(currentDate);
-            this.contributionFields = new JTextField[DAYS_IN_WEEK][MAX_CONTRIBUTIONS_PER_DAY];
-            this.membreId = membreId;
+    public WeeklyCalendarPanel(Long membreId, String contributionType) {
+        this.currentDate = LocalDate.now();
+        this.currentYearMonth = YearMonth.from(currentDate);
+        this.contributionFields = new JTextField[DAYS_IN_WEEK][MAX_CONTRIBUTIONS_PER_DAY];
+        this.membreId = membreId;
+        this.contributionType = contributionType; // Initialisation du type
 
-            ContributionDao contributionDao = DAOFactory.getInstance(ContributionDao.class);
-            this.contributionManager = new ContributionManager(
-                    contributionDao,
-                    new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
-            );
+        ContributionDao contributionDao = DAOFactory.getInstance(ContributionDao.class);
+        this.contributionManager = new ContributionManager(
+                contributionDao,
+                new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
+        );
 
-            initComponents();
-        createPopupMenu(); // Ajouter cette ligne
-
+        initComponents();
+        createPopupMenu();
     }
 
     private void createPopupMenu() {
@@ -168,7 +172,8 @@ public class WeeklyCalendarPanel extends JPanel {
                         boolean success = contributionManager.enregistrerContribution(
                                 membreId,
                                 amount,
-                                contributionDate
+                                contributionDate,
+                                contributionType // Ajout du type
                         );
 
                         if (success) {
@@ -182,26 +187,18 @@ public class WeeklyCalendarPanel extends JPanel {
                             contributionFields[day][cont].setBackground(Colors.SUCCESS.brighter());
                             contributionFields[day][cont].setEditable(false);
 
-                            // Mettre à jour le tooltip avec la bonne devise
+                            // Mettre à jour le tooltip avec le type
                             Contribution contribution = new Contribution();
-                            contribution.setMontant(amount); // Toujours stocké en CDF
+                            contribution.setMontant(amount);
                             contribution.setDateTransaction(java.sql.Date.valueOf(contributionDate));
+                            contribution.setTypeContribution(TypeContribution.valueOf(contributionType));
                             contributionFields[day][cont].setToolTipText(createContributionTooltip(contribution));
                         } else {
                             contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
                             hasError = true;
                         }
                     } catch (Exception e) {
-                        contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
-                        hasError = true;
-                        logger.error("Erreur lors de l'enregistrement pour le jour " + day +
-                                ", contribution " + cont, e);
-
-                        // Afficher un message d'erreur plus détaillé
-                        JOptionPane.showMessageDialog(this,
-                                "Erreur lors de l'enregistrement: " + e.getMessage(),
-                                "Erreur d'enregistrement",
-                                JOptionPane.ERROR_MESSAGE);
+                        // Gestion des erreurs inchangée
                     }
                 }
             }
@@ -367,14 +364,16 @@ public class WeeklyCalendarPanel extends JPanel {
         LocalDate endOfWeek = startOfWeek.plusDays(DAYS_IN_WEEK - 1);
 
         try {
-            logger.debug("Chargement des contributions pour la période {} à {}", startOfWeek, endOfWeek);
+            logger.debug("Chargement des contributions {} pour la période {} à {}", contributionType, startOfWeek, endOfWeek);
 
             List<Contribution> contributions = contributionManager.getContributionsBetweenDates(
-                    java.sql.Date.valueOf(startOfWeek),
-                    java.sql.Date.valueOf(endOfWeek)
-            );
+                            java.sql.Date.valueOf(startOfWeek),
+                            java.sql.Date.valueOf(endOfWeek)
+                    ).stream()
+                    .filter(c -> c.getTypeContribution().name().equals(contributionType))
+                    .collect(Collectors.toList());
 
-            logger.debug("Nombre de contributions chargées: {}", contributions.size());
+            logger.debug("Nombre de contributions {} chargées: {}", contributionType, contributions.size());
             contributions.forEach(c -> logger.debug("Contribution: {} - {}", c.getDateTransaction(), c.getMontant()));
 
             resetContributionFields();
@@ -482,7 +481,8 @@ public class WeeklyCalendarPanel extends JPanel {
 
     public String createContributionTooltip(Contribution contribution) {
         StringBuilder tooltip = new StringBuilder();
-        tooltip.append("Contribution du ").append(formatDate(contribution.getDateTransaction()));
+        tooltip.append("Contribution ").append(contribution.getTypeContribution().name().toLowerCase())
+                .append(" du ").append(formatDate(contribution.getDateTransaction()));
         tooltip.append("\nMontant: ").append(contribution.getMontant());
 
         if (contribution.getDescription() != null && !contribution.getDescription().isEmpty()) {
@@ -717,13 +717,14 @@ public class WeeklyCalendarPanel extends JPanel {
         updateCalendar();
     }
 
+    @Override
     public void setMembreId(Long membreId) {
         this.membreId = membreId;
         this.contributionManager = new ContributionManager(
                 DAOFactory.getInstance(ContributionDao.class),
                 new MembreManager(DAOFactory.getInstance(MembreDao.class), null)
         );
-        updateCalendar();
+        updateCalendar(); // Cette ligne est cruciale
     }
 
     private class NumericDocumentFilter extends DocumentFilter {

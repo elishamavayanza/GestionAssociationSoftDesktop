@@ -36,14 +36,14 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
         // S'enregistrer comme observateur du DAO
     }
 
-    public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution) {
+    public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution, String typeContribution) {
         return membreManager.findById(membreId).map(membre -> {
             Contribution contribution = new Contribution();
             contribution.setMembre(membre);
             contribution.setMontant(montant);
             contribution.setDateTransaction(java.sql.Date.valueOf(dateContribution));
-            contribution.setTypeContribution(TypeContribution.MENSUEL); // Adaptez selon votre logique
-            contribution.setDescription("Contribution hebdomadaire");
+            contribution.setTypeContribution(TypeContribution.valueOf(typeContribution));
+            contribution.setDescription("Contribution " + typeContribution.toLowerCase());
             return create(contribution);
         }).orElse(false);
     }

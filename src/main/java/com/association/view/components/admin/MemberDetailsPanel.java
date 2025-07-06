@@ -139,7 +139,6 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         mainPanel.add(Box.createVerticalStrut(30));
 
         // Création du JTabbedPane
-        // Création du JTabbedPane
         tabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         tabbedPane.setFont(Fonts.labelFont());
         tabbedPane.setBackground(Colors.CARD_BACKGROUND);
@@ -219,11 +218,11 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         tabbedPane.addTab("Résumé", summaryIcon, summaryPanel);
 
 // Onglet 2: Contribution
-        JPanel contributionPanel = new JPanel(new BorderLayout());
-        contributionPanel.setBackground(Colors.CARD_BACKGROUND);
-        contributionPanel.add(new WeeklyCalendarPanel(membreId), BorderLayout.CENTER);
+//        JPanel contributionPanel = new JPanel(new BorderLayout());
+//        contributionPanel.setBackground(Colors.CARD_BACKGROUND);
+//        contributionPanel.add(new WeeklyCalendarPanel(membreId), BorderLayout.CENTER);
 // Ajout de l'onglet avec icône et texte court
-        tabbedPane.addTab("Contrib", contribIcon, contributionPanel);
+        tabbedPane.addTab("Contrib", contribIcon, new ContributionsPanel(membreId));
 
 // Onglet 3: Emprunt
         JPanel empruntPanel = new JPanel();
@@ -491,21 +490,25 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         this.membreId = newMembreId;
         loadMemberData();
 
-        // Mettre à jour le WeeklyCalendarPanel dans l'onglet Contributions
+        // Mettre à jour tous les panels qui implémentent Refreshable
         Component[] tabs = tabbedPane.getComponents();
         for (Component tab : tabs) {
             if (tab instanceof JPanel) {
-                Component[] components = ((JPanel)tab).getComponents();
-                for (Component comp : components) {
-                    if (comp instanceof WeeklyCalendarPanel) {
-                        ((WeeklyCalendarPanel)comp).setMembreId(newMembreId);
-                        ((WeeklyCalendarPanel)comp).updateCalendar();
-                    }
-                }
+                // Recherche récursive des composants Refreshable
+                findAndUpdateRefreshableComponents((JPanel) tab, newMembreId);
             }
         }
     }
 
+    private void findAndUpdateRefreshableComponents(Container container, Long newMembreId) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof Refreshable) {
+                ((Refreshable) comp).setMembreId(newMembreId);
+            } else if (comp instanceof Container) {
+                findAndUpdateRefreshableComponents((Container) comp, newMembreId);
+            }
+        }
+    }
 
     @Override
     public void update(Observable o, Object arg) {
