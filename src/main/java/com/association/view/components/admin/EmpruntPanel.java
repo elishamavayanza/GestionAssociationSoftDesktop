@@ -114,13 +114,27 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         add(scrollPane, BorderLayout.CENTER);
     }
 
+    // Dans EmpruntPanel.java
     private void switchToRemboursementTab() {
         if (parentTabbedPane != null) {
-            // Trouver l'index de l'onglet "Rembt"
-            for (int i = 0; i < parentTabbedPane.getTabCount(); i++) {
-                if ("Rembt".equals(parentTabbedPane.getTitleAt(i))) {
-                    parentTabbedPane.setSelectedIndex(i);
-                    break;
+            int selectedRow = empruntTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                Long empruntId = (Long) tableModel.getValueAt(selectedRow, 0);
+                BigDecimal soldeRestant = empruntManager.getSoldeRestant(empruntId);
+
+                // Trouver l'onglet Rembt et passer les données
+                for (int i = 0; i < parentTabbedPane.getTabCount(); i++) {
+                    if ("Rembt".equals(parentTabbedPane.getTitleAt(i))) {
+                        Component comp = parentTabbedPane.getComponentAt(i);
+                        if (comp instanceof JScrollPane) {
+                            Component view = ((JScrollPane) comp).getViewport().getView();
+                            if (view instanceof RemboursementPanel) {
+                                ((RemboursementPanel) view).setEmpruntData(empruntId, soldeRestant);
+                            }
+                        }
+                        parentTabbedPane.setSelectedIndex(i);
+                        break;
+                    }
                 }
             }
         }

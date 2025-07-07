@@ -46,11 +46,14 @@ public class EmpruntManager extends BaseManager<Emprunt> {
         return empruntDao.verifierEligibilite(membreId);
     }
 
-    public void effectuerRemboursement(Long empruntId, BigDecimal montant) {
-        empruntDao.findById(empruntId).ifPresent(emprunt -> {
-            emprunt.rembourser(montant);
-            update(emprunt);
-        });
+    // Dans EmpruntManager.java
+    public boolean effectuerRemboursement(Long empruntId, BigDecimal montant) {
+        return empruntDao.findById(empruntId)
+                .map(emprunt -> {
+                    emprunt.rembourser(montant);
+                    return update(emprunt);
+                })
+                .orElse(false);
     }
 
     public BigDecimal getSoldeRestant(Long empruntId) {

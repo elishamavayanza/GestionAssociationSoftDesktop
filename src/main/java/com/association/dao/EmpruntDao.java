@@ -10,4 +10,6 @@ public interface EmpruntDao extends GenericDao<Emprunt> {
     List<Emprunt> findByStatut(StatutEmprunt statut);
     BigDecimal calculerSoldeRestant(Long empruntId);
     boolean verifierEligibilite(Long membreId);
+    boolean effectuerRemboursement(Long empruntId, BigDecimal montant);
+
 }

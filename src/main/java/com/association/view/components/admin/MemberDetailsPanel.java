@@ -283,12 +283,11 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         tabbedPane.addTab("Emprunt", loanIcon, empruntScroll);
 
 // Onglet 4: Rempourcement
-        JPanel rempourcementPanel = new JPanel();
-        rempourcementPanel.setBackground(Colors.CARD_BACKGROUND);
-        rempourcementPanel.add(new JLabel("Contenu des rempourcements"));
-        JScrollPane rempourcementScroll = new JScrollPane(rempourcementPanel);
-        rempourcementScroll.setBorder(BorderFactory.createEmptyBorder());
-        tabbedPane.addTab("Rembt", repayIcon, rempourcementScroll);
+        // Dans MemberDetailsPanel.java, remplacez la création de l'onglet Rembt par:
+        RemboursementPanel remboursementPanel = new RemboursementPanel(empruntManager);
+        JScrollPane remboursementScroll = new JScrollPane(remboursementPanel);
+        remboursementScroll.setBorder(BorderFactory.createEmptyBorder());
+        tabbedPane.addTab("Rembt", repayIcon, remboursementScroll);
 
 // Ajoutez un ChangeListener pour gérer le redimensionnement
         tabbedPane.addChangeListener(e -> {

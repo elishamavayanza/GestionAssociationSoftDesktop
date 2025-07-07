@@ -146,6 +146,26 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
         }
     }
 
+    @Override
+    public boolean effectuerRemboursement(Long empruntId, BigDecimal montant) {
+        String sql = "UPDATE emprunts SET montant_rembourse = montant_rembourse + ?, " +
+                "statut = CASE WHEN (SELECT t.montant FROM transactions t WHERE t.id = ?) <= " +
+                "(montant_rembourse + ?) THEN 'REMBOURSE' ELSE statut END " +
+                "WHERE id = ?";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBigDecimal(1, montant);
+            stmt.setLong(2, empruntId);
+            stmt.setBigDecimal(3, montant);
+            stmt.setLong(4, empruntId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 
     @Override
     public boolean update(Emprunt t) { return false; }
