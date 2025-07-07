@@ -15,4 +15,6 @@ public interface EmpruntDao extends GenericDao<Emprunt> {
     Map<String, Object> verifierEligibiliteDetail(Long membreId);
     boolean effectuerRemboursement(Long empruntId, BigDecimal montant);
     Optional<Emprunt> findById(Long id);
+    List<Emprunt> findByMembreAndStatutNot(Long membreId, StatutEmprunt statut);
+    boolean updateStatut(Long empruntId, StatutEmprunt statut);
 }

@@ -68,9 +68,19 @@ public class EmpruntManager extends BaseManager<Emprunt> {
                         throw new IllegalArgumentException("Le montant dépasse le solde restant");
                     }
 
-                    return empruntDao.effectuerRemboursement(empruntId, montant);
+                    boolean success = empruntDao.effectuerRemboursement(empruntId, montant);
+
+                    // Si le remboursement est complet, mettre à jour le statut
+                    if (success && soldeRestant.subtract(montant).compareTo(BigDecimal.ZERO) == 0) {
+                        empruntDao.updateStatut(empruntId, StatutEmprunt.REMBOURSE);
+                    }
+
+                    return success;
                 })
                 .orElse(false);
+    }
+    public List<Emprunt> getEmpruntsNonRembourses(Long membreId) {
+        return empruntDao.findByMembreAndStatutNot(membreId, StatutEmprunt.REMBOURSE);
     }
 
     public BigDecimal getSoldeRestant(Long empruntId) {

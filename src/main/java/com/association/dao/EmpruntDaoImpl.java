@@ -264,6 +264,39 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
         }
     }
     @Override
+    public List<Emprunt> findByMembreAndStatutNot(Long membreId, StatutEmprunt statut) {
+        List<Emprunt> emprunts = new ArrayList<>();
+        String sql = "SELECT e.*, t.*, ent.date_creation FROM emprunts e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "JOIN entities ent ON t.id = ent.id " +
+                "WHERE t.membre_id = ? AND e.statut != ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, membreId);
+            stmt.setString(2, statut.name());
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                emprunts.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return emprunts;
+    }
+    @Override
+    public boolean updateStatut(Long empruntId, StatutEmprunt statut) {
+        String sql = "UPDATE emprunts SET statut = ? WHERE id = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, statut.name());
+            stmt.setLong(2, empruntId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    @Override
     public Optional<Emprunt> findById(Long id) {
         String sql = "SELECT e.*, t.*, ent.date_creation FROM emprunts e " +
                 "JOIN transactions t ON e.id = t.id " +

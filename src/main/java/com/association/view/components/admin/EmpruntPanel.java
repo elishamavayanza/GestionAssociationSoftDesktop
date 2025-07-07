@@ -175,7 +175,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     private void loadEmprunts() {
         tableModel.setRowCount(0);
 
-        List<Emprunt> emprunts = empruntManager.getEmpruntsMembre(membreId);
+        List<Emprunt> emprunts = empruntManager.getEmpruntsNonRembourses(membreId);
         SimpleDateFormat dateFormat = new SimpleDateFormat(DatePattern.DATE_TIME.getPattern());
 
         for (Emprunt emprunt : emprunts) {
@@ -187,10 +187,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
                     formatCurrency(emprunt.calculerSoldeRestant()),
                     emprunt.getStatut().toString(),
                     emprunt.getDateRemboursement() != null ?
-                            dateFormat.format(emprunt.getDateRemboursement()) : "N/A",
-                    // Ajouter une colonne pour montrer le détail du calcul
-                    "Base: " + formatCurrency(emprunt.calculerSoldeRestantSansPenalite()) +
-                            (emprunt.getStatut() == StatutEmprunt.EN_RETARD ? " + pénalités" : "")
+                            dateFormat.format(emprunt.getDateRemboursement()) : "N/A"
             };
             tableModel.addRow(rowData);
         }
