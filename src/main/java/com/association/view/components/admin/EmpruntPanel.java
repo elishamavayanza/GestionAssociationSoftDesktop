@@ -5,6 +5,7 @@ import com.association.manager.MembreManager;
 import com.association.model.transaction.Emprunt;
 import com.association.util.constants.DatePattern;
 import com.association.util.utils.DateUtil;
+import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
@@ -52,6 +53,12 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         setBackground(Colors.CARD_BACKGROUND);
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
+        UIManager.put("TabbedPane.tabAreaInsets", new Insets(0, 0, 0, 0));
+        UIManager.put("TabbedPane.tabInsets", new Insets(5, 10, 5, 10));
+        UIManager.put("TabbedPane.selectedTabPadInsets", new Insets(0, 0, 0, 0));
+        UIManager.put("TabbedPane.tabHeight", 30);
+
+
         empruntTabbedPane = createTabbedPane();
         add(createTopPanel(), BorderLayout.NORTH);
         add(empruntTabbedPane, BorderLayout.CENTER);
@@ -66,8 +73,11 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         tabbedPane.setForeground(Colors.TEXT);
         tabbedPane.setFont(Fonts.labelFont());
 
-        tabbedPane.addTab("Emprunts en cours", createTablePanel(true));
-        tabbedPane.addTab("Voir historique", createTablePanel(false));
+        ImageIcon currentIcon = IconManager.getScaledIcon("current_loans.svg", 16, 16); // Remplacez par votre icône
+        ImageIcon historyIcon = IconManager.getScaledIcon("loan_history.svg", 16, 16); // Remplacez par votre icône
+
+        tabbedPane.addTab("Emprunts en cours", currentIcon, createTablePanel(true));
+        tabbedPane.addTab("Voir historique", historyIcon, createTablePanel(false));
 
         return tabbedPane;
     }
