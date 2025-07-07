@@ -277,7 +277,7 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 
 // Onglet 3: Emprunt
         // Onglet 3: Emprunt
-        EmpruntPanel empruntPanel = new EmpruntPanel(membreId, empruntManager, membreManager);
+        EmpruntPanel empruntPanel = new EmpruntPanel(membreId, empruntManager, membreManager, tabbedPane);
         JScrollPane empruntScroll = new JScrollPane(empruntPanel);
         empruntScroll.setBorder(BorderFactory.createEmptyBorder());
         tabbedPane.addTab("Emprunt", loanIcon, empruntScroll);

@@ -1,16 +1,10 @@
 package com.association.view.components.admin;
 
-import com.association.dao.DAOFactory;
-import com.association.dao.EmpruntDao;
-import com.association.dao.MembreDao;
 import com.association.manager.EmpruntManager;
 import com.association.manager.MembreManager;
-import com.association.model.Membre;
 import com.association.model.transaction.Emprunt;
-import com.association.model.enums.StatutEmprunt;
 import com.association.util.constants.DatePattern;
 import com.association.util.utils.DateUtil;
-import com.association.util.utils.ExchangeRateUtil;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 
@@ -19,9 +13,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.math.BigDecimal;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -35,11 +27,13 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     private JButton addButton;
     private JButton rembourserButton;
     private JButton refreshButton;
+    private JTabbedPane parentTabbedPane; // Référence au tabbedPane parent
 
-    public EmpruntPanel(Long membreId, EmpruntManager empruntManager, MembreManager membreManager) {
+    public EmpruntPanel(Long membreId, EmpruntManager empruntManager, MembreManager membreManager, JTabbedPane parentTabbedPane) {
         this.membreId = membreId;
         this.empruntManager = empruntManager;
         this.membreManager = membreManager;
+        this.parentTabbedPane = parentTabbedPane; // Stockez la référence
         initComponents();
         loadEmprunts();
     }
@@ -101,11 +95,37 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         empruntTable.setBackground(Colors.CARD_BACKGROUND);
         empruntTable.setForeground(Colors.TEXT);
 
+        // Ajoutez le MouseListener pour le double-clic
+        empruntTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) { // Double-clic
+                    int row = empruntTable.rowAtPoint(evt.getPoint());
+                    if (row >= 0) {
+                        // Basculer vers l'onglet "Rembt"
+                        switchToRemboursementTab();
+                    }
+                }
+            }
+        });
+
         JScrollPane scrollPane = new JScrollPane(empruntTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
         add(scrollPane, BorderLayout.CENTER);
     }
+
+    private void switchToRemboursementTab() {
+        if (parentTabbedPane != null) {
+            // Trouver l'index de l'onglet "Rembt"
+            for (int i = 0; i < parentTabbedPane.getTabCount(); i++) {
+                if ("Rembt".equals(parentTabbedPane.getTitleAt(i))) {
+                    parentTabbedPane.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+    }
+
 
     private void loadEmprunts() {
         tableModel.setRowCount(0); // Effacer les données existantes
