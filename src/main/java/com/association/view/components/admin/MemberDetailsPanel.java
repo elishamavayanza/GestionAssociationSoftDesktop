@@ -2,8 +2,10 @@ package com.association.view.components.admin;
 
 import com.association.dao.ContributionDao;
 import com.association.dao.DAOFactory;
+import com.association.dao.EmpruntDao;
 import com.association.dao.MembreDao;
 import com.association.manager.ContributionManager;
+import com.association.manager.EmpruntManager;
 import com.association.manager.MembreManager;
 import com.association.model.Membre;
 import com.association.util.file.FileStorageService;
@@ -268,10 +270,9 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 
 
 // Onglet 3: Emprunt
-        JPanel empruntPanel = new JPanel();
-        empruntPanel.setBackground(Colors.CARD_BACKGROUND);
-        empruntPanel.add(new JLabel("Contenu des emprunts"));
-        JScrollPane empruntScroll = new JScrollPane(empruntPanel);
+        EmpruntDao empruntDao = DAOFactory.getInstance(EmpruntDao.class);
+        EmpruntManager empruntManager = new EmpruntManager(empruntDao, membreManager);
+        JScrollPane empruntScroll = new JScrollPane(new EmpruntPanel(membreId, empruntManager, membreManager));
         empruntScroll.setBorder(BorderFactory.createEmptyBorder());
         tabbedPane.addTab("Emprunt", loanIcon, empruntScroll);
 

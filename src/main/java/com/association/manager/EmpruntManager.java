@@ -18,7 +18,7 @@ public class EmpruntManager extends BaseManager<Emprunt> {
         this.membreManager = membreManager;
     }
 
-    public boolean demanderEmprunt(Long membreId, BigDecimal montant) {
+    public boolean demanderEmprunt(Long membreId, BigDecimal montant, Date dateRemboursement, String description) {
         if (!verifierEligibilite(membreId)) {
             return false;
         }
@@ -28,10 +28,12 @@ public class EmpruntManager extends BaseManager<Emprunt> {
             emprunt.setMembre(membre);
             emprunt.setMontant(montant);
             emprunt.setDateTransaction(new Date());
+            emprunt.setDateCreation(new Date()); // ← très important !
+            emprunt.setDateRemboursement(dateRemboursement);
+            emprunt.setDescription(description);
             return create(emprunt);
         }).orElse(false);
     }
-
     public List<Emprunt> getEmpruntsMembre(Long membreId) {
         return empruntDao.findByMembre(membreId);
     }
