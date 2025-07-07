@@ -83,7 +83,7 @@ public class ContributionsPanel extends JPanel {
         contributionsTabbedPane.addTab("Annuel", yearlyIcon, yearlyScroll);
 
         // Onglet pour les dons avec JScrollPane
-        DonationPanel donationPanel = new DonationPanel(membreId);
+        DonPanel donationPanel = new DonPanel(membreId, contributionManager);
         JScrollPane donationScroll = new JScrollPane(donationPanel);
         donationScroll.setBorder(BorderFactory.createEmptyBorder());
         contributionsTabbedPane.addTab("Dons", donationIcon, donationScroll);

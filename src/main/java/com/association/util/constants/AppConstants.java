@@ -11,4 +11,10 @@ public class AppConstants {
     public static final double TAUX_INTERET = 0.05;
     public static final DatePattern DATE_FORMAT = DatePattern.FRENCH_DATE;
     public static final Locale DEFAULT_LOCALE = Locale.FRANCE;
+
+    public static final String ICON_EDIT = "/icons/edit.png";
+    public static final String ICON_DELETE = "/icons/delete.png";
+    public static final String ICON_SAVE = "/icons/save.png";
+    public static final String ICON_CANCEL = "/icons/cancel.png";
+    public static final String ICON_CONFIRM = "/icons/confirm.png";
 }

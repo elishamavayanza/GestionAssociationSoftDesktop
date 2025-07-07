@@ -67,6 +67,19 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
         }).orElse(false);
     }
 
+    public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution,
+                                           String typeContribution, String description) {
+        return membreManager.findById(membreId).map(membre -> {
+            Contribution contribution = new Contribution();
+            contribution.setMembre(membre);
+            contribution.setMontant(montant);
+            contribution.setDateTransaction(java.sql.Date.valueOf(dateContribution));
+            contribution.setTypeContribution(TypeContribution.valueOf(typeContribution));
+            contribution.setDescription(description);
+            return create(contribution);
+        }).orElse(false);
+    }
+
     public List<Contribution> getContributionsMembre(Long membreId) {
         return contributionDao.findByMembre(membreId);
     }
