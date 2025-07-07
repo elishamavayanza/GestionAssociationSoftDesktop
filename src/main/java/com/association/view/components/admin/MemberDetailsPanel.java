@@ -2,10 +2,8 @@ package com.association.view.components.admin;
 
 import com.association.dao.ContributionDao;
 import com.association.dao.DAOFactory;
-import com.association.dao.EmpruntDao;
 import com.association.dao.MembreDao;
 import com.association.manager.ContributionManager;
-import com.association.manager.EmpruntManager;
 import com.association.manager.MembreManager;
 import com.association.model.Membre;
 import com.association.util.file.FileStorageService;
@@ -14,6 +12,8 @@ import com.association.view.components.IconManager;
 import com.association.view.components.admin.Photo.PhotoEditorDialog;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
+import com.association.manager.EmpruntManager;
+import com.association.dao.EmpruntDao;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -43,6 +43,7 @@ public class MemberDetailsPanel extends JPanel implements Observer {
     private JTabbedPane tabbedPane;
     private final MembreManager membreManager;
     private ContributionManager contributionManager; // Add this line
+    private final EmpruntManager empruntManager;
 
 
     public MemberDetailsPanel(JFrame parentFrame, Long membreId) {
@@ -56,6 +57,11 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         this.contributionManager = new ContributionManager(
                 DAOFactory.getInstance(ContributionDao.class),
                 this.membreManager  // Use the field we just initialized
+        );
+
+        this.empruntManager = new EmpruntManager(
+                DAOFactory.getInstance(EmpruntDao.class),
+                this.membreManager
         );
 
         membreDao.addObserver(this);
@@ -270,9 +276,9 @@ public class MemberDetailsPanel extends JPanel implements Observer {
 
 
 // Onglet 3: Emprunt
-        EmpruntDao empruntDao = DAOFactory.getInstance(EmpruntDao.class);
-        EmpruntManager empruntManager = new EmpruntManager(empruntDao, membreManager);
-        JScrollPane empruntScroll = new JScrollPane(new EmpruntPanel(membreId, empruntManager, membreManager));
+        // Onglet 3: Emprunt
+        EmpruntPanel empruntPanel = new EmpruntPanel(membreId, empruntManager, membreManager);
+        JScrollPane empruntScroll = new JScrollPane(empruntPanel);
         empruntScroll.setBorder(BorderFactory.createEmptyBorder());
         tabbedPane.addTab("Emprunt", loanIcon, empruntScroll);
 
@@ -546,13 +552,22 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         this.membreId = newMembreId;
         loadMemberData();
 
-        // Mettre à jour tous les panels qui implémentent Refreshable
-        Component[] tabs = tabbedPane.getComponents();
-        for (Component tab : tabs) {
-            if (tab instanceof JPanel) {
-                // Recherche récursive des composants Refreshable
-                findAndUpdateRefreshableComponents((JPanel) tab, newMembreId);
+        // Parcours de tous les composants du tabbedPane
+        for (Component comp : tabbedPane.getComponents()) {
+            if (comp instanceof JScrollPane) {
+                Component view = ((JScrollPane) comp).getViewport().getView();
+                updateIfRefreshable(view, newMembreId);
+            } else if (comp instanceof JPanel) {
+                findAndUpdateRefreshableComponents((JPanel) comp, newMembreId);
             }
+            updateIfRefreshable(comp, newMembreId);
+        }
+    }
+
+    // Méthode utilitaire pour éviter la duplication de code
+    private void updateIfRefreshable(Component comp, Long newMembreId) {
+        if (comp instanceof Refreshable) {
+            ((Refreshable) comp).setMembreId(newMembreId);
         }
     }
 
