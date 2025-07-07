@@ -40,7 +40,7 @@ public class RemboursementPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Titre
-        JLabel titleLabel = new JLabel("Formulaire de Remboursement");
+        JLabel titleLabel = new JLabel("Remboursement");
         titleLabel.setFont(Fonts.titleFont());
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gbc.gridx = 0;
