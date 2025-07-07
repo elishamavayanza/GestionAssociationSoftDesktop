@@ -150,3 +150,9 @@ DAO (MembreDao)
      ↓ exécute requête SQL
 Base de données
 ````
+Pour qu'un membre soit eligible pour s'emprunter, il lui faut :
+
+1. Absence de dettes : Le membre ne doit pas avoir d'emprunts non remboursés (statut différent de "REMBOURSE")
+2. Contributions suffisantes : Le membre doit avoir contribué un montant minimum (configurable)
+3. Statut actif : Le membre doit avoir le statut "ACTIF"
+4. Délai depuis le dernier emprunt : Respect d'un délai minimum entre deux emprunts (configurable)
