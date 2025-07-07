@@ -2,7 +2,6 @@ package com.association.view.components.admin;
 
 import com.association.manager.EmpruntManager;
 import com.association.manager.MembreManager;
-import com.association.model.enums.StatutEmprunt;
 import com.association.model.transaction.Emprunt;
 import com.association.util.constants.DatePattern;
 import com.association.util.utils.DateUtil;
@@ -11,9 +10,11 @@ import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.metal.MetalTabbedPaneUI;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -21,28 +22,29 @@ import java.util.List;
 import java.util.Map;
 
 public class EmpruntPanel extends JPanel implements Refreshable {
+    private static final String[] TABLE_COLUMN_NAMES = {"ID", "Date", "Montant", "Remboursé", "Solde", "Statut", "Date Remb."};
+    private static final String ELIGIBLE_ICON = "✔ ";
+    private static final String NOT_ELIGIBLE_ICON = "✖ ";
+
     private Long membreId;
     private final EmpruntManager empruntManager;
     private final MembreManager membreManager;
     private JTable empruntTable;
-    private JTable historiqueTable; // Nouvelle table pour l'historique
+    private JTable historiqueTable;
     private DefaultTableModel tableModel;
-    private DefaultTableModel historiqueModel; // Nouveau modèle pour l'historique
+    private DefaultTableModel historiqueModel;
     private JButton addButton;
     private JButton refreshButton;
-    private JTabbedPane parentTabbedPane; // Référence au tabbedPane parent
-    private JTabbedPane empruntTabbedPane; // Nouveau tabbedPane interne
-
+    private final JTabbedPane parentTabbedPane;
+    private JTabbedPane empruntTabbedPane;
 
     public EmpruntPanel(Long membreId, EmpruntManager empruntManager, MembreManager membreManager, JTabbedPane parentTabbedPane) {
         this.membreId = membreId;
         this.empruntManager = empruntManager;
         this.membreManager = membreManager;
-        this.parentTabbedPane = parentTabbedPane; // Stockez la référence
+        this.parentTabbedPane = parentTabbedPane;
         initComponents();
-        loadEmprunts();
-        loadHistorique(); // Charger l'historique
-
+        loadData();
     }
 
     private void initComponents() {
@@ -50,137 +52,101 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         setBackground(Colors.CARD_BACKGROUND);
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Création du tabbedPane interne
-        empruntTabbedPane = new JTabbedPane();
-        empruntTabbedPane.setBackground(Colors.CARD_BACKGROUND);
-        empruntTabbedPane.setForeground(Colors.TEXT);
-
-        // Panel supérieur avec boutons (commun aux deux onglets)
-        JPanel topPanel = createTopPanel();
-        add(topPanel, BorderLayout.NORTH);
-
-        // Onglet "Emprunts en cours"
-        JPanel empruntPanel = createEmpruntPanel();
-        empruntTabbedPane.addTab("Emprunts en cours", empruntPanel);
-
-        // Onglet "Historique"
-        JPanel historiquePanel = createHistoriquePanel();
-        empruntTabbedPane.addTab("Voir historique", historiquePanel);
-
+        empruntTabbedPane = createTabbedPane();
+        add(createTopPanel(), BorderLayout.NORTH);
         add(empruntTabbedPane, BorderLayout.CENTER);
+
+        configureTabbedPane(parentTabbedPane);
+        configureTabbedPane(empruntTabbedPane);
+    }
+
+    private JTabbedPane createTabbedPane() {
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(Colors.CARD_BACKGROUND);
+        tabbedPane.setForeground(Colors.TEXT);
+        tabbedPane.setFont(Fonts.labelFont());
+
+        tabbedPane.addTab("Emprunts en cours", createTablePanel(true));
+        tabbedPane.addTab("Voir historique", createTablePanel(false));
+
+        return tabbedPane;
+    }
+
+    private void configureTabbedPane(JTabbedPane tabbedPane) {
+        tabbedPane.setUI(new MetalTabbedPaneUI() {
+            @Override
+            protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
+                                          int x, int y, int w, int h, boolean isSelected) {}
+
+            @Override
+            protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {}
+
+            @Override
+            protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
+                return Math.max(super.calculateTabWidth(tabPlacement, tabIndex, metrics), 100);
+            }
+        });
     }
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         topPanel.setBackground(Colors.CARD_BACKGROUND);
 
-        // Bouton Ajouter
-        addButton = new JButton("Nouvel emprunt");
-        addButton.setFont(Fonts.buttonFont());
-        addButton.setBackground(Colors.CURRENT_DANGER);
-        addButton.setForeground(Color.WHITE);
-        addButton.setFocusPainted(false);
-        addButton.addActionListener(e -> {
-            Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
-            String message = formatEligibilityMessage(eligibility);
-
-            if ((boolean) eligibility.get("eligible")) {
-                int option = JOptionPane.showConfirmDialog(
-                        this,
-                        message + "\nSouhaitez-vous continuer avec la demande d'emprunt?",
-                        "Vérification d'éligibilité",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE);
-
-                if (option == JOptionPane.YES_OPTION) {
-                    showAddEmpruntDialog(e);
-                }
-            } else {
-                JOptionPane.showMessageDialog(
-                        this,
-                        message,
-                        "Non éligible",
-                        JOptionPane.WARNING_MESSAGE);
-            }
-        });
+        addButton = createButton("Nouvel emprunt", Colors.CURRENT_DANGER, e -> handleAddEmprunt());
         topPanel.add(addButton);
 
-        JButton checkButton = new JButton("Vérifier éligibilité");
-        checkButton.setFont(Fonts.buttonFont());
-        checkButton.setBackground(Colors.CURRENT_INFO);
-        checkButton.setForeground(Color.WHITE);
-        checkButton.setFocusPainted(false);
-        checkButton.addActionListener(e -> {
-            Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
-            String message = formatEligibilityMessage(eligibility);
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    message,
-                    "Statut d'éligibilité",
-                    (boolean) eligibility.get("eligible") ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
-        });
+        JButton checkButton = createButton("Vérifier éligibilité", Colors.CURRENT_INFO,
+                e -> showEligibilityDialog(empruntManager.verifierEligibiliteDetail(membreId)));
         topPanel.add(checkButton);
 
-        // Bouton Actualiser
-        refreshButton = new JButton("Actualiser");
-        refreshButton.setFont(Fonts.buttonFont());
-        refreshButton.setBackground(Colors.CURRENT_INFO);
-        refreshButton.setForeground(Color.WHITE);
-        refreshButton.setFocusPainted(false);
-        refreshButton.addActionListener(e -> {
-            loadEmprunts();
-            loadHistorique();
-        });
+        refreshButton = createButton("Actualiser", Colors.CURRENT_INFO, e -> loadData());
         topPanel.add(refreshButton);
 
         return topPanel;
     }
 
-    private JPanel createEmpruntPanel() {
+    private JButton createButton(String text, Color bgColor, ActionListener action) {
+        JButton button = new JButton(text);
+        button.setFont(Fonts.buttonFont());
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.addActionListener(action);
+        return button;
+    }
+
+    private JPanel createTablePanel(boolean isCurrent) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Colors.CARD_BACKGROUND);
 
-        String[] columnNames = {"ID", "Date", "Montant", "Remboursé", "Solde", "Statut", "Date Remb."};
-        tableModel = new DefaultTableModel(columnNames, 0) {
+        DefaultTableModel model = new DefaultTableModel(TABLE_COLUMN_NAMES, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
-        empruntTable = new JTable(tableModel);
-        configureTable(empruntTable);
+        JTable table = new JTable(model);
+        configureTable(table);
 
-        JScrollPane scrollPane = new JScrollPane(empruntTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
+        if (isCurrent) {
+            tableModel = model;
+            empruntTable = table;
+        } else {
+            historiqueModel = model;
+            historiqueTable = table;
+        }
+
+        JScrollPane scrollPane = createScrollPane(table);
         panel.add(scrollPane, BorderLayout.CENTER);
-
         return panel;
     }
 
-    private JPanel createHistoriquePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Colors.CARD_BACKGROUND);
-
-        String[] columnNames = {"ID", "Date", "Montant", "Remboursé", "Solde", "Statut", "Date Remb."};
-        historiqueModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        historiqueTable = new JTable(historiqueModel);
-        configureTable(historiqueTable);
-
-        JScrollPane scrollPane = new JScrollPane(historiqueTable);
+    private JScrollPane createScrollPane(JTable table) {
+        JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
+        return scrollPane;
     }
 
     private void configureTable(JTable table) {
@@ -198,30 +164,33 @@ public class EmpruntPanel extends JPanel implements Refreshable {
                 if (evt.getClickCount() == 2) {
                     int row = table.rowAtPoint(evt.getPoint());
                     if (row >= 0) {
-                        switchToRemboursementTab(table == empruntTable ? tableModel : historiqueModel, row);
+                        DefaultTableModel model = (DefaultTableModel) table.getModel();
+                        switchToRemboursementTab(model, row);
                     }
                 }
             }
         });
     }
 
-//    private void loadEmprunts() {
-//        tableModel.setRowCount(0);
-//        List<Emprunt> emprunts = empruntManager.getEmpruntsNonRembourses(membreId);
-//        populateTable(tableModel, emprunts);
-//    }
+    private void loadData() {
+        loadEmprunts();
+        loadHistorique();
+    }
+
+    private void loadEmprunts() {
+        populateTable(tableModel, empruntManager.getEmpruntsNonRembourses(membreId));
+    }
 
     private void loadHistorique() {
-        historiqueModel.setRowCount(0);
-        List<Emprunt> emprunts = empruntManager.getEmpruntsMembre(membreId);
-        populateTable(historiqueModel, emprunts);
+        populateTable(historiqueModel, empruntManager.getEmpruntsMembre(membreId));
     }
 
     private void populateTable(DefaultTableModel model, List<Emprunt> emprunts) {
+        model.setRowCount(0);
         SimpleDateFormat dateFormat = new SimpleDateFormat(DatePattern.DATE_TIME.getPattern());
 
         for (Emprunt emprunt : emprunts) {
-            Object[] rowData = {
+            model.addRow(new Object[]{
                     emprunt.getId(),
                     dateFormat.format(emprunt.getDateTransaction()),
                     formatCurrency(emprunt.getMontant()),
@@ -230,12 +199,171 @@ public class EmpruntPanel extends JPanel implements Refreshable {
                     emprunt.getStatut().toString(),
                     emprunt.getDateRemboursement() != null ?
                             dateFormat.format(emprunt.getDateRemboursement()) : "N/A"
-            };
-            model.addRow(rowData);
+            });
         }
     }
 
-    // Dans EmpruntPanel.java
+    private void handleAddEmprunt() {
+        Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
+        String message = formatEligibilityMessage(eligibility);
+
+        if ((boolean) eligibility.get("eligible")) {
+            int option = JOptionPane.showConfirmDialog(
+                    this,
+                    message + "\nSouhaitez-vous continuer avec la demande d'emprunt?",
+                    "Vérification d'éligibilité",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            if (option == JOptionPane.YES_OPTION) {
+                showAddEmpruntDialog();
+            }
+        } else {
+            showEligibilityDialog(eligibility);
+        }
+    }
+
+    private void showEligibilityDialog(Map<String, Object> eligibility) {
+        JOptionPane.showMessageDialog(
+                this,
+                formatEligibilityMessage(eligibility),
+                "Statut d'éligibilité",
+                (boolean) eligibility.get("eligible") ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+    }
+
+    private void showAddEmpruntDialog() {
+        Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
+        if (!(boolean) eligibility.get("eligible")) {
+            showEligibilityDialog(eligibility);
+            return;
+        }
+
+        JDialog dialog = createEmpruntDialog();
+        JPanel panel = createEmpruntDialogPanel(dialog);
+        dialog.add(panel);
+        dialog.setVisible(true);
+    }
+
+    private JDialog createEmpruntDialog() {
+        JDialog dialog = new JDialog();
+        dialog.setTitle("Nouvel emprunt");
+        dialog.setModal(true);
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(this);
+        return dialog;
+    }
+
+    private JPanel createEmpruntDialogPanel(JDialog dialog) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Colors.CARD_BACKGROUND);
+        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        JLabel eligibilityLabel = new JLabel(ELIGIBLE_ICON + "Membre éligible à l'emprunt");
+        eligibilityLabel.setForeground(Colors.CURRENT_SUCCESS);
+        eligibilityLabel.setFont(Fonts.smallBoldFont());
+        panel.add(eligibilityLabel, gbc);
+
+        addFormField(panel, gbc, 1, "Montant (FCFA):");
+        JTextField montantField = addTextField(panel, gbc, 2);
+
+        addFormField(panel, gbc, 3, "Date de remboursement:");
+        JTextField dateField = addTextField(panel, gbc, 4);
+        dateField.setText(DateUtil.formatDate(new Date(), DatePattern.FRENCH_DATE));
+
+        addFormField(panel, gbc, 5, "Description:");
+        JTextArea descriptionArea = addTextArea(panel, gbc, 6);
+
+        addButtonsPanel(dialog, panel, gbc, 7, montantField, dateField, descriptionArea);
+
+        return panel;
+    }
+
+    private void addFormField(JPanel panel, GridBagConstraints gbc, int y, String label) {
+        gbc.gridy = y;
+        gbc.gridwidth = 1;
+        panel.add(new JLabel(label), gbc);
+    }
+
+    private JTextField addTextField(JPanel panel, GridBagConstraints gbc, int y) {
+        gbc.gridy = y;
+        JTextField textField = new JTextField();
+        textField.setFont(Fonts.textFieldFont());
+        panel.add(textField, gbc);
+        return textField;
+    }
+
+    private JTextArea addTextArea(JPanel panel, GridBagConstraints gbc, int y) {
+        gbc.gridy = y;
+        JTextArea textArea = new JTextArea(3, 20);
+        textArea.setFont(Fonts.textFieldFont());
+        textArea.setLineWrap(true);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        panel.add(scrollPane, gbc);
+        return textArea;
+    }
+
+    private void addButtonsPanel(JDialog dialog, JPanel panel, GridBagConstraints gbc, int y,
+                                 JTextField montantField, JTextField dateField, JTextArea descriptionArea) {
+        gbc.gridy = y;
+        gbc.fill = GridBagConstraints.BOTH;
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(Colors.CARD_BACKGROUND);
+
+        JButton cancelButton = createButton("Annuler", Colors.CURRENT_DANGER, e -> dialog.dispose());
+        buttonPanel.add(cancelButton);
+
+        JButton saveButton = createButton("Enregistrer", Colors.CURRENT_SUCCESS, e ->
+                saveEmprunt(dialog, montantField, dateField, descriptionArea));
+        buttonPanel.add(saveButton);
+
+        panel.add(buttonPanel, gbc);
+    }
+
+    private void saveEmprunt(JDialog dialog, JTextField montantField, JTextField dateField, JTextArea descriptionArea) {
+        try {
+            BigDecimal montant = new BigDecimal(montantField.getText().replaceAll("[^\\d.]", ""));
+            Date dateRemboursement = DateUtil.parseDate(dateField.getText(), DatePattern.FRENCH_DATE)
+                    .orElseThrow(() -> new IllegalArgumentException("Date invalide"));
+            String description = descriptionArea.getText();
+
+            validateEmpruntData(montant, dateRemboursement);
+
+            if (empruntManager.demanderEmprunt(membreId, montant, dateRemboursement, description)) {
+                JOptionPane.showMessageDialog(this, "Emprunt enregistré avec succès");
+                loadData();
+                dialog.dispose();
+            } else {
+                showErrorDialog("Erreur lors de l'enregistrement de l'emprunt");
+            }
+        } catch (NumberFormatException ex) {
+            showErrorDialog("Montant invalide. Format attendu: 50000 ou 50000.00");
+        } catch (IllegalArgumentException ex) {
+            showErrorDialog(ex.getMessage());
+        }
+    }
+
+    private void validateEmpruntData(BigDecimal montant, Date dateRemboursement) {
+        if (montant.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Le montant doit être positif");
+        }
+        if (dateRemboursement.before(new Date())) {
+            throw new IllegalArgumentException("La date de remboursement doit être dans le futur");
+        }
+    }
+
+    private void showErrorDialog(String message) {
+        JOptionPane.showMessageDialog(this, message, "Erreur", JOptionPane.ERROR_MESSAGE);
+    }
+
     private void switchToRemboursementTab(DefaultTableModel model, int row) {
         if (parentTabbedPane != null) {
             Long empruntId = (Long) model.getValueAt(row, 0);
@@ -257,156 +385,9 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         }
     }
 
-    private void loadEmprunts() {
-        tableModel.setRowCount(0);
-
-        List<Emprunt> emprunts = empruntManager.getEmpruntsNonRembourses(membreId);
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DatePattern.DATE_TIME.getPattern());
-
-        for (Emprunt emprunt : emprunts) {
-            Object[] rowData = {
-                    emprunt.getId(),
-                    dateFormat.format(emprunt.getDateTransaction()),
-                    formatCurrency(emprunt.getMontant()),
-                    formatCurrency(emprunt.getMontantRembourse()),
-                    formatCurrency(emprunt.calculerSoldeRestant()),
-                    emprunt.getStatut().toString(),
-                    emprunt.getDateRemboursement() != null ?
-                            dateFormat.format(emprunt.getDateRemboursement()) : "N/A"
-            };
-            tableModel.addRow(rowData);
-        }
-    }
-
     private String formatCurrency(BigDecimal amount) {
         if (amount == null) return "0 FCFA";
         return String.format("%,.0f FCFA", amount);
-    }
-
-    private void showAddEmpruntDialog(ActionEvent e) {
-        // Vérifier l'éligibilité avant d'afficher le dialogue
-        Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
-
-        if (!(boolean) eligibility.get("eligible")) {
-            // Construire un message détaillé
-            StringBuilder message = new StringBuilder("Le membre n'est pas éligible à un emprunt pour les raisons suivantes:\n\n");
-            @SuppressWarnings("unchecked")
-            List<String> raisons = (List<String>) eligibility.get("raisons");
-
-            for (String raison : raisons) {
-                if (!raison.contains("éligible")) { // Exclure le message positif
-                    message.append("- ").append(raison).append("\n");
-                }
-            }
-
-            JOptionPane.showMessageDialog(this,
-                    message.toString(),
-                    "Non éligible",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Nouvel emprunt");
-        dialog.setModal(true);
-        dialog.setSize(400, 350); // Légèrement agrandi pour le message d'éligibilité
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Colors.CARD_BACKGROUND);
-        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-
-        // Ajout d'un message d'éligibilité
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        JLabel eligibilityLabel = new JLabel("✔ Membre éligible à l'emprunt");
-        eligibilityLabel.setForeground(Colors.CURRENT_SUCCESS);
-        eligibilityLabel.setFont(Fonts.smallBoldFont());
-        panel.add(eligibilityLabel, gbc);
-
-        // Montant
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        panel.add(new JLabel("Montant (FCFA):"), gbc);
-
-        gbc.gridy = 2;
-        JTextField montantField = new JTextField();
-        montantField.setFont(Fonts.textFieldFont());
-        panel.add(montantField, gbc);
-
-        // Date remboursement
-        gbc.gridy = 3;
-        panel.add(new JLabel("Date de remboursement:"), gbc);
-
-        gbc.gridy = 4;
-        JTextField dateField = new JTextField(DateUtil.formatDate(new Date(), DatePattern.FRENCH_DATE));
-        dateField.setFont(Fonts.textFieldFont());
-        panel.add(dateField, gbc);
-
-        // Description
-        gbc.gridy = 5;
-        panel.add(new JLabel("Description:"), gbc);
-
-        gbc.gridy = 6;
-        JTextArea descriptionArea = new JTextArea(3, 20);
-        descriptionArea.setFont(Fonts.textFieldFont());
-        descriptionArea.setLineWrap(true);
-        JScrollPane scrollPane = new JScrollPane(descriptionArea);
-        panel.add(scrollPane, gbc);
-
-        // Boutons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Colors.CARD_BACKGROUND);
-
-        JButton cancelButton = new JButton("Annuler");
-        cancelButton.addActionListener(ev -> dialog.dispose());
-        buttonPanel.add(cancelButton);
-
-        JButton saveButton = new JButton("Enregistrer");
-        saveButton.addActionListener(ev -> {
-            try {
-                BigDecimal montant = new BigDecimal(montantField.getText().replaceAll("[^\\d.]", ""));
-                Date dateRemboursement = DateUtil.parseDate(dateField.getText(), DatePattern.FRENCH_DATE)
-                        .orElseThrow(() -> new IllegalArgumentException("Date invalide"));
-                String description = descriptionArea.getText();
-
-                if (montant.compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Le montant doit être positif");
-                }
-
-                if (dateRemboursement.before(new Date())) {
-                    throw new IllegalArgumentException("La date de remboursement doit être dans le futur");
-                }
-
-                if (empruntManager.demanderEmprunt(membreId, montant, dateRemboursement, description)) {
-                    JOptionPane.showMessageDialog(this, "Emprunt enregistré avec succès");
-                    loadEmprunts();
-                    dialog.dispose();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Erreur lors de l'enregistrement de l'emprunt",
-                            "Erreur", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Montant invalide. Format attendu: 50000 ou 50000.00",
-                        "Erreur", JOptionPane.ERROR_MESSAGE);
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(),
-                        "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        buttonPanel.add(saveButton);
-
-        gbc.gridy = 7;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel.add(buttonPanel, gbc);
-
-        dialog.add(panel);
-        dialog.setVisible(true);
     }
 
     private String formatEligibilityMessage(Map<String, Object> eligibility) {
@@ -415,32 +396,27 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         StringBuilder message = new StringBuilder();
 
         if ((boolean) eligibility.get("eligible")) {
-            message.append("✔ Membre éligible à l'emprunt\n\n");
-            message.append("Détails:\n");
-            message.append("- Contributions totales: ").append(formatCurrency((BigDecimal) eligibility.get("contributions"))).append("\n");
-            message.append("- Statut: ").append(eligibility.get("statut")).append("\n");
+            message.append(ELIGIBLE_ICON).append("Membre éligible à l'emprunt\n\nDétails:\n")
+                    .append("- Contributions totales: ").append(formatCurrency((BigDecimal) eligibility.get("contributions"))).append("\n")
+                    .append("- Statut: ").append(eligibility.get("statut")).append("\n");
 
             if (eligibility.get("dernierEmprunt") != null) {
-                long jours = (long) eligibility.get("joursDepuisDernierEmprunt");
-                message.append("- Dernier emprunt il y a ").append(jours).append(" jours\n");
+                message.append("- Dernier emprunt il y a ").append(eligibility.get("joursDepuisDernierEmprunt")).append(" jours\n");
             }
         } else {
-            message.append("✖ Membre non éligible\n\n");
-            message.append("Raisons:\n");
+            message.append(NOT_ELIGIBLE_ICON).append("Membre non éligible\n\nRaisons:\n");
             for (String raison : raisons) {
                 if (!raison.contains("éligible")) {
                     message.append("- ").append(raison).append("\n");
                 }
             }
         }
-
         return message.toString();
     }
 
     @Override
     public void setMembreId(Long membreId) {
         this.membreId = membreId;
-        loadEmprunts();
-        loadHistorique();
+        loadData();
     }
 }
