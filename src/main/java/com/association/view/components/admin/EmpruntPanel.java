@@ -2,6 +2,7 @@ package com.association.view.components.admin;
 
 import com.association.manager.EmpruntManager;
 import com.association.manager.MembreManager;
+import com.association.model.enums.StatutEmprunt;
 import com.association.model.transaction.Emprunt;
 import com.association.util.constants.DatePattern;
 import com.association.util.utils.DateUtil;
@@ -172,7 +173,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     }
 
     private void loadEmprunts() {
-        tableModel.setRowCount(0); // Effacer les données existantes
+        tableModel.setRowCount(0);
 
         List<Emprunt> emprunts = empruntManager.getEmpruntsMembre(membreId);
         SimpleDateFormat dateFormat = new SimpleDateFormat(DatePattern.DATE_TIME.getPattern());
@@ -186,7 +187,10 @@ public class EmpruntPanel extends JPanel implements Refreshable {
                     formatCurrency(emprunt.calculerSoldeRestant()),
                     emprunt.getStatut().toString(),
                     emprunt.getDateRemboursement() != null ?
-                            dateFormat.format(emprunt.getDateRemboursement()) : "N/A"
+                            dateFormat.format(emprunt.getDateRemboursement()) : "N/A",
+                    // Ajouter une colonne pour montrer le détail du calcul
+                    "Base: " + formatCurrency(emprunt.calculerSoldeRestantSansPenalite()) +
+                            (emprunt.getStatut() == StatutEmprunt.EN_RETARD ? " + pénalités" : "")
             };
             tableModel.addRow(rowData);
         }

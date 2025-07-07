@@ -9,6 +9,12 @@ public class Emprunt extends Transaction {
     private BigDecimal montantRembourse = BigDecimal.ZERO;
     private Date dateRemboursement;
     private StatutEmprunt statut;
+    // Taux d'intérêt de base (5%)
+    private static final BigDecimal TAUX_INTERET = new BigDecimal("0.05");
+    // Taux de pénalité par jour de retard (0.5%)
+    private static final BigDecimal PENALITE_PAR_JOUR = new BigDecimal("0.005");
+    // Nombre maximum de jours pour calculer la pénalité (pour éviter des montants trop élevés)
+    private static final int MAX_JOURS_PENALITE = 60;
 
     public Emprunt() {
         super();
@@ -48,17 +54,47 @@ public class Emprunt extends Transaction {
 
     // Methods
     public BigDecimal calculerSoldeRestant() {
-        return getMontant().subtract(montantRembourse);
+        BigDecimal montantInitial = getMontant();
+
+        // 1. Calculer le montant avec intérêt de base
+        BigDecimal montantAvecInteret = montantInitial.add(montantInitial.multiply(TAUX_INTERET));
+
+        // 2. Calculer les pénalités si en retard
+        if (StatutEmprunt.EN_RETARD.equals(statut) && dateRemboursement != null) {
+            long joursRetard = calculerJoursRetard();
+            if (joursRetard > 0) {
+                BigDecimal penalite = montantAvecInteret.multiply(PENALITE_PAR_JOUR)
+                        .multiply(new BigDecimal(Math.min(joursRetard, MAX_JOURS_PENALITE)));
+                montantAvecInteret = montantAvecInteret.add(penalite);
+            }
+        }
+
+        return montantAvecInteret.subtract(montantRembourse);
+    }
+
+    private long calculerJoursRetard() {
+        if (dateRemboursement == null) return 0;
+        Date aujourdhui = new Date();
+        if (aujourdhui.before(dateRemboursement)) return 0;
+
+        long diff = aujourdhui.getTime() - dateRemboursement.getTime();
+        return diff / (1000 * 60 * 60 * 24); // Convertir millisecondes en jours
     }
 
     public void verifierStatut() {
-        if (calculerSoldeRestant().compareTo(BigDecimal.ZERO) <= 0) {
+        if (calculerSoldeRestantSansPenalite().compareTo(BigDecimal.ZERO) <= 0) {
             setStatut(StatutEmprunt.REMBOURSE);
         } else if (new Date().after(dateRemboursement)) {
             setStatut(StatutEmprunt.EN_RETARD);
         } else {
             setStatut(StatutEmprunt.EN_COURS);
         }
+    }
+
+    // Nouvelle méthode pour calculer le solde sans pénalité (pour affichage)
+    public BigDecimal calculerSoldeRestantSansPenalite() {
+        BigDecimal montantAvecInteret = getMontant().add(getMontant().multiply(TAUX_INTERET));
+        return montantAvecInteret.subtract(montantRembourse);
     }
 
     public void rembourser(BigDecimal montant) {

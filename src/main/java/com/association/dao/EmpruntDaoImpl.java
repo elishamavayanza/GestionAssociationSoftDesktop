@@ -4,10 +4,8 @@ import com.association.model.transaction.Emprunt;
 import com.association.model.enums.StatutEmprunt;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 
 class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     public EmpruntDaoImpl() {
@@ -254,22 +252,34 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
 
     @Override
     public boolean effectuerRemboursement(Long empruntId, BigDecimal montant) {
-        String sql = "UPDATE emprunts SET montant_rembourse = montant_rembourse + ?, " +
-                "statut = CASE WHEN (SELECT t.montant FROM transactions t WHERE t.id = ?) <= " +
-                "(montant_rembourse + ?) THEN 'REMBOURSE' ELSE statut END " +
-                "WHERE id = ?";
-
+        String sql = "UPDATE emprunts SET montant_rembourse = montant_rembourse + ? WHERE id = ?";
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setBigDecimal(1, montant);
             stmt.setLong(2, empruntId);
-            stmt.setBigDecimal(3, montant);
-            stmt.setLong(4, empruntId);
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+    }
+    @Override
+    public Optional<Emprunt> findById(Long id) {
+        String sql = "SELECT e.*, t.*, ent.date_creation FROM emprunts e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "JOIN entities ent ON t.id = ent.id " +
+                "WHERE e.id = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
     }
 
 

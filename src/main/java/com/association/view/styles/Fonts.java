@@ -45,4 +45,9 @@ public class Fonts {
         return new Font("Arial", Font.BOLD, 14);
 
     }
+
+    public static Font mediumBoldFont() {
+        return new Font("Arial", Font.BOLD, 10);
+
+    }
 }
