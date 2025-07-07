@@ -5,7 +5,9 @@ import com.association.model.enums.StatutEmprunt;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     public EmpruntDaoImpl() {
@@ -89,6 +91,110 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     public boolean verifierEligibilite(Long membreId) {
         // Implémentation de la logique de vérification d'éligibilité
         return true;
+    }
+
+    @Override
+    public Map<String, Object> verifierEligibiliteDetail(Long membreId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<String> raisons = new ArrayList<>();
+        boolean eligible = true;
+
+        // Paramètres configurables
+        BigDecimal montantMinimumContributions = new BigDecimal("1000.00");
+        int delaiDepuisDernierEmprunt = 30;
+
+        // Initialisation
+        result.put("membreId", membreId);
+        result.put("eligible", true);
+        result.put("raisons", raisons);
+
+        try (Connection conn = databaseConfig.getConnection()) {
+            // Requête combinée pour optimiser les appels SQL
+            String sql = "SELECT "
+                    + "(SELECT COUNT(*) FROM emprunts e JOIN transactions t ON e.id = t.id "
+                    + "WHERE t.membre_id = ? AND e.statut != 'REMBOURSE') as dette_count, "
+                    + "(SELECT SUM(t.montant) FROM transactions t "
+                    + "WHERE t.membre_id = ? AND t.transaction_type = 'CONTRIBUTION') as total_contributions, "
+                    + "(SELECT m.statut FROM membres m WHERE m.id = ?) as statut_membre, "
+                    + "(SELECT MAX(t.date_transaction) FROM transactions t JOIN emprunts e ON t.id = e.id "
+                    + "WHERE t.membre_id = ?) as dernier_emprunt";
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, membreId);
+                stmt.setLong(2, membreId);
+                stmt.setLong(3, membreId);
+                stmt.setLong(4, membreId);
+
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    // 1. Vérification des dettes
+                    int detteCount = rs.getInt("dette_count");
+                    result.put("dettes", detteCount > 0);
+                    if (detteCount > 0) {
+                        eligible = false;
+                        raisons.add("Le membre a des emprunts non remboursés");
+                    }
+
+                    // 2. Vérification des contributions
+                    BigDecimal totalContributions = rs.getBigDecimal("total_contributions");
+                    if (totalContributions == null) totalContributions = BigDecimal.ZERO;
+                    result.put("contributions", totalContributions);
+
+                    if (totalContributions.compareTo(montantMinimumContributions) < 0) {
+                        eligible = false;
+                        raisons.add(String.format(
+                                "Contributions insuffisantes (actuelles: %s, minimum requis: %s)",
+                                totalContributions, montantMinimumContributions
+                        ));
+                    }
+
+                    // 3. Vérification du statut
+                    String statut = rs.getString("statut_membre");
+                    result.put("statut", statut != null ? statut : "NON_TROUVE");
+
+                    if (statut == null) {
+                        eligible = false;
+                        raisons.add("Membre non trouvé");
+                    } else if (!"ACTIF".equals(statut)) {
+                        eligible = false;
+                        raisons.add("Statut du membre: " + statut + " (requis: ACTIF)");
+                    }
+
+                    // 4. Vérification du délai
+                    Date dernierEmprunt = rs.getDate("dernier_emprunt");
+                    result.put("dernierEmprunt", dernierEmprunt);
+
+                    if (dernierEmprunt != null) {
+                        long diffDays = (System.currentTimeMillis() - dernierEmprunt.getTime()) / (24 * 60 * 60 * 1000);
+                        result.put("joursDepuisDernierEmprunt", diffDays);
+
+                        if (diffDays < delaiDepuisDernierEmprunt) {
+                            eligible = false;
+                            raisons.add(String.format(
+                                    "Délai depuis le dernier emprunt insuffisant (%d jours, minimum requis: %d jours)",
+                                    diffDays, delaiDepuisDernierEmprunt
+                            ));
+                        }
+                    }
+                } else {
+                    eligible = false;
+                    raisons.add("Membre non trouvé");
+                }
+            }
+
+            result.put("eligible", eligible);
+            if (eligible) {
+                raisons.add("Le membre est éligible à un nouvel emprunt");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            result.put("eligible", false);
+            raisons.add("Erreur technique lors de la vérification");
+            result.put("erreur", e.getMessage());
+        }
+
+        return result;
     }
 
     // Implémentations des autres méthodes de GenericDao

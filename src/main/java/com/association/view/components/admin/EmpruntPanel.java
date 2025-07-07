@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class EmpruntPanel extends JPanel implements Refreshable {
     private Long membreId;
@@ -25,7 +26,6 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     private JTable empruntTable;
     private DefaultTableModel tableModel;
     private JButton addButton;
-    private JButton rembourserButton;
     private JButton refreshButton;
     private JTabbedPane parentTabbedPane; // Référence au tabbedPane parent
 
@@ -53,17 +53,48 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         addButton.setBackground(Colors.CURRENT_DANGER);
         addButton.setForeground(Color.WHITE);
         addButton.setFocusPainted(false);
-        addButton.addActionListener(this::showAddEmpruntDialog);
+        addButton.addActionListener(e -> {
+            Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
+            String message = formatEligibilityMessage(eligibility);
+
+            if ((boolean) eligibility.get("eligible")) {
+                int option = JOptionPane.showConfirmDialog(
+                        this,
+                        message + "\nSouhaitez-vous continuer avec la demande d'emprunt?",
+                        "Vérification d'éligibilité",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                if (option == JOptionPane.YES_OPTION) {
+                    showAddEmpruntDialog(e);
+                }
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        message,
+                        "Non éligible",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        });
         topPanel.add(addButton);
 
-        // Bouton Rembourser
-        rembourserButton = new JButton("Effectuer remboursement");
-        rembourserButton.setFont(Fonts.buttonFont());
-        rembourserButton.setBackground(Colors.CURRENT_SUCCESS);
-        rembourserButton.setForeground(Color.WHITE);
-        rembourserButton.setFocusPainted(false);
-        rembourserButton.addActionListener(this::showRemboursementDialog);
-        topPanel.add(rembourserButton);
+        // Dans initComponents()
+        JButton checkButton = new JButton("Vérifier éligibilité");
+        checkButton.setFont(Fonts.buttonFont());
+        checkButton.setBackground(Colors.CURRENT_INFO);
+        checkButton.setForeground(Color.WHITE);
+        checkButton.setFocusPainted(false);
+        checkButton.addActionListener(e -> {
+            Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
+            String message = formatEligibilityMessage(eligibility);
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    message,
+                    "Statut d'éligibilité",
+                    (boolean) eligibility.get("eligible") ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+        });
+        topPanel.add(checkButton);
 
         // Bouton Actualiser
         refreshButton = new JButton("Actualiser");
@@ -140,7 +171,6 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         }
     }
 
-
     private void loadEmprunts() {
         tableModel.setRowCount(0); // Effacer les données existantes
 
@@ -163,14 +193,37 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     }
 
     private String formatCurrency(BigDecimal amount) {
+        if (amount == null) return "0 FCFA";
         return String.format("%,.0f FCFA", amount);
     }
 
     private void showAddEmpruntDialog(ActionEvent e) {
+        // Vérifier l'éligibilité avant d'afficher le dialogue
+        Map<String, Object> eligibility = empruntManager.verifierEligibiliteDetail(membreId);
+
+        if (!(boolean) eligibility.get("eligible")) {
+            // Construire un message détaillé
+            StringBuilder message = new StringBuilder("Le membre n'est pas éligible à un emprunt pour les raisons suivantes:\n\n");
+            @SuppressWarnings("unchecked")
+            List<String> raisons = (List<String>) eligibility.get("raisons");
+
+            for (String raison : raisons) {
+                if (!raison.contains("éligible")) { // Exclure le message positif
+                    message.append("- ").append(raison).append("\n");
+                }
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    message.toString(),
+                    "Non éligible",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         JDialog dialog = new JDialog();
         dialog.setTitle("Nouvel emprunt");
         dialog.setModal(true);
-        dialog.setSize(400, 300);
+        dialog.setSize(400, 350); // Légèrement agrandi pour le message d'éligibilité
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel(new GridBagLayout());
@@ -181,30 +234,39 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
-        // Montant
+        // Ajout d'un message d'éligibilité
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        JLabel eligibilityLabel = new JLabel("✔ Membre éligible à l'emprunt");
+        eligibilityLabel.setForeground(Colors.CURRENT_SUCCESS);
+        eligibilityLabel.setFont(Fonts.smallBoldFont());
+        panel.add(eligibilityLabel, gbc);
+
+        // Montant
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
         panel.add(new JLabel("Montant (FCFA):"), gbc);
 
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         JTextField montantField = new JTextField();
         montantField.setFont(Fonts.textFieldFont());
         panel.add(montantField, gbc);
 
         // Date remboursement
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         panel.add(new JLabel("Date de remboursement:"), gbc);
 
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         JTextField dateField = new JTextField(DateUtil.formatDate(new Date(), DatePattern.FRENCH_DATE));
         dateField.setFont(Fonts.textFieldFont());
         panel.add(dateField, gbc);
 
         // Description
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         panel.add(new JLabel("Description:"), gbc);
 
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         JTextArea descriptionArea = new JTextArea(3, 20);
         descriptionArea.setFont(Fonts.textFieldFont());
         descriptionArea.setLineWrap(true);
@@ -222,10 +284,18 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         JButton saveButton = new JButton("Enregistrer");
         saveButton.addActionListener(ev -> {
             try {
-                BigDecimal montant = new BigDecimal(montantField.getText());
+                BigDecimal montant = new BigDecimal(montantField.getText().replaceAll("[^\\d.]", ""));
                 Date dateRemboursement = DateUtil.parseDate(dateField.getText(), DatePattern.FRENCH_DATE)
                         .orElseThrow(() -> new IllegalArgumentException("Date invalide"));
                 String description = descriptionArea.getText();
+
+                if (montant.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Le montant doit être positif");
+                }
+
+                if (dateRemboursement.before(new Date())) {
+                    throw new IllegalArgumentException("La date de remboursement doit être dans le futur");
+                }
 
                 if (empruntManager.demanderEmprunt(membreId, montant, dateRemboursement, description)) {
                     JOptionPane.showMessageDialog(this, "Emprunt enregistré avec succès");
@@ -236,7 +306,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
                             "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Montant invalide",
+                JOptionPane.showMessageDialog(this, "Montant invalide. Format attendu: 50000 ou 50000.00",
                         "Erreur", JOptionPane.ERROR_MESSAGE);
             } catch (IllegalArgumentException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(),
@@ -245,7 +315,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         });
         buttonPanel.add(saveButton);
 
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         gbc.fill = GridBagConstraints.BOTH;
         panel.add(buttonPanel, gbc);
 
@@ -253,89 +323,32 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         dialog.setVisible(true);
     }
 
-    private void showRemboursementDialog(ActionEvent e) {
-        int selectedRow = empruntTable.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Veuillez sélectionner un emprunt",
-                    "Aucune sélection", JOptionPane.WARNING_MESSAGE);
-            return;
+    private String formatEligibilityMessage(Map<String, Object> eligibility) {
+        @SuppressWarnings("unchecked")
+        List<String> raisons = (List<String>) eligibility.get("raisons");
+        StringBuilder message = new StringBuilder();
+
+        if ((boolean) eligibility.get("eligible")) {
+            message.append("✔ Membre éligible à l'emprunt\n\n");
+            message.append("Détails:\n");
+            message.append("- Contributions totales: ").append(formatCurrency((BigDecimal) eligibility.get("contributions"))).append("\n");
+            message.append("- Statut: ").append(eligibility.get("statut")).append("\n");
+
+            if (eligibility.get("dernierEmprunt") != null) {
+                long jours = (long) eligibility.get("joursDepuisDernierEmprunt");
+                message.append("- Dernier emprunt il y a ").append(jours).append(" jours\n");
+            }
+        } else {
+            message.append("✖ Membre non éligible\n\n");
+            message.append("Raisons:\n");
+            for (String raison : raisons) {
+                if (!raison.contains("éligible")) {
+                    message.append("- ").append(raison).append("\n");
+                }
+            }
         }
 
-        Long empruntId = (Long) tableModel.getValueAt(selectedRow, 0);
-        BigDecimal soldeRestant = empruntManager.getSoldeRestant(empruntId);
-
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Remboursement d'emprunt");
-        dialog.setModal(true);
-        dialog.setSize(400, 200);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Colors.CARD_BACKGROUND);
-        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-
-        // Solde restant
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(new JLabel("Solde restant:"), gbc);
-
-        gbc.gridy = 1;
-        JLabel soldeLabel = new JLabel(formatCurrency(soldeRestant));
-        soldeLabel.setFont(Fonts.textFieldFont());
-        panel.add(soldeLabel, gbc);
-
-        // Montant remboursement
-        gbc.gridy = 2;
-        panel.add(new JLabel("Montant remboursé:"), gbc);
-
-        gbc.gridy = 3;
-        JTextField montantField = new JTextField(soldeRestant.toString());
-        montantField.setFont(Fonts.textFieldFont());
-        panel.add(montantField, gbc);
-
-        // Boutons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Colors.CARD_BACKGROUND);
-
-        JButton cancelButton = new JButton("Annuler");
-        cancelButton.addActionListener(ev -> dialog.dispose());
-        buttonPanel.add(cancelButton);
-
-        JButton saveButton = new JButton("Enregistrer");
-        saveButton.addActionListener(ev -> {
-            try {
-                BigDecimal montant = new BigDecimal(montantField.getText());
-                if (montant.compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Le montant doit être positif");
-                }
-                if (montant.compareTo(soldeRestant) > 0) {
-                    throw new IllegalArgumentException("Le montant ne peut pas dépasser le solde restant");
-                }
-
-                empruntManager.effectuerRemboursement(empruntId, montant);
-                JOptionPane.showMessageDialog(this, "Remboursement enregistré avec succès");
-                loadEmprunts();
-                dialog.dispose();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Montant invalide",
-                        "Erreur", JOptionPane.ERROR_MESSAGE);
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(),
-                        "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        buttonPanel.add(saveButton);
-
-        gbc.gridy = 4;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel.add(buttonPanel, gbc);
-
-        dialog.add(panel);
-        dialog.setVisible(true);
+        return message.toString();
     }
 
     @Override

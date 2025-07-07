@@ -40,4 +40,9 @@ public class Fonts {
         return new Font("Arial", Font.BOLD, 14);
 
     }
+
+    public static Font smallBoldFont() {
+        return new Font("Arial", Font.BOLD, 14);
+
+    }
 }

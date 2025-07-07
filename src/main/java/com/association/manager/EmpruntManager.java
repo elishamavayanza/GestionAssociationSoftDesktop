@@ -7,6 +7,7 @@ import com.association.model.enums.StatutEmprunt;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class EmpruntManager extends BaseManager<Emprunt> {
     private final EmpruntDao empruntDao;
@@ -44,6 +45,10 @@ public class EmpruntManager extends BaseManager<Emprunt> {
 
     public boolean verifierEligibilite(Long membreId) {
         return empruntDao.verifierEligibilite(membreId);
+    }
+
+    public Map<String, Object> verifierEligibiliteDetail(Long membreId) {
+        return empruntDao.verifierEligibiliteDetail(membreId);
     }
 
     // Dans EmpruntManager.java
