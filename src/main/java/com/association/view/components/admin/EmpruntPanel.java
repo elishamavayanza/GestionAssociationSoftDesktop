@@ -11,7 +11,9 @@ import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.plaf.metal.MetalTabbedPaneUI;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -66,6 +68,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         configureTabbedPane(parentTabbedPane);
         configureTabbedPane(empruntTabbedPane);
     }
+
 
     private JTabbedPane createTabbedPane() {
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -156,18 +159,70 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
+
+        // Personnalisation de la barre de défilement
+        customizeScrollBar(scrollPane.getVerticalScrollBar());
+        customizeScrollBar(scrollPane.getHorizontalScrollBar());
+
         return scrollPane;
     }
 
+    private void customizeScrollBar(JScrollBar scrollBar) {
+        scrollBar.setUI(new BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = Colors.SECONDARY;
+                this.trackColor = Colors.CARD_BACKGROUND;
+            }
+
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            private JButton createZeroButton() {
+                JButton button = new JButton();
+                button.setPreferredSize(new Dimension(0, 0));
+                return button;
+            }
+        });
+    }
+
+
+
     private void configureTable(JTable table) {
+        // Police et couleurs
         table.setFont(Fonts.tableFont());
         table.getTableHeader().setFont(Fonts.tableHeaderFont());
+        table.setForeground(Colors.TEXT);
+        table.setBackground(Colors.CARD_BACKGROUND);
+
+        // En-tête personnalisé
+        table.getTableHeader().setOpaque(false);
+        table.getTableHeader().setBackground(Colors.PRIMARY);
+        table.getTableHeader().setForeground(Color.WHITE);
+
+        // Hauteur des lignes et sélection
         table.setRowHeight(30);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setSelectionBackground(Colors.PRIMARY_LIGHT);
+        table.setSelectionForeground(Colors.TEXT);
+
+        // Suppression des bordures
         table.setShowGrid(false);
-        table.setIntercellSpacing(new Dimension(0, 0));
-        table.setBackground(Colors.CARD_BACKGROUND);
-        table.setForeground(Colors.TEXT);
+        table.setIntercellSpacing(new Dimension(0, 1));
+
+        // Centrage du contenu
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
 
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -181,6 +236,8 @@ public class EmpruntPanel extends JPanel implements Refreshable {
             }
         });
     }
+
+
 
     private void loadData() {
         loadEmprunts();
