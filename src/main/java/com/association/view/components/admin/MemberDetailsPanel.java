@@ -231,51 +231,19 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         ImageIcon repayIcon = IconManager.getScaledIcon("repay_icon.svg", 16, 16);
 
 // Onglet 1: Résumé (contient les 5 cartes originales)
-        JPanel summaryPanel = new JPanel(new GridBagLayout());
-        summaryPanel.setBackground(Colors.CARD_BACKGROUND);
-
-
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-
-// Première ligne (2 cartes)
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        summaryPanel.add(createInfoCard("Contribution", "0 FCFA", "Contribution"), gbc);
-
-        gbc.gridx = 1;
-        summaryPanel.add(createInfoCard("Emprunt", "0 FCFA", "Emprunt"), gbc);
-
-// Deuxième ligne (2 cartes)
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        summaryPanel.add(createInfoCard("Rempourcement", "0 FCFA", "Rempourcement"), gbc);
-
-        gbc.gridx = 1;
-        summaryPanel.add(createInfoCard("Total", "0 FCFA", null), gbc);
-
-// Troisième ligne (1 carte qui prend toute la largeur)
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        summaryPanel.add(createInfoCard("Bénéfice", "0 FCFA", null), gbc);
-
-// Ajout de l'onglet avec icône
-        JScrollPane summaryScroll = new JScrollPane(summaryPanel);
+        InfoCardsPanel infoCardsPanel = new InfoCardsPanel(
+                membreId,
+                contributionManager,
+                empruntManager,
+                membreManager
+        );
+        JScrollPane summaryScroll = new JScrollPane(infoCardsPanel);
         summaryScroll.setBorder(BorderFactory.createEmptyBorder());
         tabbedPane.addTab("Résumé", summaryIcon, summaryScroll);
 
 
         tabbedPane.addTab("Contrib", contribIcon, new ContributionsPanel(membreId, contributionManager));
 
-
-
-// Onglet 3: Emprunt
         // Onglet 3: Emprunt
         EmpruntPanel empruntPanel = new EmpruntPanel(membreId, empruntManager, membreManager, tabbedPane);
         JScrollPane empruntScroll = new JScrollPane(empruntPanel);
