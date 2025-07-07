@@ -25,10 +25,14 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     private final EmpruntManager empruntManager;
     private final MembreManager membreManager;
     private JTable empruntTable;
+    private JTable historiqueTable; // Nouvelle table pour l'historique
     private DefaultTableModel tableModel;
+    private DefaultTableModel historiqueModel; // Nouveau modèle pour l'historique
     private JButton addButton;
     private JButton refreshButton;
     private JTabbedPane parentTabbedPane; // Référence au tabbedPane parent
+    private JTabbedPane empruntTabbedPane; // Nouveau tabbedPane interne
+
 
     public EmpruntPanel(Long membreId, EmpruntManager empruntManager, MembreManager membreManager, JTabbedPane parentTabbedPane) {
         this.membreId = membreId;
@@ -37,6 +41,8 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         this.parentTabbedPane = parentTabbedPane; // Stockez la référence
         initComponents();
         loadEmprunts();
+        loadHistorique(); // Charger l'historique
+
     }
 
     private void initComponents() {
@@ -44,7 +50,27 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         setBackground(Colors.CARD_BACKGROUND);
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Panel supérieur avec boutons
+        // Création du tabbedPane interne
+        empruntTabbedPane = new JTabbedPane();
+        empruntTabbedPane.setBackground(Colors.CARD_BACKGROUND);
+        empruntTabbedPane.setForeground(Colors.TEXT);
+
+        // Panel supérieur avec boutons (commun aux deux onglets)
+        JPanel topPanel = createTopPanel();
+        add(topPanel, BorderLayout.NORTH);
+
+        // Onglet "Emprunts en cours"
+        JPanel empruntPanel = createEmpruntPanel();
+        empruntTabbedPane.addTab("Emprunts en cours", empruntPanel);
+
+        // Onglet "Historique"
+        JPanel historiquePanel = createHistoriquePanel();
+        empruntTabbedPane.addTab("Voir historique", historiquePanel);
+
+        add(empruntTabbedPane, BorderLayout.CENTER);
+    }
+
+    private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         topPanel.setBackground(Colors.CARD_BACKGROUND);
 
@@ -79,7 +105,6 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         });
         topPanel.add(addButton);
 
-        // Dans initComponents()
         JButton checkButton = new JButton("Vérifier éligibilité");
         checkButton.setFont(Fonts.buttonFont());
         checkButton.setBackground(Colors.CURRENT_INFO);
@@ -103,12 +128,19 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         refreshButton.setBackground(Colors.CURRENT_INFO);
         refreshButton.setForeground(Color.WHITE);
         refreshButton.setFocusPainted(false);
-        refreshButton.addActionListener(e -> loadEmprunts());
+        refreshButton.addActionListener(e -> {
+            loadEmprunts();
+            loadHistorique();
+        });
         topPanel.add(refreshButton);
 
-        add(topPanel, BorderLayout.NORTH);
+        return topPanel;
+    }
 
-        // Tableau des emprunts
+    private JPanel createEmpruntPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Colors.CARD_BACKGROUND);
+
         String[] columnNames = {"ID", "Date", "Montant", "Remboursé", "Solde", "Statut", "Date Remb."};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -118,55 +150,108 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         };
 
         empruntTable = new JTable(tableModel);
-        empruntTable.setFont(Fonts.tableFont());
-        empruntTable.getTableHeader().setFont(Fonts.tableHeaderFont());
-        empruntTable.setRowHeight(30);
-        empruntTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        empruntTable.setShowGrid(false);
-        empruntTable.setIntercellSpacing(new Dimension(0, 0));
-        empruntTable.setBackground(Colors.CARD_BACKGROUND);
-        empruntTable.setForeground(Colors.TEXT);
-
-        // Ajoutez le MouseListener pour le double-clic
-        empruntTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                if (evt.getClickCount() == 2) { // Double-clic
-                    int row = empruntTable.rowAtPoint(evt.getPoint());
-                    if (row >= 0) {
-                        // Basculer vers l'onglet "Rembt"
-                        switchToRemboursementTab();
-                    }
-                }
-            }
-        });
+        configureTable(empruntTable);
 
         JScrollPane scrollPane = new JScrollPane(empruntTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
-        add(scrollPane, BorderLayout.CENTER);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private JPanel createHistoriquePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Colors.CARD_BACKGROUND);
+
+        String[] columnNames = {"ID", "Date", "Montant", "Remboursé", "Solde", "Statut", "Date Remb."};
+        historiqueModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        historiqueTable = new JTable(historiqueModel);
+        configureTable(historiqueTable);
+
+        JScrollPane scrollPane = new JScrollPane(historiqueTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void configureTable(JTable table) {
+        table.setFont(Fonts.tableFont());
+        table.getTableHeader().setFont(Fonts.tableHeaderFont());
+        table.setRowHeight(30);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setBackground(Colors.CARD_BACKGROUND);
+        table.setForeground(Colors.TEXT);
+
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    int row = table.rowAtPoint(evt.getPoint());
+                    if (row >= 0) {
+                        switchToRemboursementTab(table == empruntTable ? tableModel : historiqueModel, row);
+                    }
+                }
+            }
+        });
+    }
+
+//    private void loadEmprunts() {
+//        tableModel.setRowCount(0);
+//        List<Emprunt> emprunts = empruntManager.getEmpruntsNonRembourses(membreId);
+//        populateTable(tableModel, emprunts);
+//    }
+
+    private void loadHistorique() {
+        historiqueModel.setRowCount(0);
+        List<Emprunt> emprunts = empruntManager.getEmpruntsMembre(membreId);
+        populateTable(historiqueModel, emprunts);
+    }
+
+    private void populateTable(DefaultTableModel model, List<Emprunt> emprunts) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DatePattern.DATE_TIME.getPattern());
+
+        for (Emprunt emprunt : emprunts) {
+            Object[] rowData = {
+                    emprunt.getId(),
+                    dateFormat.format(emprunt.getDateTransaction()),
+                    formatCurrency(emprunt.getMontant()),
+                    formatCurrency(emprunt.getMontantRembourse()),
+                    formatCurrency(emprunt.calculerSoldeRestant()),
+                    emprunt.getStatut().toString(),
+                    emprunt.getDateRemboursement() != null ?
+                            dateFormat.format(emprunt.getDateRemboursement()) : "N/A"
+            };
+            model.addRow(rowData);
+        }
     }
 
     // Dans EmpruntPanel.java
-    private void switchToRemboursementTab() {
+    private void switchToRemboursementTab(DefaultTableModel model, int row) {
         if (parentTabbedPane != null) {
-            int selectedRow = empruntTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                Long empruntId = (Long) tableModel.getValueAt(selectedRow, 0);
-                BigDecimal soldeRestant = empruntManager.getSoldeRestant(empruntId);
+            Long empruntId = (Long) model.getValueAt(row, 0);
+            BigDecimal soldeRestant = empruntManager.getSoldeRestant(empruntId);
 
-                // Trouver l'onglet Rembt et passer les données
-                for (int i = 0; i < parentTabbedPane.getTabCount(); i++) {
-                    if ("Rembt".equals(parentTabbedPane.getTitleAt(i))) {
-                        Component comp = parentTabbedPane.getComponentAt(i);
-                        if (comp instanceof JScrollPane) {
-                            Component view = ((JScrollPane) comp).getViewport().getView();
-                            if (view instanceof RemboursementPanel) {
-                                ((RemboursementPanel) view).setEmpruntData(empruntId, soldeRestant);
-                            }
+            for (int i = 0; i < parentTabbedPane.getTabCount(); i++) {
+                if ("Rembt".equals(parentTabbedPane.getTitleAt(i))) {
+                    Component comp = parentTabbedPane.getComponentAt(i);
+                    if (comp instanceof JScrollPane) {
+                        Component view = ((JScrollPane) comp).getViewport().getView();
+                        if (view instanceof RemboursementPanel) {
+                            ((RemboursementPanel) view).setEmpruntData(empruntId, soldeRestant);
                         }
-                        parentTabbedPane.setSelectedIndex(i);
-                        break;
                     }
+                    parentTabbedPane.setSelectedIndex(i);
+                    break;
                 }
             }
         }
@@ -356,5 +441,6 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     public void setMembreId(Long membreId) {
         this.membreId = membreId;
         loadEmprunts();
+        loadHistorique();
     }
 }
