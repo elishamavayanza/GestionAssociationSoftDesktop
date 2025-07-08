@@ -99,6 +99,10 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
         return empruntDao.findByMembreAndStatutNot(membreId, StatutEmprunt.REMBOURSE);
     }
 
+    public List<Emprunt> getArchivedEmpruntsMembre(Long membreId) {
+        return empruntDao.findArchivedByMembre(membreId);
+    }
+
     public boolean archiverEmprunt(Long empruntId) {
         return empruntDao.findById(empruntId)
                 .map(emprunt -> {

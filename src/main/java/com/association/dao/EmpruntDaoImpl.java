@@ -363,6 +363,26 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     }
 
     @Override
+    public List<Emprunt> findArchivedByMembre(Long membreId) {
+        List<Emprunt> emprunts = new ArrayList<>();
+        String sql = "SELECT e.*, t.*, ent.date_creation FROM emprunts_archives e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "JOIN entities ent ON t.id = ent.id " +
+                "WHERE t.membre_id = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, membreId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                emprunts.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return emprunts;
+    }
+
+    @Override
     public boolean update(Emprunt t) { return false; }
     @Override
     public boolean delete(Long id) { return false; }

@@ -249,7 +249,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
     }
 
     private void loadHistorique() {
-        populateTable(historiqueModel, empruntManager.getEmpruntsMembre(membreId));
+        populateTable(historiqueModel, empruntManager.getArchivedEmpruntsMembre(membreId));
     }
 
     private void populateTable(DefaultTableModel model, List<Emprunt> emprunts) {
