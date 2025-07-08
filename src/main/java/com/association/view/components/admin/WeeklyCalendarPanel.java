@@ -64,6 +64,9 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
     private ContributionManager contributionManager;
     private Long membreId;
     private JButton saveButton;
+    private JTextField lastEditedField = null;
+    private int lastEditedDay = -1;
+    private int lastEditedCont = -1;
 
     public WeeklyCalendarPanel(Long membreId, String contributionType) {
         this.currentDate = LocalDate.now();
@@ -150,67 +153,94 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
         boolean hasWarning = false;
         List<String> errorMessages = new ArrayList<>();
 
-        for (int day = 0; day < DAYS_IN_WEEK; day++) {
-            LocalDate contributionDate = startOfWeek.plusDays(day);
+        // Variables pour stocker la dernière contribution
+        int lastDay = -1;
+        int lastCont = -1;
+        double lastMontant = 0;
 
+        // Trouver la dernière contribution saisie
+        for (int day = 0; day < DAYS_IN_WEEK; day++) {
             for (int cont = 0; cont < MAX_CONTRIBUTIONS_PER_DAY; cont++) {
                 double montant = contributions[day][cont];
                 if (montant > 0) {
-                    try {
-                        BigDecimal amount = BigDecimal.valueOf(montant);
-
-                        if (currentCurrency.equals(CURRENCY_USD)) {
-                            amount = ExchangeRateUtil.convert(amount, CURRENCY_USD, CURRENCY_CDF);
-                        }
-
-                        if (amount.compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
-                            contributionFields[day][cont].setBackground(Colors.WARNING.brighter());
-                            hasWarning = true;
-                            errorMessages.add(String.format("Montant trop petit le %s: %s %s",
-                                    contributionDate, montant, currentCurrency));
-                            continue;
-                        }
-
-                        boolean success = contributionManager.enregistrerContribution(
-                                membreId,
-                                amount,
-                                contributionDate,
-                                contributionType
-                        );
-
-                        if (success) {
-                            // Convertir le montant affiché si nécessaire
-                            BigDecimal displayAmount = amount;
-                            if (currentCurrency.equals(CURRENCY_USD)) {
-                                displayAmount = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
-                            }
-
-                            contributionFields[day][cont].setText(displayAmount.toString());
-                            contributionFields[day][cont].setBackground(Colors.SUCCESS.brighter());
-                            contributionFields[day][cont].setEditable(false);
-
-                            // Mettre à jour le tooltip avec le type
-                            Contribution contribution = new Contribution();
-                            contribution.setMontant(amount);
-                            contribution.setDateTransaction(java.sql.Date.valueOf(contributionDate));
-                            contribution.setTypeContribution(TypeContribution.valueOf(contributionType));
-                            contributionFields[day][cont].setToolTipText(createContributionTooltip(contribution));
-                        } else {
-                            contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
-                            hasError = true;
-                            errorMessages.add(String.format("Échec enregistrement le %s: %s %s",
-                                    contributionDate, montant, currentCurrency));
-                        }
-                    } catch (Exception e) {
-                        logger.error("Erreur lors de l'enregistrement", e);
-                        errorMessages.add("Erreur technique pour " + contributionDate);
-                        hasError = true;
-                    }
+                    lastDay = day;
+                    lastCont = cont;
+                    lastMontant = montant;
                 }
             }
         }
 
-        showSaveResultMessages(hasError, hasWarning, errorMessages);
+        // Si aucune contribution trouvée, ne rien faire
+        if (lastDay == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Aucune contribution à enregistrer",
+                    "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Traiter seulement la dernière contribution
+        try {
+            LocalDate contributionDate = startOfWeek.plusDays(lastDay);
+            BigDecimal amount = BigDecimal.valueOf(lastMontant);
+
+            if (currentCurrency.equals(CURRENCY_USD)) {
+                amount = ExchangeRateUtil.convert(amount, CURRENCY_USD, CURRENCY_CDF);
+            }
+
+            if (amount.compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
+                contributionFields[lastDay][lastCont].setBackground(Colors.WARNING.brighter());
+                JOptionPane.showMessageDialog(this,
+                        String.format("Montant trop petit: %s %s (minimum: %s CDF)",
+                                lastMontant, currentCurrency, AppConstants.MIN_CONTRIBUTION),
+                        "Avertissement",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            boolean success = contributionManager.enregistrerContribution(
+                    membreId,
+                    amount,
+                    contributionDate,
+                    contributionType
+            );
+
+            if (success) {
+                // Convertir le montant affiché si nécessaire
+                BigDecimal displayAmount = amount;
+                if (currentCurrency.equals(CURRENCY_USD)) {
+                    displayAmount = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
+                }
+
+                contributionFields[lastDay][lastCont].setText(displayAmount.toString());
+                contributionFields[lastDay][lastCont].setBackground(Colors.SUCCESS.brighter());
+                contributionFields[lastDay][lastCont].setEditable(false);
+
+                // Mettre à jour le tooltip avec le type
+                Contribution contribution = new Contribution();
+                contribution.setMontant(amount);
+                contribution.setDateTransaction(java.sql.Date.valueOf(contributionDate));
+                contribution.setTypeContribution(TypeContribution.valueOf(contributionType));
+                contributionFields[lastDay][lastCont].setToolTipText(createContributionTooltip(contribution));
+
+                JOptionPane.showMessageDialog(this,
+                        "Contribution enregistrée avec succès!",
+                        "Succès",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                contributionFields[lastDay][lastCont].setBackground(Colors.DANGER.brighter());
+                JOptionPane.showMessageDialog(this,
+                        "Échec de l'enregistrement de la contribution",
+                        "Erreur",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'enregistrement", e);
+            JOptionPane.showMessageDialog(this,
+                    "Erreur technique lors de l'enregistrement",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void showSaveResultMessages(boolean hasError, boolean hasWarning, List<String> messages) {
@@ -631,6 +661,8 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
         dayPanel.add(contributionsPanel, BorderLayout.CENTER);
         return dayPanel;
     }
+
+
 
     private void maybeShowPopup(MouseEvent e, JTextField field, LocalDate date) {
         if (e.isPopupTrigger() && !field.isEditable() && !field.getText().isEmpty()) {
