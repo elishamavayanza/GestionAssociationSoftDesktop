@@ -1,5 +1,7 @@
 package com.association.view.components;
 
+import com.association.view.styles.Colors;
+import com.association.view.styles.Fonts;
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.image.ImageTranscoder;
@@ -121,5 +123,13 @@ public class IconManager {
         ));
         button.setContentAreaFilled(false);
         return button;
+    }
+    public static JLabel createLoadingLabel() {
+        JLabel loadingLabel = new JLabel("Chargement...", IconManager.getIcon("loader.svg", 32), SwingConstants.CENTER);
+        loadingLabel.setFont(Fonts.textFieldFont());
+        loadingLabel.setForeground(Colors.TEXT);
+        loadingLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+        loadingLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
+        return loadingLabel;
     }
 }

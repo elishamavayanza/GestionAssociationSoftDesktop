@@ -117,17 +117,19 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
 
     @Override
     public BigDecimal calculerTotalContributionsMembre(Long membreId) {
-        String sql = "SELECT SUM(t.montant) FROM transactions t " +
+        String sql = "SELECT SUM(t.montant) as total FROM transactions t " +
                 "WHERE t.transaction_type = 'CONTRIBUTION' AND t.membre_id = ?";
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, membreId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return rs.getBigDecimal(1);
+                BigDecimal result = rs.getBigDecimal("total");
+                System.out.println("DB returned: " + result); // Debug
+                return result != null ? result : BigDecimal.ZERO;
             }
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Erreur lors du calcul du total des contributions par membre", e);
+            logger.log(Level.SEVERE, "Erreur SQL", e);
         }
         return BigDecimal.ZERO;
     }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <style>
+        .spinner {
+        transform-origin: center;
+        animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+        100% { transform: rotate(360deg); }
+        }
+    </style>
+    <path class="spinner" fill="#2c3e50" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+</svg>

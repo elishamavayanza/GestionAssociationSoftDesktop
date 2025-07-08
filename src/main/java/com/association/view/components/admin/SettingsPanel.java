@@ -8,10 +8,10 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 
 public class SettingsPanel extends JPanel {
-    private final ThemeManager themeManager;
+//    private final ThemeManager themeManager;
 
     public SettingsPanel() {
-        themeManager = ThemeManager.getInstance();
+//        themeManager = ThemeManager.getInstance();
         initComponents();
     }
 
@@ -45,9 +45,9 @@ public class SettingsPanel extends JPanel {
         gbc.gridx = 1;
         JToggleButton themeToggle = new JToggleButton("Mode Sombre");
         themeToggle.setFont(Fonts.buttonFont());
-        themeToggle.setSelected(themeManager.isDarkMode());
+//        themeToggle.setSelected(themeManager.isDarkMode());
         themeToggle.addActionListener(e -> {
-            themeManager.toggleTheme();
+//            themeManager.toggleTheme();
             updateTheme();
         });
         contentPanel.add(themeToggle, gbc);

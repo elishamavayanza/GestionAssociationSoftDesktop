@@ -519,31 +519,47 @@ public class MemberDetailsPanel extends JPanel implements Observer {
         this.membreId = newMembreId;
         loadMemberData();
 
-        // Parcours de tous les composants du tabbedPane
-        for (Component comp : tabbedPane.getComponents()) {
+        // Parcourir tous les onglets
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+
+            // Gestion des JScrollPane
             if (comp instanceof JScrollPane) {
                 Component view = ((JScrollPane) comp).getViewport().getView();
-                updateIfRefreshable(view, newMembreId);
-            } else if (comp instanceof JPanel) {
-                findAndUpdateRefreshableComponents((JPanel) comp, newMembreId);
+                updateComponent(view, newMembreId);
+                updateComponent(view); // Pour InfoCardsPanel
             }
-            updateIfRefreshable(comp, newMembreId);
+
+            // Mise à jour du composant principal
+            updateComponent(comp, newMembreId);
+            updateComponent(comp); // Pour InfoCardsPanel
+
+            // Recherche récursive dans les conteneurs
+            if (comp instanceof Container) {
+                findAndUpdateComponents((Container) comp, newMembreId);
+            }
         }
     }
 
-    // Méthode utilitaire pour éviter la duplication de code
-    private void updateIfRefreshable(Component comp, Long newMembreId) {
+    private void updateComponent(Component comp, Long newMembreId) {
         if (comp instanceof Refreshable) {
             ((Refreshable) comp).setMembreId(newMembreId);
         }
     }
 
-    private void findAndUpdateRefreshableComponents(Container container, Long newMembreId) {
+    private void updateComponent(Component comp) {
+        if (comp instanceof InfoCardsPanel) {
+            ((InfoCardsPanel) comp).updateCardValues(); // Forcer le rafraîchissement
+        }
+    }
+
+    private void findAndUpdateComponents(Container container, Long newMembreId) {
         for (Component comp : container.getComponents()) {
-            if (comp instanceof Refreshable) {
-                ((Refreshable) comp).setMembreId(newMembreId);
-            } else if (comp instanceof Container) {
-                findAndUpdateRefreshableComponents((Container) comp, newMembreId);
+            updateComponent(comp, newMembreId);
+            updateComponent(comp);
+
+            if (comp instanceof Container) {
+                findAndUpdateComponents((Container) comp, newMembreId);
             }
         }
     }

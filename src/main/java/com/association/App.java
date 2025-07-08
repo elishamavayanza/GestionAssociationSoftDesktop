@@ -6,13 +6,15 @@ import com.association.util.file.FileStorageService;
 import com.association.util.file.FileStorageServiceAdapter;
 import com.association.view.AuthPanel;
 import com.association.view.LoginFrame;
+import com.association.view.styles.Colors;
+import com.association.view.styles.ThemeManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.swing.*;
 
 public class App {
     public static void main(String[] args) {
-        // Initialisation des dépendances
+        // Initialisation des dépendance
 
         UtilisateurDao utilisateurDao = DAOFactory.getInstance(UtilisateurDao.class);
         FileStorageService fileStorageService = new FileStorageServiceAdapter() {

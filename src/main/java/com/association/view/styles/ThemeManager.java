@@ -1,89 +1,83 @@
 package com.association.view.styles;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
+
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ThemeManager {
-    private static ThemeManager instance;
-    private boolean darkMode = false;
-    private Map<JFrame, Map<String, JComponent>> registeredComponents = new HashMap<>();
+    public enum Theme {
+        LIGHT("Clair"),
+        DARK("Sombre"),
+        CUSTOM("Personnalisé");
 
-    private ThemeManager() {}
+        private final String displayName;
 
-    public static ThemeManager getInstance() {
-        if (instance == null) {
-            instance = new ThemeManager();
+        Theme(String displayName) {
+            this.displayName = displayName;
         }
-        return instance;
-    }
 
-    public void toggleTheme() {
-        darkMode = !darkMode;
-        Colors.setDarkTheme(darkMode);
-        applyThemeToAllRegisteredFrames();
-    }
-
-    public void registerFrame(JFrame frame, Map<String, JComponent> components) {
-        registeredComponents.put(frame, components);
-        applyTheme(frame);
-    }
-
-    public void unregisterFrame(JFrame frame) {
-        registeredComponents.remove(frame);
-    }
-
-    private void applyThemeToAllRegisteredFrames() {
-        registeredComponents.keySet().forEach(this::applyTheme);
-    }
-
-    private void applyTheme(JFrame frame) {
-        Map<String, JComponent> components = registeredComponents.get(frame);
-        if (components != null) {
-            applyTheme(components);
+        @Override
+        public String toString() {
+            return displayName;
         }
     }
 
-    public void applyTheme(Map<String, JComponent> components) {
-        Color bgColor = darkMode ? Colors.DARK_BACKGROUND : Colors.BACKGROUND;
-        Color fgColor = darkMode ? Colors.DARK_TEXT : Colors.TEXT;
-        Color borderColor = darkMode ? Colors.DARK_BORDER : Colors.BORDER;
-
-        components.forEach((key, component) -> {
-            component.setBackground(bgColor);
-            component.setForeground(fgColor);
-
-            if (component instanceof JPanel) {
-                component.setBackground(bgColor);
-
-                // Gestion des bordures titrées
-                if (component.getBorder() instanceof TitledBorder) {
-                    TitledBorder border = (TitledBorder) component.getBorder();
-                    border.setTitleColor(darkMode ? Colors.DARK_PRIMARY : Colors.PRIMARY);
-                } else {
-                    component.setBorder(BorderFactory.createLineBorder(borderColor));
-                }
+    public static void setTheme(Theme theme) {
+        try {
+            switch (theme) {
+                case LIGHT:
+                    UIManager.setLookAndFeel(new FlatMacLightLaf());
+                    applyCustomOverrides(); // Applique vos couleurs personnalisées
+                    break;
+                case DARK:
+                    UIManager.setLookAndFeel(new FlatMacDarkLaf());
+                    applyCustomOverrides(); // Applique vos couleurs personnalisées
+                    break;
+                case CUSTOM:
+                    applyFullCustomTheme(); // Applique uniquement votre thème
+                    break;
             }
-
-            // Gestion spécifique pour différents composants
-            if (component instanceof JTextField || component instanceof JComboBox) {
-                component.setBackground(darkMode ? Colors.DARK_INPUT_BACKGROUND : Colors.INPUT_BACKGROUND);
-                component.setForeground(fgColor);
-            } else if (component instanceof JButton) {
-                JButton button = (JButton) component;
-                if (button.getText().equals("Rechercher")) {
-                    button.setBackground(darkMode ? Colors.DARK_PRIMARY : Colors.PRIMARY);
-                } else if (button.getText().equals("Réinitialiser")) {
-                    button.setBackground(darkMode ? Colors.DARK_SECONDARY : Colors.SECONDARY);
-                }
-                button.setForeground(Color.WHITE);
-            }
-        });
+            updateAllComponents();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public boolean isDarkMode() {
-        return darkMode;
+    private static void applyFullCustomTheme() {
+        // Désactive FlatLaf pour revenir au look par défaut
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Applique toutes vos propriétés personnalisées
+        UIManager.put("Panel.background", Colors.SECONDARY);
+        UIManager.put("Button.background", Colors.PRIMARY);
+        UIManager.put("Button.foreground", Color.WHITE);
+        UIManager.put("Button.font", new Font("Arial", Font.PLAIN, 14));
+        UIManager.put("ScrollBar.thumb", Colors.PRIMARY);
+        UIManager.put("ScrollBar.track", Colors.SECONDARY.darker());
+        // Ajoutez d'autres propriétés selon vos besoins
+    }
+
+    private static void applyCustomOverrides() {
+        // Surcharge certaines propriétés de FlatLaf avec vos couleurs
+        UIManager.put("Panel.background", Colors.CURRENT_BACKGROUND);
+        UIManager.put("Button.background", Colors.CURRENT_PRIMARY);
+        UIManager.put("Button.foreground", Colors.CURRENT_TEXT);
+        UIManager.put("ScrollBar.thumb", Colors.CURRENT_PRIMARY);
+        UIManager.put("ScrollBar.track", Colors.CURRENT_SECONDARY.darker());
+        // Ajoutez d'autres surcharges selon vos besoins
+    }
+
+    private static void updateAllComponents() {
+        for (Window window : Window.getWindows()) {
+            SwingUtilities.updateComponentTreeUI(window);
+        }
     }
 }

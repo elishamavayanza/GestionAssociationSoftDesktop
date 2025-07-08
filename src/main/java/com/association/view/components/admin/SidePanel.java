@@ -120,8 +120,13 @@ public class SidePanel extends JPanel {
         administration.addSubMenuItem("Gestion Utilisateurs", "manage_accounts.svg");
         administration.addSubMenuItem("Paramètres Système", "tune.svg");
 
+        // Dans createSidePanelContent():
         DropDownMenu parametresBtn = new DropDownMenu("Paramètres", "settings.svg");
-        parametresBtn.addSubMenuItem("Preference", "preference.svg");
+        HoverButton preferenceBtn = parametresBtn.addSubMenuItem("Préférences", "preference.svg");
+        preferenceBtn.setDoubleClickAction(() -> {
+            PreferencePanel preferencePanel = new PreferencePanel(parentFrame);
+            adminInterface.setContentPanel(preferencePanel);
+        });
 
         // Ajout des composants (sans le header)
         sidePanel.add(dashboard);
