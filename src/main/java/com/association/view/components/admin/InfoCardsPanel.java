@@ -413,9 +413,10 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                 String nextRepayment = getNextRepaymentDate();
                 String lastRepayment = getLastRepaymentDate();
                 String datesText = String.format("<html>Prochain: %s | Dernier: %s</html>",
-                        formatDateWithColor(getNextRepaymentDate(), true),
-                        formatDateWithColor(getLastRepaymentDate(), false));
+                        formatDateWithColor(nextRepayment, true),
+                        formatDateWithColor(lastRepayment, false));
                 remboursementDatesLabel.setText(datesText);
+
 
                 // Mise à jour des couleurs
                 updateCardColors(soldeNet, benefice);
@@ -480,14 +481,12 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     }
 
     private String getNextRepaymentDate() {
-        // Récupérer tous les emprunts non remboursés du membre
-        List<Emprunt> empruntsNonRembourses = empruntManager.getEmpruntsNonRembourses(membreId);
 
+        List<Emprunt> empruntsNonRembourses = empruntManager.getEmpruntsNonRembourses(membreId);
         if (empruntsNonRembourses.isEmpty()) {
             return "N/A";
         }
 
-        // Trouver la prochaine date de remboursement la plus proche
         Date nextDate = null;
         Date now = new Date();
 
@@ -504,24 +503,24 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     }
 
     private String getLastRepaymentDate() {
-        // Récupérer tous les emprunts remboursés du membre
-        List<Emprunt> empruntsRembourses = empruntManager.getEmpruntsMembre(membreId).stream()
-                .filter(e -> e.getStatut() == StatutEmprunt.REMBOURSE)
+        List<Emprunt> empruntsAvecRemboursement = empruntManager.getEmpruntsMembre(membreId).stream()
+                .filter(e -> e.getMontantRembourse().compareTo(BigDecimal.ZERO) > 0)
                 .toList();
 
-        if (empruntsRembourses.isEmpty()) {
+        if (empruntsAvecRemboursement.isEmpty()) {
             return "N/A";
         }
 
-        // Trouver la date de remboursement la plus récente
         Date lastDate = null;
+        for (Emprunt emprunt : empruntsAvecRemboursement) {
+            // Utiliser la date de transaction ou date de création comme date effective de remboursement
+            Date remboursementDate = emprunt.getDateTransaction() != null ?
+                    emprunt.getDateTransaction() :
+                    emprunt.getDateCreation();
 
-        for (Emprunt emprunt : empruntsRembourses) {
-            Date dateRemboursement = emprunt.getDateRemboursement();
-            if (dateRemboursement != null) {
-                if (lastDate == null || dateRemboursement.after(lastDate)) {
-                    lastDate = dateRemboursement;
-                }
+            if (remboursementDate != null &&
+                    (lastDate == null || remboursementDate.after(lastDate))) {
+                lastDate = remboursementDate;
             }
         }
 
