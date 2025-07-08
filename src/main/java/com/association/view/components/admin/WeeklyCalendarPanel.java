@@ -211,7 +211,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
         if (hasError) {
             JOptionPane.showMessageDialog(this,
                     "Certaines contributions n'ont pas pu être enregistrées",
-                    "Erreur",
+                    "Succès",
                     JOptionPane.ERROR_MESSAGE);
         }
 
