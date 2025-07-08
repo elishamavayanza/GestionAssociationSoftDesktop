@@ -258,10 +258,22 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setBigDecimal(1, montant);
             stmt.setLong(2, empruntId);
-            return stmt.executeUpdate() > 0;
+            boolean success = stmt.executeUpdate() > 0;
+
+            if (success) {
+                // Créer une map avec les données du remboursement
+                Map<String, Object> rembData = new HashMap<>();
+                rembData.put("remboursement", true);
+                rembData.put("montant", montant);
+                rembData.put("empruntId", empruntId);
+
+                // Notifier avec les données complètes
+                notifyObservers(rembData);
+            }
+            return success;
+//            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
-
             return false;
         }
     }
@@ -352,6 +364,7 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
                 stmtDelete.executeUpdate();
 
                 conn.commit();
+                notifyObservers(empruntId); // Notifier le changement de statut
                 return true;
             } catch (SQLException e) {
                 conn.rollback();

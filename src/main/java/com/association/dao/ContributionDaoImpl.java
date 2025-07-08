@@ -8,6 +8,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -289,6 +290,8 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
 
     @Override
     public boolean delete(Long id) {
+        Optional<Contribution> contributionOpt = findById(id);
+
         String sql = "DELETE FROM entities WHERE id = ?";
 
         Connection conn = null;

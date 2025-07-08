@@ -1,10 +1,15 @@
 package com.association.view.interfaces;
 
+import com.association.dao.ContributionDao;
 import com.association.dao.DAOFactory;
+import com.association.dao.EmpruntDao;
 import com.association.dao.MembreDao;
 import com.association.model.Membre;
 import com.association.model.Notification;
 import com.association.model.access.Utilisateur;
+import com.association.model.enums.TypeContribution;
+import com.association.model.transaction.Contribution;
+import com.association.model.transaction.Emprunt;
 import com.association.view.AuthPanel;
 import com.association.view.LoginFrame;
 import com.association.view.components.*;
@@ -18,10 +23,13 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.*;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.association.model.enums.TypeContribution.DON;
 
 
 public class AdminInterface implements RoleInterface, Observer {
@@ -40,6 +48,9 @@ public class AdminInterface implements RoleInterface, Observer {
         this.utilisateur = utilisateur;
 
         DAOFactory.getInstance(MembreDao.class).addObserver(this);
+        DAOFactory.getInstance(EmpruntDao.class).addObserver(this);
+        DAOFactory.getInstance(ContributionDao.class).addObserver(this); // Ajoutez cette ligne
+
 
         purgeOldNotificationsFile();
 
@@ -218,7 +229,6 @@ public class AdminInterface implements RoleInterface, Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-
         if (arg instanceof Membre) {
             Membre membre = (Membre) arg;
 
@@ -239,17 +249,75 @@ public class AdminInterface implements RoleInterface, Observer {
 
                 addNotification("MODIFICATION", message, "info");
             }
-        } else if (arg instanceof Long) {
-            // Cas d'une suppression
-            String message = "Membre supprimé (ID: " + arg + ")";
-            addNotification("SUPPRESSION", message, "warning");
-        } else if (arg instanceof String) {
+        }
+        else if (arg instanceof Long) {
+            // Distinction claire entre les types de suppression
+            if (o instanceof MembreDao) {
+                // Cas d'une suppression de membre
+                String message = "Membre supprimé (ID: " + arg + ")";
+                addNotification("SUPPRESSION_MEMBRE", message, "warning");
+            }
+            else if (o instanceof ContributionDao) {
+                // Cas d'une suppression de contribution
+                Long contributionId = (Long) arg;
+                ContributionDao contributionDao = DAOFactory.getInstance(ContributionDao.class);
+                Optional<Contribution> contributionOpt = contributionDao.findById(contributionId);
+
+                String message;
+                if (contributionOpt.isPresent()) {
+                    Contribution c = contributionOpt.get();
+                    String type = getTypeContributionLabel(c.getTypeContribution());
+                    message = "Contribution supprimée (" + type + ") de " + c.getMontant()
+                            + " par " + c.getMembre().getNom();
+                } else {
+                    message = "Contribution supprimée (ID: " + contributionId + ")";
+                }
+                addNotification("SUPPRESSION_CONTRIBUTION", message, "warning");
+            }
+            else if (o instanceof EmpruntDao) {
+                // Cas d'une suppression d'emprunt
+                String message = "Emprunt supprimé (ID: " + arg + ")";
+                addNotification("SUPPRESSION_EMPRUNT", message, "warning");
+            }
+        }
+        else if (arg instanceof String) {
             String operation = (String) arg;
             if (operation.startsWith("UPDATE_PHOTO:")) {
                 Long membreId = Long.parseLong(operation.split(":")[1]);
                 String message = "Photo du membre ID " + membreId + " modifiée";
                 addNotification("MODIFICATION", message, "info");
             }
+        }
+        else if (arg instanceof Emprunt) {
+            Emprunt emprunt = (Emprunt) arg;
+            String message = "Nouvel emprunt de " + emprunt.getMontant() + " par " +
+                    emprunt.getMembre().getNom();
+            addNotification("EMPRUNT", message, "info");
+        }
+        else if (arg instanceof Map && ((Map<?, ?>) arg).containsKey("remboursement")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> rembData = (Map<String, Object>) arg;
+            BigDecimal montant = (BigDecimal) rembData.get("montant");
+            Long empruntId = (Long) rembData.get("empruntId");
+            String message = "Remboursement de " + montant + " pour l'emprunt ID " + empruntId;
+            addNotification("REMBOURSEMENT", message, "info");
+        }
+        else if (arg instanceof Contribution) {
+            Contribution contribution = (Contribution) arg;
+            String typeContribution = getTypeContributionLabel(contribution.getTypeContribution());
+            String message = "Nouvelle contribution (" + typeContribution + ") de "
+                    + contribution.getMontant() + " par " + contribution.getMembre().getNom();
+            addNotification("CONTRIBUTION", message, "info");
+        }
+    }
+
+    private String getTypeContributionLabel(TypeContribution type) {
+        if (type == null) return "Non spécifié";
+        switch(type) {
+            case MENSUEL: return "Mensuel";
+            case DON: return "Don";
+            case ANNUELLE: return "Annuelle";
+            default: return type.toString();
         }
     }
     private void showNotifications() {
@@ -353,6 +421,19 @@ public class AdminInterface implements RoleInterface, Observer {
 
             if (!notif.isRead()) {
                 foreground = foreground.darker();
+            }
+
+            if (notif.getAction().equals("EMPRUNT")) {
+                iconName = "loan.svg";
+                foreground = Colors.CURRENT_WARNING;
+            } else if (notif.getAction().equals("REMBOURSEMENT")) {
+                iconName = "payment.svg";
+                foreground = Colors.CURRENT_SUCCESS;
+            }
+
+            if (notif.getAction().equals("CONTRIBUTION")) {
+                iconName = "loan.svg"; // Créez cette icône
+                foreground = Colors.CURRENT_WARNING;
             }
 
             JLabel label = (JLabel) super.getListCellRendererComponent(
