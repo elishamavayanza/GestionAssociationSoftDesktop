@@ -42,10 +42,24 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.JTextField;
+import javax.swing.BorderFactory;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.AbstractDocument;
+
+import java.awt.Dimension;
+
+import com.association.view.styles.Colors;
+import com.association.view.styles.Fonts;
+//import com.association.view.utils.NumericDocumentFilter; // ou un autre package selon l’emplacement réel
+
+// Assurez-vous que `updateLastEditedField(JTextField)` est bien une méthode de votre classe.
+
+
 public class WeeklyCalendarPanel extends JPanel implements Refreshable{
     private String contributionType; // Nouveau champ
 
-    // ... code existant ...
     private static final Logger logger = LoggerFactory.getLogger(WeeklyCalendarPanel.class);
     private static final int MAX_CONTRIBUTIONS_PER_DAY = 5;
     private static final int DAYS_IN_WEEK = 7;
@@ -147,52 +161,37 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
     }
 
     private void enregistrerContributions() {
-        double[][] contributions = getContributions();
-        LocalDate startOfWeek = getStartOfWeek();
-        boolean hasError = false;
-        boolean hasWarning = false;
-        List<String> errorMessages = new ArrayList<>();
-
-        // Variables pour stocker la dernière contribution
-        int lastDay = -1;
-        int lastCont = -1;
-        double lastMontant = 0;
-
-        // Trouver la dernière contribution saisie
-        for (int day = 0; day < DAYS_IN_WEEK; day++) {
-            for (int cont = 0; cont < MAX_CONTRIBUTIONS_PER_DAY; cont++) {
-                double montant = contributions[day][cont];
-                if (montant > 0) {
-                    lastDay = day;
-                    lastCont = cont;
-                    lastMontant = montant;
-                }
-            }
-        }
-
-        // Si aucune contribution trouvée, ne rien faire
-        if (lastDay == -1) {
+        if (lastEditedField == null || lastEditedDay == -1 || lastEditedCont == -1) {
             JOptionPane.showMessageDialog(this,
-                    "Aucune contribution à enregistrer",
+                    "Aucune contribution modifiée à enregistrer",
                     "Information",
                     JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        // Traiter seulement la dernière contribution
         try {
-            LocalDate contributionDate = startOfWeek.plusDays(lastDay);
-            BigDecimal amount = BigDecimal.valueOf(lastMontant);
+            String text = lastEditedField.getText();
+            if (text.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Le champ est vide",
+                        "Avertissement",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            double montant = Double.parseDouble(text);
+            LocalDate contributionDate = getStartOfWeek().plusDays(lastEditedDay);
+            BigDecimal amount = BigDecimal.valueOf(montant);
 
             if (currentCurrency.equals(CURRENCY_USD)) {
                 amount = ExchangeRateUtil.convert(amount, CURRENCY_USD, CURRENCY_CDF);
             }
 
             if (amount.compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
-                contributionFields[lastDay][lastCont].setBackground(Colors.WARNING.brighter());
+                lastEditedField.setBackground(Colors.WARNING.brighter());
                 JOptionPane.showMessageDialog(this,
                         String.format("Montant trop petit: %s %s (minimum: %s CDF)",
-                                lastMontant, currentCurrency, AppConstants.MIN_CONTRIBUTION),
+                                montant, currentCurrency, AppConstants.MIN_CONTRIBUTION),
                         "Avertissement",
                         JOptionPane.WARNING_MESSAGE);
                 return;
@@ -212,32 +211,43 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                     displayAmount = ExchangeRateUtil.convert(amount, CURRENCY_CDF, CURRENCY_USD);
                 }
 
-                contributionFields[lastDay][lastCont].setText(displayAmount.toString());
-                contributionFields[lastDay][lastCont].setBackground(Colors.SUCCESS.brighter());
-                contributionFields[lastDay][lastCont].setEditable(false);
+                lastEditedField.setText(displayAmount.toString());
+                lastEditedField.setBackground(Colors.SUCCESS.brighter());
+                lastEditedField.setEditable(false);
 
-                // Mettre à jour le tooltip avec le type
+                // Mettre à jour le tooltip
                 Contribution contribution = new Contribution();
                 contribution.setMontant(amount);
                 contribution.setDateTransaction(java.sql.Date.valueOf(contributionDate));
                 contribution.setTypeContribution(TypeContribution.valueOf(contributionType));
-                contributionFields[lastDay][lastCont].setToolTipText(createContributionTooltip(contribution));
+                lastEditedField.setToolTipText(createContributionTooltip(contribution));
 
                 JOptionPane.showMessageDialog(this,
                         "Contribution enregistrée avec succès!",
                         "Succès",
                         JOptionPane.INFORMATION_MESSAGE);
+
+                // Réinitialiser le suivi
+                lastEditedField = null;
+                lastEditedDay = -1;
+                lastEditedCont = -1;
             } else {
-                contributionFields[lastDay][lastCont].setBackground(Colors.DANGER.brighter());
+                lastEditedField.setBackground(Colors.DANGER.brighter());
                 JOptionPane.showMessageDialog(this,
-                        "Échec de l'enregistrement de la contribution",
+                        "Échec de l'enregistrement",
                         "Erreur",
                         JOptionPane.ERROR_MESSAGE);
             }
+        } catch (NumberFormatException e) {
+            lastEditedField.setBackground(Colors.DANGER.brighter());
+            JOptionPane.showMessageDialog(this,
+                    "Montant invalide",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             logger.error("Erreur lors de l'enregistrement", e);
             JOptionPane.showMessageDialog(this,
-                    "Erreur technique lors de l'enregistrement",
+                    "Erreur technique",
                     "Erreur",
                     JOptionPane.ERROR_MESSAGE);
         }
@@ -426,6 +436,10 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
     }
 
     private void resetContributionFields() {
+        lastEditedField = null;
+        lastEditedDay = -1;
+        lastEditedCont = -1;
+
         for (int day = 0; day < DAYS_IN_WEEK; day++) {
             for (int cont = 0; cont < MAX_CONTRIBUTIONS_PER_DAY; cont++) {
                 if (contributionFields[day][cont] != null) {
@@ -727,14 +741,49 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                 BorderFactory.createLineBorder(Colors.BORDER),
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
-        // Ajoutez ces lignes pour fixer la taille
+        // Fixer la taille
         Dimension preferredSize = new Dimension(70, field.getPreferredSize().height);
         field.setPreferredSize(preferredSize);
         field.setMinimumSize(preferredSize);
         field.setMaximumSize(preferredSize);
 
         ((AbstractDocument)field.getDocument()).setDocumentFilter(new NumericDocumentFilter(field));
+
+        // Ajout du DocumentListener pour suivre les modifications
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateLastEditedField(field);
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateLastEditedField(field);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateLastEditedField(field);
+            }
+        });
+
         return field;
+    }
+
+    private void updateLastEditedField(JTextField field) {
+        if (!field.isEditable()) return; // Ignorer les champs non éditables
+
+        // Trouver les coordonnées du champ
+        for (int day = 0; day < DAYS_IN_WEEK; day++) {
+            for (int cont = 0; cont < MAX_CONTRIBUTIONS_PER_DAY; cont++) {
+                if (contributionFields[day][cont] == field) {
+                    lastEditedField = field;
+                    lastEditedDay = day;
+                    lastEditedCont = cont;
+                    return;
+                }
+            }
+        }
     }
 
     public double[][] getContributions() {
