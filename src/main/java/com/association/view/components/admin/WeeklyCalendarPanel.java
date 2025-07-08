@@ -148,6 +148,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
         LocalDate startOfWeek = getStartOfWeek();
         boolean hasError = false;
         boolean hasWarning = false;
+        List<String> errorMessages = new ArrayList<>();
 
         for (int day = 0; day < DAYS_IN_WEEK; day++) {
             LocalDate contributionDate = startOfWeek.plusDays(day);
@@ -158,7 +159,6 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                     try {
                         BigDecimal amount = BigDecimal.valueOf(montant);
 
-                        // Convertir en CDF si on est en mode USD
                         if (currentCurrency.equals(CURRENCY_USD)) {
                             amount = ExchangeRateUtil.convert(amount, CURRENCY_USD, CURRENCY_CDF);
                         }
@@ -166,6 +166,8 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                         if (amount.compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
                             contributionFields[day][cont].setBackground(Colors.WARNING.brighter());
                             hasWarning = true;
+                            errorMessages.add(String.format("Montant trop petit le %s: %s %s",
+                                    contributionDate, montant, currentCurrency));
                             continue;
                         }
 
@@ -173,7 +175,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                                 membreId,
                                 amount,
                                 contributionDate,
-                                contributionType // Utilisez le type passé au constructeur
+                                contributionType
                         );
 
                         if (success) {
@@ -196,34 +198,35 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                         } else {
                             contributionFields[day][cont].setBackground(Colors.DANGER.brighter());
                             hasError = true;
+                            errorMessages.add(String.format("Échec enregistrement le %s: %s %s",
+                                    contributionDate, montant, currentCurrency));
                         }
                     } catch (Exception e) {
-                        // Gestion des erreurs inchangée
+                        logger.error("Erreur lors de l'enregistrement", e);
+                        errorMessages.add("Erreur technique pour " + contributionDate);
+                        hasError = true;
                     }
                 }
             }
         }
 
-        showSaveResultMessages(hasError, hasWarning);
+        showSaveResultMessages(hasError, hasWarning, errorMessages);
     }
 
-    private void showSaveResultMessages(boolean hasError, boolean hasWarning) {
+    private void showSaveResultMessages(boolean hasError, boolean hasWarning, List<String> messages) {
         if (hasError) {
+            String details = String.join("\n", messages);
             JOptionPane.showMessageDialog(this,
-                    "Certaines contributions n'ont pas pu être enregistrées",
-                    "Succès",
+                    "Certaines contributions n'ont pas pu être enregistrées:\n" + details,
+                    "Erreur",
                     JOptionPane.ERROR_MESSAGE);
-        }
-
-        if (hasWarning) {
+        } else if (hasWarning) {
             JOptionPane.showMessageDialog(this,
                     String.format("Certaines contributions sont inférieures au minimum (%s)",
                             AppConstants.MIN_CONTRIBUTION),
                     "Avertissement",
                     JOptionPane.WARNING_MESSAGE);
-        }
-
-        if (!hasError && !hasWarning) {
+        } else {
             JOptionPane.showMessageDialog(this,
                     "Toutes les contributions ont été enregistrées avec succès!",
                     "Succès",
