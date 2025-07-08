@@ -76,9 +76,19 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
 
                     boolean success = empruntDao.effectuerRemboursement(empruntId, montant);
 
-                    // Si le remboursement est complet, mettre à jour le statut
+                    // Si le remboursement est complet
                     if (success && soldeRestant.subtract(montant).compareTo(BigDecimal.ZERO) == 0) {
+                        // Mettre à jour le statut d'abord
                         empruntDao.updateStatut(empruntId, StatutEmprunt.REMBOURSE);
+
+                        // Recharger l'emprunt pour avoir les données à jour
+                        Optional<Emprunt> updatedEmprunt = empruntDao.findById(empruntId);
+                        if (updatedEmprunt.isPresent() &&
+                                updatedEmprunt.get().getStatut() == StatutEmprunt.REMBOURSE &&
+                                updatedEmprunt.get().calculerSoldeRestant().compareTo(BigDecimal.ZERO) == 0) {
+                            // Archiver seulement si le statut est bien REMBOURSE et solde à 0
+                            empruntDao.archiverEmprunt(empruntId);
+                        }
                     }
 
                     return success;
@@ -87,6 +97,17 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
     }
     public List<Emprunt> getEmpruntsNonRembourses(Long membreId) {
         return empruntDao.findByMembreAndStatutNot(membreId, StatutEmprunt.REMBOURSE);
+    }
+
+    public boolean archiverEmprunt(Long empruntId) {
+        return empruntDao.findById(empruntId)
+                .map(emprunt -> {
+                    if (emprunt.getStatut() != StatutEmprunt.REMBOURSE) {
+                        throw new IllegalStateException("L'emprunt doit être complètement remboursé avant archivage");
+                    }
+                    return empruntDao.archiverEmprunt(empruntId);
+                })
+                .orElse(false);
     }
 
     public BigDecimal getSoldeRestant(Long empruntId) {
@@ -102,14 +123,10 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
         if (arg instanceof Emprunt) {
             Emprunt emprunt = (Emprunt) arg;
             logger.info("Emprunt modifié reçu par l'observateur: {}", emprunt.getId());
-            // Vous pourriez ici:
-            // - Mettre à jour un cache
-            // - Notifier d'autres composants
-            // - Effectuer des vérifications sur le statut de l'emprunt
+
         } else if (arg instanceof Long) {
             Long empruntId = (Long) arg;
             logger.info("Emprunt supprimé reçu par l'observateur: {}", empruntId);
-            // Nettoyage si nécessaire
         }
     }
 

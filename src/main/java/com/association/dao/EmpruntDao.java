@@ -17,4 +17,6 @@ public interface EmpruntDao extends GenericDao<Emprunt> {
     Optional<Emprunt> findById(Long id);
     List<Emprunt> findByMembreAndStatutNot(Long membreId, StatutEmprunt statut);
     boolean updateStatut(Long empruntId, StatutEmprunt statut);
-}
+    boolean archiverEmprunt(Long empruntId);
+
+    }

@@ -316,7 +316,51 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
         }
         return Optional.empty();
     }
+    @Override
+    public boolean archiverEmprunt(Long empruntId) {
+        // Vérifier d'abord si l'emprunt existe et est remboursé
+        Optional<Emprunt> empruntOpt = findById(empruntId);
+        if (!empruntOpt.isPresent()) {
+            throw new IllegalStateException("Emprunt non trouvé");
+        }
 
+        Emprunt emprunt = empruntOpt.get();
+        BigDecimal soldeRestant = emprunt.calculerSoldeRestant();
+
+        if (emprunt.getStatut() != StatutEmprunt.REMBOURSE || soldeRestant.compareTo(BigDecimal.ZERO) != 0) {
+            // Au lieu de throw une exception, on pourrait juste retourner false
+            return false;
+        }
+
+        // Option 2: Archivage dans une table dédiée (solution plus complète)
+        String sqlArchive = "INSERT INTO emprunts_archives " +
+                "SELECT e.*, NOW() as date_archivage FROM emprunts e WHERE e.id = ?";
+        String sqlDelete = "DELETE FROM emprunts WHERE id = ?";
+
+        try (Connection conn = databaseConfig.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmtArchive = conn.prepareStatement(sqlArchive);
+                 PreparedStatement stmtDelete = conn.prepareStatement(sqlDelete)) {
+
+                // Archiver l'emprunt
+                stmtArchive.setLong(1, empruntId);
+                stmtArchive.executeUpdate();
+
+                // Supprimer de la table principale
+                stmtDelete.setLong(1, empruntId);
+                stmtDelete.executeUpdate();
+
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new RuntimeException("Erreur lors de l'archivage", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur de connexion à la base de données", e);
+        }
+    }
 
     @Override
     public boolean update(Emprunt t) { return false; }
