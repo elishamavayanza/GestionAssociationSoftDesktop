@@ -242,6 +242,7 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
             stmtEmprunt.executeUpdate();
 
             conn.commit();
+            notifyObservers(emprunt); // Notification après création
             return true;
 
         } catch (SQLException e) {
@@ -260,6 +261,7 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+
             return false;
         }
     }

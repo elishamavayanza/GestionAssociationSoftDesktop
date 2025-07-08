@@ -17,14 +17,6 @@ import java.util.Observer;
 
 public class ContributionManager extends BaseManager<Contribution> implements Observer {
 
-    private final Observable observable = new Observable() {
-        @Override
-        public void notifyObservers(Object arg) {
-            setChanged();
-            super.notifyObservers(arg);
-        }
-    };
-
     private final ContributionDao contributionDao;
     private final MembreManager membreManager;
     private static final Logger logger = LoggerFactory.getLogger(ContributionManager.class);
@@ -34,7 +26,8 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
         this.contributionDao = contributionDao;
         this.membreManager = membreManager;
 
-        // S'enregistrer comme observateur du DAO
+        contributionDao.addObserver(this);
+
     }
 
     public boolean supprimerContribution(Long membreId, BigDecimal montant, LocalDate date, String typeContribution) {
@@ -96,34 +89,30 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
         return contributionDao.calculerTotalContributionsMembre(membreId);
     }
 
-    @Override
-    public void update(Observable o, Object arg) {
-        if (arg instanceof Contribution) {
-            Contribution contribution = (Contribution) arg;
-            logger.info("Contribution modifiée reçue: {}", contribution.getId());
-            // Transmettre la notification aux observateurs du Manager
-            notifyObservers(arg);
-        } else if (arg instanceof Long) {
-            Long contributionId = (Long) arg;
-            logger.info("Contribution supprimée reçue: {}", contributionId);
-            // Transmettre la notification aux observateurs du Manager
-            notifyObservers(arg);
-        }
-    }
-
     public List<Contribution> findByMembreAndType(Long membreId, TypeContribution type) {
         return contributionDao.findByMembreAndType(membreId, type);
     }
 
-    public void addObserver(Observer o) {
-        observable.addObserver(o);
+    @Override
+    public void update(Observable o, Object arg) {
+        if (arg instanceof Contribution) {
+            Contribution contribution = (Contribution) arg;
+            logger.info("Contribution modifiée reçue par l'observateur - ID: {}, Membre: {}, Montant: {}",
+                    contribution.getId(),
+                    contribution.getMembre().getId(),
+                    contribution.getMontant());
+
+            // Exemple d'actions possibles:
+            // - Mettre à jour des statistiques en cache
+            // - Notifier d'autres composants du système
+            // - Vérifier des règles métier
+
+        } else if (arg instanceof Long) {
+            Long contributionId = (Long) arg;
+            logger.info("Contribution supprimée reçue par l'observateur - ID: {}", contributionId);
+
+            // Nettoyage ou mise à jour si nécessaire
+        }
     }
 
-    public void removeObserver(Observer o) {
-        observable.deleteObserver(o);
-    }
-
-    protected void notifyObservers(Object arg) {
-        observable.notifyObservers(arg); // Utilise maintenant l'override
-    }
 }

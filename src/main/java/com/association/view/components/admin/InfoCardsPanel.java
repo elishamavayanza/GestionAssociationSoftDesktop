@@ -10,15 +10,15 @@ import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
 
 public class InfoCardsPanel extends JPanel implements Refreshable {
     private Long membreId;
@@ -27,6 +27,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     private final MembreManager membreManager;
     private BigDecimal totalEmprunts = BigDecimal.ZERO;
     private BigDecimal soldeRestant = BigDecimal.ZERO;
+    private Timer refreshTimer;
 
 
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(new Locale("fr", "FR"));
@@ -57,10 +58,16 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         this.empruntManager = empruntManager;
         this.membreManager = membreManager;
 
+
         initComponents();
         showLoadingState();
         updateCardValues();
+
+        initRefreshTimer();
+
     }
+
+
 
     private void initComponents() {
         // Panel principal avec BorderLayout
@@ -253,7 +260,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
 
     private void showLoadingState() {
         Component[] loadingComponents = {
-                new JLabel(IconManager.getIcon("loading-spinner.svg", 24)),
+                new JLabel(IconManager.getIcon("loader.svg", 24)),
                 new JLabel("Chargement...", SwingConstants.CENTER),
                 new JLabel("", SwingConstants.CENTER)
         };
@@ -311,6 +318,9 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
 
     public void updateCardValues() {
 
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
         System.out.println("Debug - Membre ID: " + membreId);
         System.out.println("Debug - ContributionManager: " + contributionManager);
         System.out.println("Debug - EmpruntManager: " + empruntManager);
@@ -402,6 +412,10 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
 
                 // Mise à jour des couleurs
                 updateCardColors(soldeNet, benefice);
+
+                if (refreshTimer != null) {
+                    refreshTimer.start();
+                }
             }
         }.execute();
     }
@@ -521,10 +535,38 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         return CURRENCY_FORMAT.format(amount.doubleValue()).replace("€", "FCFA");
     }
 
+    private void initRefreshTimer() {
+        // Créer un timer qui se déclenche toutes les 3 secondes (3000 ms)
+        refreshTimer = new Timer(3000, e -> {
+            // Rafraîchir les données
+            updateCardValues();
+        });
+        refreshTimer.setRepeats(true); // Répéter indéfiniment
+        refreshTimer.start(); // Démarrer le timer
+    }
+
     @Override
     public void setMembreId(Long membreId) {
+
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
+
         this.membreId = membreId;
         showLoadingState();
         updateCardValues();
+
+        initRefreshTimer();
+
     }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        // Arrêter le timer lorsque le panel est retiré
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
+    }
+
 }

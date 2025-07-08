@@ -8,6 +8,7 @@ import com.association.util.file.FileStorageService;
 import java.io.InputStream;
 import java.util.*;
 
+import com.association.view.components.admin.InfoCardsPanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,4 +126,5 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
             // Traiter la suppression (nettoyage du cache, etc.)
         }
     }
+
 }

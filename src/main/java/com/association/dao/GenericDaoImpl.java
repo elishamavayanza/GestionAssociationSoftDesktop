@@ -24,6 +24,7 @@ abstract class GenericDaoImpl<T extends Entity> extends Observable implements Ge
         super.notifyObservers(arg);
     }
 
+
     public void notifyObservers(T entity) {
         notifyObservers((Object)entity);
     }

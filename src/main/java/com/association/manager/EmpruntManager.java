@@ -4,23 +4,29 @@ import com.association.dao.EmpruntDao;
 import com.association.model.Membre;
 import com.association.model.transaction.Emprunt;
 import com.association.model.enums.StatutEmprunt;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class EmpruntManager extends BaseManager<Emprunt> {
+import java.math.BigDecimal;
+import java.util.*;
+
+public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
     private final EmpruntDao empruntDao;
     private final MembreManager membreManager;
     public static final BigDecimal TAUX_INTERET = new BigDecimal("0.05"); // 5%
     public static final BigDecimal TAUX_PENALITE_PAR_JOUR = new BigDecimal("0.01"); // 1% par jour
     public static final int MAX_JOURS_PENALITE = 30;
 
+    private static final Logger logger = LoggerFactory.getLogger(EmpruntManager.class);
+
+
     public EmpruntManager(EmpruntDao empruntDao, MembreManager membreManager) {
         super(empruntDao);
         this.empruntDao = empruntDao;
         this.membreManager = membreManager;
+
+        empruntDao.addObserver(this);
+
     }
 
     public boolean demanderEmprunt(Long membreId, BigDecimal montant, Date dateRemboursement, String description) {
@@ -89,6 +95,22 @@ public class EmpruntManager extends BaseManager<Emprunt> {
 
     public Optional<Emprunt> findById(Long empruntId) {
         return empruntDao.findById(empruntId);
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if (arg instanceof Emprunt) {
+            Emprunt emprunt = (Emprunt) arg;
+            logger.info("Emprunt modifié reçu par l'observateur: {}", emprunt.getId());
+            // Vous pourriez ici:
+            // - Mettre à jour un cache
+            // - Notifier d'autres composants
+            // - Effectuer des vérifications sur le statut de l'emprunt
+        } else if (arg instanceof Long) {
+            Long empruntId = (Long) arg;
+            logger.info("Emprunt supprimé reçu par l'observateur: {}", empruntId);
+            // Nettoyage si nécessaire
+        }
     }
 
 }
