@@ -63,37 +63,55 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     }
 
     private void initComponents() {
-        // Utiliser un GridLayout avec un conteneur de scrolling
-        JPanel cardsPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 colonnes, espacement 10px
-        cardsPanel.setBackground(Colors.CARD_BACKGROUND);
+        // Panel principal avec BorderLayout
+        setLayout(new BorderLayout());
+        setBackground(Colors.CARD_BACKGROUND);
 
-        // Créer les cartes avec des tailles fixes
-        JPanel contributionCard = createCardWithFixedSize(createContributionCard());
-        JPanel empruntCard = createCardWithFixedSize(createEmpruntCard());
-        JPanel remboursementCard = createCardWithFixedSize(createRemboursementCard());
-        JPanel totalCard = createCardWithFixedSize(createTotalCard());
-        JPanel beneficeCard = createCardWithFixedSize(createBeneficeCard());
+        // Panel pour les 4 premières cartes (2x2)
+        JPanel topCardsPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        topCardsPanel.setBackground(Colors.CARD_BACKGROUND);
 
-        // Ajouter les cartes
-        cardsPanel.add(contributionCard);
-        cardsPanel.add(empruntCard);
-        cardsPanel.add(remboursementCard);
-        cardsPanel.add(totalCard);
-        cardsPanel.add(beneficeCard);
+        // Panel pour la 5ème carte (en bas)
+        JPanel bottomCardPanel = new JPanel(new BorderLayout());
+        bottomCardPanel.setBackground(Colors.CARD_BACKGROUND);
+        bottomCardPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+
+        // Créer les cartes avec des tailles fixes (hauteur réduite)
+        JPanel contributionCard = createCardWithFixedSize(createContributionCard(), 160);
+        JPanel empruntCard = createCardWithFixedSize(createEmpruntCard(), 160);
+        JPanel remboursementCard = createCardWithFixedSize(createRemboursementCard(), 160);
+        JPanel totalCard = createCardWithFixedSize(createTotalCard(), 160);
+        JPanel beneficeCard = createCardWithFixedSize(createBeneficeCard(), 160);
+
+        // Ajouter les 4 premières cartes au panel du haut
+        topCardsPanel.add(contributionCard);
+        topCardsPanel.add(empruntCard);
+        topCardsPanel.add(remboursementCard);
+        topCardsPanel.add(totalCard);
+
+        // Ajouter la 5ème carte au panel du bas
+        bottomCardPanel.add(beneficeCard, BorderLayout.CENTER);
+
+        // Conteneur principal pour les deux parties
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBackground(Colors.CARD_BACKGROUND);
+
+        mainPanel.add(topCardsPanel);
+        mainPanel.add(bottomCardPanel);
 
         // Ajouter un scrolling si nécessaire
-        JScrollPane scrollPane = new JScrollPane(cardsPanel);
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
 
-        setLayout(new BorderLayout());
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private JPanel createCardWithFixedSize(JPanel card) {
-        card.setPreferredSize(new Dimension(300, 180));
-        card.setMinimumSize(new Dimension(300, 180));
-        card.setMaximumSize(new Dimension(300, 180));
+    private JPanel createCardWithFixedSize(JPanel card, int height) {
+        card.setPreferredSize(new Dimension(300, height));
+        card.setMinimumSize(new Dimension(300, height));
+        card.setMaximumSize(new Dimension(300, height));
         return card;
     }
 
