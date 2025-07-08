@@ -67,6 +67,9 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         setLayout(new BorderLayout());
         setBackground(Colors.CARD_BACKGROUND);
 
+        // Nouvelle hauteur pour toutes les cartes (ex: 140px au lieu de 180px)
+        int reducedHeight = 127;
+
         // Panel pour les 4 premières cartes (2x2)
         JPanel topCardsPanel = new JPanel(new GridLayout(2, 2, 10, 10));
         topCardsPanel.setBackground(Colors.CARD_BACKGROUND);
@@ -76,12 +79,12 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         bottomCardPanel.setBackground(Colors.CARD_BACKGROUND);
         bottomCardPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-        // Créer les cartes avec des tailles fixes (hauteur réduite)
-        JPanel contributionCard = createCardWithFixedSize(createContributionCard(), 160);
-        JPanel empruntCard = createCardWithFixedSize(createEmpruntCard(), 160);
-        JPanel remboursementCard = createCardWithFixedSize(createRemboursementCard(), 160);
-        JPanel totalCard = createCardWithFixedSize(createTotalCard(), 160);
-        JPanel beneficeCard = createCardWithFixedSize(createBeneficeCard(), 160);
+        // Créer les cartes avec la nouvelle hauteur réduite
+        JPanel contributionCard = createCardWithFixedSize(createContributionCard(), reducedHeight);
+        JPanel empruntCard = createCardWithFixedSize(createEmpruntCard(), reducedHeight);
+        JPanel remboursementCard = createCardWithFixedSize(createRemboursementCard(), reducedHeight);
+        JPanel totalCard = createCardWithFixedSize(createTotalCard(), reducedHeight);
+        JPanel beneficeCard = createCardWithFixedSize(createBeneficeCard(), reducedHeight);
 
         // Ajouter les 4 premières cartes au panel du haut
         topCardsPanel.add(contributionCard);
@@ -92,7 +95,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         // Ajouter la 5ème carte au panel du bas
         bottomCardPanel.add(beneficeCard, BorderLayout.CENTER);
 
-        // Conteneur principal pour les deux parties
+        // Conteneur principal
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(Colors.CARD_BACKGROUND);
@@ -100,7 +103,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         mainPanel.add(topCardsPanel);
         mainPanel.add(bottomCardPanel);
 
-        // Ajouter un scrolling si nécessaire
+        // Ajouter un scrolling
         JScrollPane scrollPane = new JScrollPane(mainPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
@@ -109,6 +112,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     }
 
     private JPanel createCardWithFixedSize(JPanel card, int height) {
+        // Largeur fixe, hauteur personnalisable
         card.setPreferredSize(new Dimension(300, height));
         card.setMinimumSize(new Dimension(300, height));
         card.setMaximumSize(new Dimension(300, height));
