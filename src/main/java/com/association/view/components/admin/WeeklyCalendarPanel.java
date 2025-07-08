@@ -173,7 +173,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                                 membreId,
                                 amount,
                                 contributionDate,
-                                TypeContribution.MENSUEL.name()
+                                contributionType // Utilisez le type passé au constructeur
                         );
 
                         if (success) {
@@ -371,6 +371,7 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                             java.sql.Date.valueOf(endOfWeek)
                     ).stream()
                     .filter(c -> c.getTypeContribution().name().equals(contributionType))
+
                     .collect(Collectors.toList());
 
             logger.debug("Nombre de contributions {} chargées: {}", contributionType, contributions.size());
@@ -407,6 +408,29 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
     private void processContributions(List<Contribution> contributions) {
         resetContributionFields();
         if (contributions == null) return;
+
+        Set<Long> processedIds = new HashSet<>();
+
+        for (Contribution contribution : contributions) {
+            try {
+                if (!isValidContribution(contribution)) {
+                    continue;
+                }
+
+                // Vérifier si l'ID a déjà été traité
+                if (processedIds.contains(contribution.getId())) {
+                    logger.warn("Contribution dupliquée détectée - ID: {}", contribution.getId());
+                    continue;
+                }
+                processedIds.add(contribution.getId());
+
+                LocalDate contributionDate = convertToLocalDate(contribution.getDateTransaction());
+                int dayOfWeek = contributionDate.getDayOfWeek().getValue() - 1;
+                addContributionToField(dayOfWeek, contribution);
+            } catch (Exception e) {
+                logger.warn("Erreur lors du traitement d'une contribution", e);
+            }
+        }
 
         LocalDate startOfWeek = getStartOfWeek();
         Map<LocalDate, Set<BigDecimal>> uniqueContributions = new HashMap<>(); // Pour vérifier l'unicité

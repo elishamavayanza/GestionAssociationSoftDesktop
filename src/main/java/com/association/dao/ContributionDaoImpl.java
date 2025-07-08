@@ -67,6 +67,7 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
                 "FROM contributions c " +
                 "JOIN transactions t ON c.id = t.id " +
                 "WHERE t.date_transaction BETWEEN ? AND ? " +
+                "GROUP BY t.membre_id, t.date_transaction, t.montant, c.type_contribution " +
                 "ORDER BY t.date_transaction, t.montant " +
                 "LIMIT 1000";
 

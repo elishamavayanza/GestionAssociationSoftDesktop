@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.stream.Collectors;
 
 
 public class ContributionManager extends BaseManager<Contribution> implements Observer {
@@ -50,6 +51,19 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
 
     public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution, String typeContribution) {
         return membreManager.findById(membreId).map(membre -> {
+            // Vérifier si une contribution existe déjà
+            List<Contribution> existing = findByMembreAndType(membreId, TypeContribution.valueOf(typeContribution))
+                    .stream()
+                    .filter(c -> c.getDateTransaction().equals(java.sql.Date.valueOf(dateContribution)))
+                    .filter(c -> c.getMontant().compareTo(montant) == 0)
+                    .collect(Collectors.toList());
+
+            if (!existing.isEmpty()) {
+                logger.warn("Contribution existante trouvée pour membre {}, date {} et montant {}",
+                        membreId, dateContribution, montant);
+                return false; // ou return true si vous considérez que c'est OK
+            }
+
             Contribution contribution = new Contribution();
             contribution.setMembre(membre);
             contribution.setMontant(montant);
@@ -79,6 +93,7 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
 
     public List<Contribution> getContributionsBetweenDates(Date start, Date end) {
         return contributionDao.findByDateBetween(start, end);
+
     }
 
     public BigDecimal getTotalContributions() {

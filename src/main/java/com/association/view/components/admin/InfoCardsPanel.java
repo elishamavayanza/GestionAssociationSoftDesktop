@@ -50,7 +50,6 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                           MembreManager membreManager) {
 
         if (!SwingUtilities.isEventDispatchThread()) {
-            System.out.println("ATTENTION: Le panel est créé en dehors de l'EDT!");
         }
 
         this.membreId = membreId;
@@ -252,8 +251,6 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
             card.add(buttonPanel, BorderLayout.NORTH);
         }
 
-        System.out.println("Création carte: " + title);
-        card.setName("card_" + title.replace(" ", "_"));
 
         return card;
     }
@@ -321,16 +318,11 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         if (refreshTimer != null) {
             refreshTimer.stop();
         }
-        System.out.println("Debug - Membre ID: " + membreId);
-        System.out.println("Debug - ContributionManager: " + contributionManager);
-        System.out.println("Debug - EmpruntManager: " + empruntManager);
 
 // Test direct des managers
         BigDecimal testContrib = contributionManager.getTotalContributionsMembre(membreId);
-        System.out.println("Debug - Total contributions: " + testContrib);
 
         List<Emprunt> testEmprunts = empruntManager.getEmpruntsMembre(membreId);
-        System.out.println("Debug - Nombre d'emprunts: " + testEmprunts.size());
 
         new SwingWorker<Void, Void>() {
             private BigDecimal totalContributions;
@@ -379,13 +371,6 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                 BigDecimal soldeNet = totalContributions
                         .subtract(totalEmprunts)
                         .add(totalRemboursements);
-
-                // Debug
-                System.out.println("Debug - Valeurs calculées:");
-                System.out.println("Contributions: " + totalContributions);
-                System.out.println("Emprunts: " + totalEmprunts);
-                System.out.println("Remboursements: " + totalRemboursements);
-
 
                 // Calcul du bénéfice
                 BigDecimal benefice = calculerBenefice(totalContributions, totalEmprunts, totalRemboursements);
@@ -532,7 +517,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     }
 
     private String formatCurrency(BigDecimal amount) {
-        return CURRENCY_FORMAT.format(amount.doubleValue()).replace("€", "FCFA");
+        return CURRENCY_FORMAT.format(amount.doubleValue()).replace("€", "FC");
     }
 
     private void initRefreshTimer() {
