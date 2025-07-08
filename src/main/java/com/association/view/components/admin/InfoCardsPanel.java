@@ -43,6 +43,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     private JLabel contributionSubtitleLabel;
     private JLabel empruntSubtitleLabel;
     private JLabel remboursementSubtitleLabel;
+    private BigDecimal totalRemboursements = BigDecimal.ZERO;
 
     public InfoCardsPanel(Long membreId,
                           ContributionManager contributionManager,
@@ -146,6 +147,8 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         JPanel contentPanel = (JPanel) card.getComponent(0);
         remboursementValueLabel = (JLabel) contentPanel.getComponent(2);
         remboursementSubtitleLabel = (JLabel) contentPanel.getComponent(4);
+
+
         return card;
     }
 
@@ -362,6 +365,12 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                         .map(e -> e.getMontant().subtract(e.getMontantRembourse()))
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+                // Calculer l'intérêt total de 5% sur les emprunts
+                BigDecimal interetTotal = totalEmprunts.multiply(new BigDecimal("0.05"));
+
+                // Ajouter l'intérêt au total des remboursements attendus
+                BigDecimal totalRemboursementsAttendus = totalEmprunts.add(interetTotal);
+
                 return null;
             }
 
@@ -389,9 +398,8 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                 empruntSubtitleLabel.setText(String.format("%d emprunt(s) | Total: %s",
                         empruntsEnCours, formatCurrency(totalEmprunts)));
 
-                remboursementSubtitleLabel.setText(String.format("%d en cours | Reste: %s",
+                remboursementSubtitleLabel.setText(String.format("%d en cours | Reste: %s (incl. 5%%)",
                         empruntsEnCours, formatCurrency(soldeRestant)));
-
                 // Tooltips détaillés
                 setTooltipDetails(totalContributions, mensuelCount, annuelCount, donCount, empruntsEnCours, soldeRestant);
 
@@ -433,10 +441,16 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
 
         remboursementValueLabel.setToolTipText(String.format(
                 "<html><b>Détail des remboursements</b><br>"
-                        + "Prochain remboursement: %s<br>"
-                        + "Dernier remboursement: %s</html>",
-                getNextRepaymentDate(),
-                getLastRepaymentDate()
+                        + "Montant emprunté: %s<br>"
+                        + "Intérêt (5%%): %s<br>"
+                        + "Total à rembourser: %s<br>"
+                        + "Déjà remboursé: %s<br>"
+                        + "Solde restant: %s</html>",
+                formatCurrency(totalEmprunts),
+                formatCurrency(totalEmprunts.multiply(new BigDecimal("0.05"))),
+                formatCurrency(totalEmprunts.multiply(new BigDecimal("1.05"))),
+                formatCurrency(totalRemboursements),
+                formatCurrency(soldeRestant)
         ));
     }
 
