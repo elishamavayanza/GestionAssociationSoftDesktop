@@ -3,6 +3,7 @@ package com.association.view.components.admin;
 import com.association.manager.ContributionManager;
 import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
+import com.association.util.utils.CustomDialog;
 import com.association.util.utils.DateUtil;
 import com.association.util.utils.MoneyUtil;
 import com.association.view.components.IconManager;
@@ -415,10 +416,9 @@ public class DonPanel extends JPanel implements Refreshable {
                         "Don mis à jour avec succès" :
                         "Don enregistré avec succès";
 
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showSuccessDialog(this,
                         message,
-                        "Succès",
-                        JOptionPane.INFORMATION_MESSAGE);
+                        "Succès");
 
                 // Réinitialiser après l'opération
                 contributionEnEdition = null;
@@ -426,16 +426,15 @@ public class DonPanel extends JPanel implements Refreshable {
                 resetForm();
                 loadContributionHistory();
             } else {
-                JOptionPane.showMessageDialog(this,
+
+                CustomDialog.showErrorDialog(this,
                         "Erreur lors de l'opération",
-                        "Erreur",
-                        JOptionPane.ERROR_MESSAGE);
+                        "Erreur");
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     ex.getMessage(),
-                    "Erreur de validation",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur de validation");
         }
     }
 
@@ -568,10 +567,9 @@ public class DonPanel extends JPanel implements Refreshable {
                 submitButton.setText("Mettre à jour");
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Erreur lors de l'édition: " + e.getMessage(),
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
         }
     }
 
@@ -605,13 +603,10 @@ public class DonPanel extends JPanel implements Refreshable {
             BigDecimal amount = MoneyUtil.parse(amountObj.toString(), Locale.FRANCE)
                     .orElse(BigDecimal.ZERO);
 
-            // Confirmation
-            int confirm = JOptionPane.showConfirmDialog(
+            int confirm = CustomDialog.showConfirmDialog(
                     this,
                     "Êtes-vous sûr de vouloir supprimer ce don du " + date + " ?",
-                    "Confirmation de suppression",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
+                    "Confirmation de suppression"
             );
 
             if (confirm == JOptionPane.YES_OPTION) {
@@ -631,22 +626,19 @@ public class DonPanel extends JPanel implements Refreshable {
                         resetForm();
                     }
 
-                    JOptionPane.showMessageDialog(this,
+                    CustomDialog.showSuccessDialog(this,
                             "Don supprimé avec succès",
-                            "Succès",
-                            JOptionPane.INFORMATION_MESSAGE);
+                            "Succès");
                 } else {
-                    JOptionPane.showMessageDialog(this,
+                    CustomDialog.showErrorDialog(this,
                             "Erreur lors de la suppression",
-                            "Erreur",
-                            JOptionPane.ERROR_MESSAGE);
+                            "Erreur");
                 }
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Erreur lors de la suppression: " + e.getMessage(),
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
             e.printStackTrace();
         }
     }

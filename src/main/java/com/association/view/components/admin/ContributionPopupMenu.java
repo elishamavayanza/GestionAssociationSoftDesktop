@@ -3,11 +3,11 @@ package com.association.view.components.admin;
 import com.association.manager.ContributionManager;
 import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
+import com.association.util.utils.CustomDialog;
 import com.association.util.utils.ExchangeRateUtil;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
@@ -51,10 +51,10 @@ public class ContributionPopupMenu extends JPopupMenu {
         String currentValue = contributionField.getText();
         if (currentValue == null || currentValue.isEmpty()) return;
 
-        String newValue = JOptionPane.showInputDialog(
+        String newValue = CustomDialog.showInputDialog(
                 parentPanel,
                 "Modifier la contribution:",
-                currentValue
+                "Modification"
         );
 
         if (newValue != null && !newValue.isEmpty()) {
@@ -84,7 +84,7 @@ public class ContributionPopupMenu extends JPopupMenu {
 
                             if (contributionManager.update(contrib)) {
                                 contributionField.setText(newValue);
-                                parentPanel.updateCalendar(); // Rafraîchir l'affichage
+                                parentPanel.updateCalendar();
                                 showSuccessMessage("Contribution modifiée avec succès!");
                             } else {
                                 showErrorMessage("Échec de la modification");
@@ -106,11 +106,10 @@ public class ContributionPopupMenu extends JPopupMenu {
         String currentValue = contributionField.getText();
         if (currentValue == null || currentValue.isEmpty()) return;
 
-        int confirm = JOptionPane.showConfirmDialog(
+        int confirm = CustomDialog.showConfirmDialog(
                 parentPanel,
                 "Êtes-vous sûr de vouloir supprimer cette contribution?",
-                "Confirmation",
-                JOptionPane.YES_NO_OPTION
+                "Confirmation"
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
@@ -131,7 +130,7 @@ public class ContributionPopupMenu extends JPopupMenu {
                             if (contributionManager.delete(contrib.getId())) {
                                 contributionField.setText("");
                                 contributionField.setToolTipText(null);
-                                parentPanel.updateCalendar(); // Rafraîchir l'affichage
+                                parentPanel.updateCalendar();
                                 showSuccessMessage("Contribution supprimée avec succès!");
                             } else {
                                 showErrorMessage("Échec de la suppression");
@@ -148,20 +147,18 @@ public class ContributionPopupMenu extends JPopupMenu {
     }
 
     private void showSuccessMessage(String message) {
-        JOptionPane.showMessageDialog(
+        CustomDialog.showSuccessDialog(
                 parentPanel,
                 message,
-                "Succès",
-                JOptionPane.INFORMATION_MESSAGE
+                "Succès"
         );
     }
 
     private void showErrorMessage(String message) {
-        JOptionPane.showMessageDialog(
+        CustomDialog.showErrorDialog(
                 parentPanel,
                 message,
-                "Erreur",
-                JOptionPane.ERROR_MESSAGE
+                "Erreur"
         );
     }
 }

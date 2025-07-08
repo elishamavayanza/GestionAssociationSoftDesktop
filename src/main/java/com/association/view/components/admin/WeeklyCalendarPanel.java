@@ -8,6 +8,7 @@ import com.association.manager.MembreManager;
 import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import com.association.util.constants.AppConstants;
+import com.association.util.utils.CustomDialog;
 import com.association.util.utils.DateUtil;
 import com.association.util.utils.ExchangeRateUtil;
 import com.association.util.utils.MoneyUtil;
@@ -162,20 +163,18 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
 
     private void enregistrerContributions() {
         if (lastEditedField == null || lastEditedDay == -1 || lastEditedCont == -1) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showInfoDialog(this,
                     "Aucune contribution modifiée à enregistrer",
-                    "Information",
-                    JOptionPane.INFORMATION_MESSAGE);
+                    "Information");
             return;
         }
 
         try {
             String text = lastEditedField.getText();
             if (text.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showWarningDialog(this,
                         "Le champ est vide",
-                        "Avertissement",
-                        JOptionPane.WARNING_MESSAGE);
+                        "Avertissement");
                 return;
             }
 
@@ -189,11 +188,10 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
 
             if (amount.compareTo(AppConstants.MIN_CONTRIBUTION) < 0) {
                 lastEditedField.setBackground(Colors.WARNING.brighter());
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showWarningDialog(this,
                         String.format("Montant trop petit: %s %s (minimum: %s CDF)",
                                 montant, currentCurrency, AppConstants.MIN_CONTRIBUTION),
-                        "Avertissement",
-                        JOptionPane.WARNING_MESSAGE);
+                        "Avertissement");
                 return;
             }
 
@@ -222,10 +220,9 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                 contribution.setTypeContribution(TypeContribution.valueOf(contributionType));
                 lastEditedField.setToolTipText(createContributionTooltip(contribution));
 
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showSuccessDialog(this,
                         "Contribution enregistrée avec succès!",
-                        "Succès",
-                        JOptionPane.INFORMATION_MESSAGE);
+                        "Succès");
 
                 // Réinitialiser le suivi
                 lastEditedField = null;
@@ -233,44 +230,38 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
                 lastEditedCont = -1;
             } else {
                 lastEditedField.setBackground(Colors.DANGER.brighter());
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showErrorDialog(this,
                         "Échec de l'enregistrement",
-                        "Erreur",
-                        JOptionPane.ERROR_MESSAGE);
+                        "Erreur");
             }
         } catch (NumberFormatException e) {
             lastEditedField.setBackground(Colors.DANGER.brighter());
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Montant invalide",
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
         } catch (Exception e) {
             logger.error("Erreur lors de l'enregistrement", e);
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Erreur technique",
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
         }
     }
 
     private void showSaveResultMessages(boolean hasError, boolean hasWarning, List<String> messages) {
         if (hasError) {
             String details = String.join("\n", messages);
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Certaines contributions n'ont pas pu être enregistrées:\n" + details,
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
         } else if (hasWarning) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showWarningDialog(this,
                     String.format("Certaines contributions sont inférieures au minimum (%s)",
                             AppConstants.MIN_CONTRIBUTION),
-                    "Avertissement",
-                    JOptionPane.WARNING_MESSAGE);
+                    "Avertissement");
         } else {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showSuccessDialog(this,
                     "Toutes les contributions ont été enregistrées avec succès!",
-                    "Succès",
-                    JOptionPane.INFORMATION_MESSAGE);
+                    "Succès");
         }
     }
 
@@ -424,10 +415,10 @@ public class WeeklyCalendarPanel extends JPanel implements Refreshable{
             processContributions(contributions);
         } catch (Exception e) {
             logger.error("Erreur lors du chargement des contributions", e);
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Erreur lors du chargement des contributions",
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
+
         }
     }
 

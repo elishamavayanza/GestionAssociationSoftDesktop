@@ -3,6 +3,7 @@ package com.association.view.components.admin;
 import com.association.manager.ContributionManager;
 import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
+import com.association.util.utils.CustomDialog;
 import com.association.util.utils.DateUtil;
 import com.association.util.utils.MoneyUtil;
 import com.association.view.components.IconManager;
@@ -390,10 +391,9 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
                         "Contribution mise à jour avec succès" :
                         "Contribution enregistrée avec succès";
 
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showSuccessDialog(this,
                         message,
-                        "Succès",
-                        JOptionPane.INFORMATION_MESSAGE);
+                        "Succès");
 
                 // Réinitialiser après l'opération
                 contributionEnEdition = null;
@@ -401,16 +401,14 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
                 resetForm();
                 loadContributionHistory();
             } else {
-                JOptionPane.showMessageDialog(this,
+                CustomDialog.showErrorDialog(this,
                         "Erreur lors de l'opération",
-                        "Erreur",
-                        JOptionPane.ERROR_MESSAGE);
+                        "Erreur");
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     ex.getMessage(),
-                    "Erreur de validation",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur de validation");
         }
     }
 
@@ -521,10 +519,9 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
                 submitButton.setText("Mettre à jour");
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Erreur lors de l'édition: " + e.getMessage(),
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
         }
     }
 
@@ -537,12 +534,10 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
             String amountStr = (String) historyTable.getValueAt(row, 1);
             BigDecimal amount = MoneyUtil.parse(amountStr, Locale.FRANCE).orElse(BigDecimal.ZERO);
 
-            int confirm = JOptionPane.showConfirmDialog(
+            int confirm = CustomDialog.showConfirmDialog(
                     this,
                     "Êtes-vous sûr de vouloir supprimer cette contribution du " + date + " ?",
-                    "Confirmation de suppression",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
+                    "Confirmation de suppression"
             );
 
             if (confirm == JOptionPane.YES_OPTION) {
@@ -556,16 +551,20 @@ public class AnnualContributionPanel extends JPanel implements Refreshable {
                         resetForm();
                     }
                     historyTableModel.removeRow(row);
-                    JOptionPane.showMessageDialog(this, "Contribution supprimée avec succès", "Succès", JOptionPane.INFORMATION_MESSAGE);
+                    CustomDialog.showSuccessDialog(this,
+                            "Contribution supprimée avec succès",
+                            "Succès");
                 } else {
-                    JOptionPane.showMessageDialog(this, "Erreur lors de la suppression", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    CustomDialog.showErrorDialog(this,
+                            "Erreur lors de la suppression",
+                            "Erreur");
                 }
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
+            CustomDialog.showErrorDialog(this,
                     "Erreur lors de la suppression: " + e.getMessage(),
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Erreur");
+            e.printStackTrace();
         }
     }
 }
