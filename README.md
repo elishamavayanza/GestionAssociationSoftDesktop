@@ -156,3 +156,11 @@ Pour qu'un membre soit eligible pour s'emprunter, il lui faut :
 2. Contributions suffisantes : Le membre doit avoir contribué un montant minimum (configurable)
 3. Statut actif : Le membre doit avoir le statut "ACTIF"
 4. Délai depuis le dernier emprunt : Respect d'un délai minimum entre deux emprunts (configurable)
+
+---
+### Solde Net
+Le solde net représente le solde financier actuel du membre vis-à-vis de l'association :
+"Combien il a contribué au total, moins ce qu’il doit encore réellement à l’association."
+```` 
+soldeNet = totalContributions - totalEmprunts + totalRemboursements;
+````

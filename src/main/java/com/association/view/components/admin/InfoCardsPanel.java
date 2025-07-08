@@ -17,6 +17,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     private BigDecimal totalEmprunts = BigDecimal.ZERO;
     private BigDecimal soldeRestant = BigDecimal.ZERO;
     private Timer refreshTimer;
+    private JLabel remboursementDatesLabel; // Ajoutez cette ligne
 
 
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getCurrencyInstance(new Locale("fr", "FR"));
@@ -75,7 +77,7 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         setBackground(Colors.CARD_BACKGROUND);
 
         // Nouvelle hauteur pour toutes les cartes (ex: 140px au lieu de 180px)
-        int reducedHeight = 127;
+        int reducedHeight = 140;
 
         // Panel pour les 4 premières cartes (2x2)
         JPanel topCardsPanel = new JPanel(new GridLayout(2, 2, 10, 10));
@@ -148,6 +150,11 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
         remboursementValueLabel = (JLabel) contentPanel.getComponent(2);
         remboursementSubtitleLabel = (JLabel) contentPanel.getComponent(4);
 
+// Ajout d'un deuxième sous-titre pour les dates
+        remboursementDatesLabel = new JLabel("", SwingConstants.CENTER);
+        remboursementDatesLabel.setFont(Fonts.smallFont().deriveFont(10));
+        remboursementDatesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(remboursementDatesLabel);
 
         return card;
     }
@@ -403,6 +410,13 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                 // Tooltips détaillés
                 setTooltipDetails(totalContributions, mensuelCount, annuelCount, donCount, empruntsEnCours, soldeRestant);
 
+                String nextRepayment = getNextRepaymentDate();
+                String lastRepayment = getLastRepaymentDate();
+                String datesText = String.format("<html>Prochain: %s | Dernier: %s</html>",
+                        formatDateWithColor(getNextRepaymentDate(), true),
+                        formatDateWithColor(getLastRepaymentDate(), false));
+                remboursementDatesLabel.setText(datesText);
+
                 // Mise à jour des couleurs
                 updateCardColors(soldeNet, benefice);
 
@@ -412,7 +426,14 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
             }
         }.execute();
     }
-
+    private String formatDateWithColor(String date, boolean isNext) {
+        if ("N/A".equals(date)) {
+            return "<font color='gray'>" + date + "</font>";
+        }
+        return String.format("<font color='%s'>%s</font>",
+                isNext ? "#2E7D32" : "#1565C0", // Vert pour prochain, bleu pour dernier
+                date);
+    }
     private void setTooltipDetails(BigDecimal totalContributions, long mensuelCount,
                                    long annuelCount, long donCount, long empruntsEnCours,
                                    BigDecimal soldeRestant) {
@@ -445,23 +466,72 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
                         + "Intérêt (5%%): %s<br>"
                         + "Total à rembourser: %s<br>"
                         + "Déjà remboursé: %s<br>"
-                        + "Solde restant: %s</html>",
+                        + "Solde restant: %s<br>"
+                        + "Dernier remboursement: %s<br>"
+                        + "Prochain remboursement: %s</html>",
                 formatCurrency(totalEmprunts),
                 formatCurrency(totalEmprunts.multiply(new BigDecimal("0.05"))),
                 formatCurrency(totalEmprunts.multiply(new BigDecimal("1.05"))),
                 formatCurrency(totalRemboursements),
-                formatCurrency(soldeRestant)
+                formatCurrency(soldeRestant),
+                getLastRepaymentDate(),
+                getNextRepaymentDate()
         ));
     }
 
     private String getNextRepaymentDate() {
-        // Implémentation pour récupérer la date du prochain remboursement
-        return "N/A";
+        // Récupérer tous les emprunts non remboursés du membre
+        List<Emprunt> empruntsNonRembourses = empruntManager.getEmpruntsNonRembourses(membreId);
+
+        if (empruntsNonRembourses.isEmpty()) {
+            return "N/A";
+        }
+
+        // Trouver la prochaine date de remboursement la plus proche
+        Date nextDate = null;
+        Date now = new Date();
+
+        for (Emprunt emprunt : empruntsNonRembourses) {
+            Date dateRemboursement = emprunt.getDateRemboursement();
+            if (dateRemboursement != null && dateRemboursement.after(now)) {
+                if (nextDate == null || dateRemboursement.before(nextDate)) {
+                    nextDate = dateRemboursement;
+                }
+            }
+        }
+
+        return nextDate != null ? formatDate(nextDate) : "N/A";
     }
 
     private String getLastRepaymentDate() {
-        // Implémentation pour récupérer la date du dernier remboursement
-        return "N/A";
+        // Récupérer tous les emprunts remboursés du membre
+        List<Emprunt> empruntsRembourses = empruntManager.getEmpruntsMembre(membreId).stream()
+                .filter(e -> e.getStatut() == StatutEmprunt.REMBOURSE)
+                .toList();
+
+        if (empruntsRembourses.isEmpty()) {
+            return "N/A";
+        }
+
+        // Trouver la date de remboursement la plus récente
+        Date lastDate = null;
+
+        for (Emprunt emprunt : empruntsRembourses) {
+            Date dateRemboursement = emprunt.getDateRemboursement();
+            if (dateRemboursement != null) {
+                if (lastDate == null || dateRemboursement.after(lastDate)) {
+                    lastDate = dateRemboursement;
+                }
+            }
+        }
+
+        return lastDate != null ? formatDate(lastDate) : "N/A";
+    }
+
+    private String formatDate(Date date) {
+        // Utiliser SimpleDateFormat pour formater la date
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(date);
     }
 
     private BigDecimal calculerBenefice(BigDecimal contributions, BigDecimal emprunts, BigDecimal remboursements) {
