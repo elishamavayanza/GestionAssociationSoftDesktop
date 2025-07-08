@@ -63,53 +63,38 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
     }
 
     private void initComponents() {
-        setLayout(new GridBagLayout());
-        setBackground(Colors.CARD_BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Utiliser un GridLayout avec un conteneur de scrolling
+        JPanel cardsPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 colonnes, espacement 10px
+        cardsPanel.setBackground(Colors.CARD_BACKGROUND);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
+        // Créer les cartes avec des tailles fixes
+        JPanel contributionCard = createCardWithFixedSize(createContributionCard());
+        JPanel empruntCard = createCardWithFixedSize(createEmpruntCard());
+        JPanel remboursementCard = createCardWithFixedSize(createRemboursementCard());
+        JPanel totalCard = createCardWithFixedSize(createTotalCard());
+        JPanel beneficeCard = createCardWithFixedSize(createBeneficeCard());
 
-        // Créer un conteneur intermédiaire pour les cartes
-        JPanel cardsContainer = new JPanel(new GridBagLayout());
-        cardsContainer.setBackground(Colors.CARD_BACKGROUND);
+        // Ajouter les cartes
+        cardsPanel.add(contributionCard);
+        cardsPanel.add(empruntCard);
+        cardsPanel.add(remboursementCard);
+        cardsPanel.add(totalCard);
+        cardsPanel.add(beneficeCard);
 
-        // Ajout des cartes avec une largeur minimale
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        JPanel contributionCard = createContributionCard();
-        contributionCard.setMinimumSize(new Dimension(200, 150));
-        cardsContainer.add(contributionCard, gbc);
+        // Ajouter un scrolling si nécessaire
+        JScrollPane scrollPane = new JScrollPane(cardsPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Colors.CARD_BACKGROUND);
 
-        gbc.gridx = 1;
-        JPanel empruntCard = createEmpruntCard();
-        empruntCard.setMinimumSize(new Dimension(200, 150));
-        cardsContainer.add(empruntCard, gbc);
+        setLayout(new BorderLayout());
+        add(scrollPane, BorderLayout.CENTER);
+    }
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        JPanel remboursementCard = createRemboursementCard();
-        remboursementCard.setMinimumSize(new Dimension(200, 150));
-        cardsContainer.add(remboursementCard, gbc);
-
-        gbc.gridx = 1;
-        JPanel totalCard = createTotalCard();
-        totalCard.setMinimumSize(new Dimension(200, 150));
-        cardsContainer.add(totalCard, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        JPanel beneficeCard = createBeneficeCard();
-        beneficeCard.setMinimumSize(new Dimension(200, 150));
-        cardsContainer.add(beneficeCard, gbc);
-
-        // Ajout du conteneur avec scroll si nécessaire
-        add(new JScrollPane(cardsContainer), new GridBagConstraints());
+    private JPanel createCardWithFixedSize(JPanel card) {
+        card.setPreferredSize(new Dimension(300, 180));
+        card.setMinimumSize(new Dimension(300, 180));
+        card.setMaximumSize(new Dimension(300, 180));
+        return card;
     }
 
     private JPanel createContributionCard() {
