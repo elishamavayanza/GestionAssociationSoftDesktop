@@ -198,6 +198,8 @@ public class InfoCardsPanel extends JPanel implements Refreshable {
             case "Contribution" -> IconManager.getIcon("wallet.svg", 16);
             case "Emprunt" -> IconManager.getIcon("loan.svg", 16);
             case "Remboursement" -> IconManager.getIcon("repayment.svg", 16);
+
+
             default -> null;
         };
         if (icon != null) titleLabel.setIcon(icon);
