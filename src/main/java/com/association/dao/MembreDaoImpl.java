@@ -4,10 +4,8 @@ import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import java.sql.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Date;
-import java.util.List;
-import java.util.Observer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -409,6 +407,61 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
         return membres;
     }
 
+    @Override
+    public Map<String, Integer> getMonthlyRegistrations() {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        String sql = """
+        SELECT TO_CHAR(date_inscription, 'YYYY-MM') AS month, 
+               COUNT(*) AS count 
+        FROM membres 
+        GROUP BY TO_CHAR(date_inscription, 'YYYY-MM') 
+        ORDER BY month""";
 
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                result.put(rs.getString("month"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            logger.error("Erreur lors de la récupération des inscriptions mensuelles", e);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, Integer> getMembersByAgeGroup() {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        String sql = """
+        SELECT 
+            CASE 
+                WHEN age < 20 THEN '<20'
+                WHEN age BETWEEN 20 AND 29 THEN '20-29'
+                WHEN age BETWEEN 30 AND 39 THEN '30-39'
+                WHEN age BETWEEN 40 AND 49 THEN '40-49'
+                WHEN age >= 50 THEN '50+'
+                ELSE 'Inconnu'
+            END AS age_group,
+            COUNT(*) AS count
+        FROM (
+            SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, date_naissance)) AS age
+            FROM personnes p
+            JOIN membres m ON p.id = m.id
+            WHERE date_naissance IS NOT NULL
+        ) t
+        GROUP BY age_group
+        ORDER BY age_group""";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                result.put(rs.getString("age_group"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            logger.error("Erreur lors de la récupération des membres par tranche d'âge", e);
+        }
+        return result;
+    }
 
 }

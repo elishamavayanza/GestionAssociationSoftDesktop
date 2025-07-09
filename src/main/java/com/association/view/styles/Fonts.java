@@ -3,6 +3,10 @@ package com.association.view.styles;
 import java.awt.Font;
 
 public class Fonts {
+    public static Font mediumBoldFont;
+    public static Font mediumFont;
+    public static Font largeBoldFont;
+
     public static Font titleFont() {
         return new Font("Arial", Font.BOLD, 24);
     }

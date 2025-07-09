@@ -5,6 +5,7 @@ import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public interface MembreDao extends GenericDao<Membre> {
     List<Membre> findByNom(String nom);
@@ -15,5 +16,6 @@ public interface MembreDao extends GenericDao<Membre> {
     List<Membre> findAll();
     List<Membre> search(MembreSearchCriteria criteria);
     List<Membre> findByNameContaining(String name);
-
+    Map<String, Integer> getMonthlyRegistrations();
+    Map<String, Integer> getMembersByAgeGroup();
 }

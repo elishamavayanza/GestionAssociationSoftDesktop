@@ -127,4 +127,14 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
         }
     }
 
+    public Map<String, Integer> getMonthlyRegistrations() {
+        // Implémentez cette méthode dans MembreDao
+        return membreDao.getMonthlyRegistrations();
+    }
+
+    public Map<String, Integer> getMembersByAgeGroup() {
+        // Implémentez cette méthode dans MembreDao
+        return membreDao.getMembersByAgeGroup();
+    }
+
 }
