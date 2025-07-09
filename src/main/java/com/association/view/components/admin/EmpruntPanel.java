@@ -4,6 +4,7 @@ import com.association.manager.EmpruntManager;
 import com.association.manager.MembreManager;
 import com.association.model.transaction.Emprunt;
 import com.association.util.constants.DatePattern;
+import com.association.util.utils.CustomDialog;
 import com.association.util.utils.DateUtil;
 import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
@@ -46,6 +47,7 @@ public class EmpruntPanel extends JPanel implements Refreshable {
         this.empruntManager = empruntManager;
         this.membreManager = membreManager;
         this.parentTabbedPane = parentTabbedPane;
+        initializeCustomDialogs(); // Ajoutez cette ligne
         initComponents();
         loadData();
     }
@@ -479,6 +481,9 @@ public class EmpruntPanel extends JPanel implements Refreshable {
             }
         }
         return message.toString();
+    }
+    private void initializeCustomDialogs() {
+        CustomDialog.customizeDialogs();
     }
 
     @Override

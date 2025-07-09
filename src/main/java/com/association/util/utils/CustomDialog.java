@@ -8,17 +8,17 @@ import java.awt.*;
 
 public class CustomDialog {
     // Icônes personnalisées pour chaque type de message
-    private static final Icon INFO_ICON = loadIcon("/icons/info.png");
-    private static final Icon WARNING_ICON = loadIcon("/icons/warning.png");
-    private static final Icon ERROR_ICON = loadIcon("/icons/error.png");
-    private static final Icon QUESTION_ICON = loadIcon("/icons/question.png");
-    private static final Icon SUCCESS_ICON = loadIcon("/icons/success.png");
+    private static final Icon INFO_ICON = loadIcon("/icons/info.svg");
+    private static final Icon WARNING_ICON = loadIcon("/icons/warning.svg");
+    private static final Icon ERROR_ICON = loadIcon("/icons/error.svg");
+    private static final Icon QUESTION_ICON = loadIcon("/icons/question.svg");
+    private static final Icon SUCCESS_ICON = loadIcon("/icons/success.svg");
 
     // Icônes pour les boutons
-    private static final Icon YES_ICON = loadIcon("/icons/yes.png");
-    private static final Icon NO_ICON = loadIcon("/icons/no.png");
-    private static final Icon CANCEL_ICON = loadIcon("/icons/cancel.png");
-    private static final Icon OK_ICON = loadIcon("/icons/ok.png");
+    private static final Icon YES_ICON = loadIcon("/icons/yes.svg");
+    private static final Icon NO_ICON = loadIcon("/icons/no.svg");
+    private static final Icon CANCEL_ICON = loadIcon("/icons/cancel.svg");
+    private static final Icon OK_ICON = loadIcon("/icons/ok.svg");
 
     public static void customizeDialogs() {
         // Personnalisation de base pour tous les JOptionPane
