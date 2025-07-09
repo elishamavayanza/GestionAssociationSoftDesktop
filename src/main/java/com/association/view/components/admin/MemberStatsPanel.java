@@ -222,7 +222,7 @@ public class MemberStatsPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(224, 224, 224), 1),
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
-        wrapper.setBackground(Color.WHITE);
+        wrapper.setBackground(Colors.BACKGROUND); // Modifier cette ligne
 
         // Header avec titre et bouton d'export
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -416,11 +416,11 @@ public class MemberStatsPanel extends JPanel {
                 NumberFormat.getPercentInstance()
         ));
 
-        plot.setBackgroundPaint(null);
-        chart.setBackgroundPaint(null);
+        plot.setBackgroundPaint(Colors.BACKGROUND);
+        chart.setBackgroundPaint(Colors.BACKGROUND);
 
         LegendTitle legend = chart.getLegend();
-        legend.setBackgroundPaint(null);
+        legend.setBackgroundPaint(Colors.BACKGROUND);
 
         return chart;
     }
@@ -456,12 +456,12 @@ public class MemberStatsPanel extends JPanel {
 
         plot.getDomainAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
         plot.getRangeAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
-        plot.setBackgroundPaint(null);
-        chart.setBackgroundPaint(null);
+        plot.setBackgroundPaint(Colors.BACKGROUND);
+        chart.setBackgroundPaint(Colors.BACKGROUND);
 
         LegendTitle legend = chart.getLegend();
         legend.setItemFont(new Font("SansSerif", Font.PLAIN, 12));
-        legend.setBackgroundPaint(null);
+        legend.setBackgroundPaint(Colors.BACKGROUND);
 
         return chart;
     }
@@ -497,8 +497,8 @@ public class MemberStatsPanel extends JPanel {
 
         plot.getDomainAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
         plot.getRangeAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
-        plot.setBackgroundPaint(null);
-        chart.setBackgroundPaint(null);
+        plot.setBackgroundPaint(Colors.BACKGROUND);
+        chart.setBackgroundPaint(Colors.BACKGROUND);
 
         return chart;
     }
