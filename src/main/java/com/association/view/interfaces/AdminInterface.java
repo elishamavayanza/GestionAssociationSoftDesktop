@@ -136,16 +136,29 @@ public class AdminInterface implements RoleInterface, Observer {
     }
 
     private void updateNotificationBadge() {
+        // Supprimez d'abord l'ancien composant d'icône s'il existe
+        if (notificationButton.getComponentCount() > 0) {
+            Component oldIcon = notificationButton.getComponent(0);
+            if (oldIcon instanceof IconManager.NotificationIconLabel) {
+                ((IconManager.NotificationIconLabel) oldIcon).stopAnimation();
+            }
+            notificationButton.removeAll();
+        }
+
         if (unreadNotificationCount > 0) {
-            notificationButton.setIcon(IconManager.createBadgedIcon(
+            notificationButton.setIcon(null);
+            JLabel animatedIcon = IconManager.createAnimatedNotificationIcon(
                     "notification.svg",
-                    String.valueOf(unreadNotificationCount),
+                    unreadNotificationCount,
                     32,
                     Colors.DANGER
-            ));
+            );
+            notificationButton.add(animatedIcon);
         } else {
             notificationButton.setIcon(IconManager.getIcon("notifications.svg", 30));
         }
+        notificationButton.revalidate();
+        notificationButton.repaint();
     }
 
 
