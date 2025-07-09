@@ -169,14 +169,15 @@ public class MemberStatsPanel extends JPanel {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
         gbc.insets = new Insets(10, 10, 10, 10);
         panel.setBackground(Colors.BACKGROUND);
 
-        // Graphique circulaire avec indicateur de chargement
+        // Graphique circulaire (à gauche)
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridheight = 2; // Prendra 2 lignes de hauteur
+        gbc.weightx = 0.5;  // Moitié de la largeur
+        gbc.weighty = 1.0;
         JPanel pieChartWrapper = createChartWithLoading("Répartition par Statut", () -> {
             JFreeChart pieChart = createPieChart();
             pieChartPanel = new ChartPanel(pieChart);
@@ -185,8 +186,14 @@ public class MemberStatsPanel extends JPanel {
         });
         panel.add(pieChartWrapper, gbc);
 
-        // Graphique linéaire avec indicateur de chargement
+        // Réinitialisation des paramètres pour les graphiques de droite
+        gbc.gridheight = 1;
+        gbc.weightx = 0.5;
+        gbc.weighty = 0.5;
+
+        // Graphique linéaire (en haut à droite)
         gbc.gridx = 1;
+        gbc.gridy = 0;
         JPanel lineChartWrapper = createChartWithLoading("Évolution des Inscriptions", () -> {
             JFreeChart lineChart = createLineChart(12);
             lineChartPanel = new ChartPanel(lineChart);
@@ -195,10 +202,9 @@ public class MemberStatsPanel extends JPanel {
         });
         panel.add(lineChartWrapper, gbc);
 
-        // Graphique à barres avec indicateur de chargement
-        gbc.gridx = 0;
+        // Graphique à barres (en bas à droite)
+        gbc.gridx = 1;
         gbc.gridy = 1;
-        gbc.gridwidth = 2;
         JPanel barChartWrapper = createChartWithLoading("Répartition par Âge", () -> {
             JFreeChart barChart = createAgeGroupChart();
             barChartPanel = new ChartPanel(barChart);
