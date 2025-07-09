@@ -20,6 +20,7 @@ import org.jfree.chart.labels.StandardPieToolTipGenerator;
 import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.RingPlot;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
@@ -286,13 +287,14 @@ public class MemberStatsPanel extends JPanel {
 
     private JFreeChart createPieChart() {
         Map<String, Object> stats = membreManager.getMembreStats();
+        int totalMembres = ((Number) stats.get("total")).intValue();
 
         DefaultPieDataset dataset = new DefaultPieDataset();
         dataset.setValue("Actifs", (Number) stats.get("actifs"));
         dataset.setValue("Inactifs", (Number) stats.get("inactifs"));
         dataset.setValue("Suspendus", (Number) stats.get("suspendus"));
 
-        JFreeChart chart = ChartFactory.createPieChart(
+        JFreeChart chart = ChartFactory.createRingChart(
                 "", // Titre vide car nous avons notre propre titre
                 dataset,
                 true, // légende
@@ -300,32 +302,23 @@ public class MemberStatsPanel extends JPanel {
                 false // URLs
         );
 
-        // Dans createPieChart(), après avoir créé le graphique
-        chart.addProgressListener(new ChartProgressListener() {
-            @Override
-            public void chartProgress(ChartProgressEvent event) {
-                if (event.getType() == ChartProgressEvent.DRAWING_FINISHED) {
-                    PiePlot plot = (PiePlot) event.getChart().getPlot();
-                    plot.setToolTipGenerator(new StandardPieToolTipGenerator(
-                            "<html><b>{0}</b><br>Membres: {1}<br>{2}</html>",
-                            NumberFormat.getNumberInstance(),
-                            NumberFormat.getPercentInstance()
-                    ));
-                }
-            }
-        });
+        // Personnalisation du graphique en couronne
+        RingPlot plot = (RingPlot) chart.getPlot();
 
-        PiePlot plot = (PiePlot) chart.getPlot();
+        // Ajout du texte personnalisé au centre (version simplifiée)
+        plot.setCenterText(generateCenterText(totalMembres));
+        plot.setCenterTextFont(new Font("SansSerif", Font.BOLD, 24));
+        plot.setCenterTextColor(Colors.PRIMARY);
 
         // Amélioration des couleurs avec des nuances plus modernes
         plot.setSectionPaint("Actifs", new Color(76, 175, 80)); // Vert
         plot.setSectionPaint("Inactifs", new Color(255, 193, 7)); // Jaune
         plot.setSectionPaint("Suspendus", new Color(244, 67, 54)); // Rouge
 
-        // Effet 3D léger
-        plot.setCircular(true);
-        plot.setInteriorGap(0.02);
-        plot.setExplodePercent("Actifs", 0.05);
+        // Configuration de la couronne
+        plot.setSectionDepth(0.35); // Épaisseur de la couronne
+        plot.setInnerSeparatorExtension(0.05);
+        plot.setOuterSeparatorExtension(0.05);
 
         // Amélioration des labels
         plot.setLabelGenerator(new StandardPieSectionLabelGenerator(
@@ -338,7 +331,12 @@ public class MemberStatsPanel extends JPanel {
         plot.setLabelOutlinePaint(null);
         plot.setLabelShadowPaint(null);
 
-
+        // Tooltips améliorés
+        plot.setToolTipGenerator(new StandardPieToolTipGenerator(
+                "<html><b>{0}</b><br>Membres: {1}<br>{2}</html>",
+                NumberFormat.getNumberInstance(),
+                NumberFormat.getPercentInstance()
+        ));
 
         // Fond transparent
         plot.setBackgroundPaint(null);
@@ -349,19 +347,16 @@ public class MemberStatsPanel extends JPanel {
         legend.setItemFont(new Font("SansSerif", Font.PLAIN, 12));
         legend.setBackgroundPaint(null);
 
-        chart.addProgressListener(new ChartProgressListener() {
-            @Override
-            public void chartProgress(ChartProgressEvent event) {
-                if (event.getType() == ChartProgressEvent.DRAWING_FINISHED) {
-                    PiePlot plot = (PiePlot) chart.getPlot();
-                    plot.setBackgroundPaint(Colors.BACKGROUND);
-                    plot.setLabelFont(Fonts. mediumBoldFont());
-                    // ... autres paramètres de style
-                }
-            }
-        });
-
         return chart;
+    }
+
+    private String generateCenterText(int total) {
+        return "<html><div style='text-align: center;'>"
+                + "<span style='font-size: 24px; font-weight: bold;'>"
+                + NumberFormat.getNumberInstance().format(total)
+                + "</span><br>"
+                + "<span style='font-size: 14px;'>Membres</span>"
+                + "</div></html>";
     }
 
     private JPanel createLineChartWithControls() {
