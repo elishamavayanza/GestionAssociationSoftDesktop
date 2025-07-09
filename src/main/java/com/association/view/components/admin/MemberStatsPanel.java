@@ -27,6 +27,8 @@ import org.jfree.chart.ChartUtils;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +44,7 @@ public class MemberStatsPanel extends JPanel {
     }
 
     private void initComponents() {
+
         setLayout(new BorderLayout());
         setBackground(Colors.BACKGROUND);
 
@@ -214,7 +217,24 @@ public class MemberStatsPanel extends JPanel {
 
         // Bouton d'export
         JButton exportButton = new JButton("Exporter");
-        exportButton.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        exportButton.setFont(Fonts.normalFont());
+        exportButton.setForeground(Color.WHITE);
+        exportButton.setBackground(Colors.PRIMARY);
+        exportButton.setOpaque(true);
+        exportButton.setBorderPainted(false);
+
+// Ajouter l'effet de survol avec MouseAdapter
+        exportButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                exportButton.setBackground(Colors.darker(Colors.PRIMARY, 0.1f));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                exportButton.setBackground(Colors.PRIMARY);
+            }
+        });
         exportButton.addActionListener(e -> exportChart(chartPanel.getChart()));
 
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -328,6 +348,18 @@ public class MemberStatsPanel extends JPanel {
         LegendTitle legend = chart.getLegend();
         legend.setItemFont(new Font("SansSerif", Font.PLAIN, 12));
         legend.setBackgroundPaint(null);
+
+        chart.addProgressListener(new ChartProgressListener() {
+            @Override
+            public void chartProgress(ChartProgressEvent event) {
+                if (event.getType() == ChartProgressEvent.DRAWING_FINISHED) {
+                    PiePlot plot = (PiePlot) chart.getPlot();
+                    plot.setBackgroundPaint(Colors.BACKGROUND);
+                    plot.setLabelFont(Fonts. mediumBoldFont());
+                    // ... autres paramètres de style
+                }
+            }
+        });
 
         return chart;
     }

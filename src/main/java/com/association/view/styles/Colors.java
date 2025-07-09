@@ -118,4 +118,34 @@ public class Colors {
         setDarkTheme(darkMode);
         // Mettre à jour les couleurs spécifiques à FlatLaf si nécessaire
     }
+
+    /**
+     * Retourne une version plus sombre de la couleur spécifiée.
+     * @param color La couleur de base
+     * @param factor Facteur d'assombrissement (0 = pas de changement, 1 = noir complet)
+     * @return La couleur assombrie
+     */
+    public static Color darker(Color color, float factor) {
+        // Vérification des paramètres
+        if (color == null) {
+            throw new IllegalArgumentException("La couleur ne peut pas être null");
+        }
+
+        if (factor < 0 || factor > 1) {
+            throw new IllegalArgumentException("Le facteur doit être entre 0 et 1");
+        }
+
+        // Convertir les composantes RGB
+        int red = (int) (color.getRed() * (1 - factor));
+        int green = (int) (color.getGreen() * (1 - factor));
+        int blue = (int) (color.getBlue() * (1 - factor));
+
+        // S'assurer que les valeurs restent dans la plage 0-255
+        red = Math.max(0, Math.min(255, red));
+        green = Math.max(0, Math.min(255, green));
+        blue = Math.max(0, Math.min(255, blue));
+
+        // Créer et retourner la nouvelle couleur
+        return new Color(red, green, blue);
+    }
 }

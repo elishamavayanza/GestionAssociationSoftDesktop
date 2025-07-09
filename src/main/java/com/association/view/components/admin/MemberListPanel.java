@@ -83,6 +83,7 @@ public class MemberListPanel extends JPanel implements Observer {
         // Titre à gauche
         JLabel titleLabel = new JLabel("Liste des Membres");
         titleLabel.setFont(Fonts.titleFont());
+        titleLabel.setForeground(Colors.PRIMARY);
         titleLabel.setHorizontalAlignment(SwingConstants.LEFT);
 
         // Panel pour les outils de recherche à droite
