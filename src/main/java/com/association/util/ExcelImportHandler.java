@@ -99,14 +99,11 @@ public class ExcelImportHandler {
         // Colonne 2: Contact (email ou téléphone)
         membre.setContact(getCellStringValue(row.getCell(2)));
 
-        // Colonne 3: Photo (chemin ou nom de fichier)
-        membre.setPhoto(getCellStringValue(row.getCell(3)));
+        // Colonne 3: Date Inscription
+        membre.setDateInscription(ImportUtils.parseDate(getCellStringValue(row.getCell(3))));
 
-        // Colonne 4: Date Inscription
-        membre.setDateInscription(ImportUtils.parseDate(getCellStringValue(row.getCell(4))));
-
-        // Colonne 5: Statut
-        membre.setStatut(parseStatut(getCellStringValue(row.getCell(5))));
+        // Colonne 4: Statut
+        membre.setStatut(parseStatut(getCellStringValue(row.getCell(4))));
 
         // Valider les champs obligatoires
         if (membre.getNom() == null || membre.getNom().isEmpty()) {
