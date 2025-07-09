@@ -1,6 +1,7 @@
 package com.association.util;
 
 import com.itextpdf.text.Font;
+import com.itextpdf.text.pdf.PdfPCell;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.itextpdf.text.*;
@@ -104,34 +105,59 @@ public class ExportUtils {
                 PdfWriter.getInstance(document, new FileOutputStream(file));
                 document.open();
 
-                // Ajouter le titre
-                Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
+                // Ajouter le titre avec style similaire à PrintUtils
+                Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
                 Paragraph docTitle = new Paragraph(title, titleFont);
                 docTitle.setAlignment(Element.ALIGN_CENTER);
                 docTitle.setSpacingAfter(20f);
                 document.add(docTitle);
 
-                // Créer la table PDF
+                // Créer la table PDF avec des styles similaires à PrintUtils
                 PdfPTable pdfTable = new PdfPTable(model.getColumnCount());
                 pdfTable.setWidthPercentage(100);
+                pdfTable.setSpacingBefore(10f);
+                pdfTable.setSpacingAfter(10f);
 
-                // Ajouter les en-têtes
-                Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD);
+                // Style pour l'en-tête (similaire à PrintUtils)
+                Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+                Font dataFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+                // Couleurs
+                BaseColor headerBgColor = new BaseColor(240, 240, 240);
+                BaseColor evenRowColor = new BaseColor(255, 255, 255);
+                BaseColor oddRowColor = new BaseColor(248, 248, 248);
+
+                // Ajouter les en-têtes avec style
                 for (int col = 0; col < model.getColumnCount(); col++) {
-                    Phrase headerPhrase = new Phrase(model.getColumnName(col), headerFont);
-                    pdfTable.addCell(headerPhrase);
+                    PdfPCell headerCell = new PdfPCell(new Phrase(model.getColumnName(col), headerFont));
+                    headerCell.setBackgroundColor(headerBgColor);
+                    headerCell.setBorderColor(BaseColor.BLACK);
+                    headerCell.setPadding(5);
+                    headerCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+                    pdfTable.addCell(headerCell);
                 }
 
-                // Ajouter les données
-                Font dataFont = FontFactory.getFont(FontFactory.HELVETICA);
+                // Ajouter les données avec alternance de couleurs
                 for (int row = 0; row < model.getRowCount(); row++) {
                     for (int col = 0; col < model.getColumnCount(); col++) {
                         Object value = model.getValueAt(row, col);
-                        pdfTable.addCell(new Phrase(value != null ? value.toString() : "", dataFont));
+                        PdfPCell dataCell = new PdfPCell(new Phrase(value != null ? value.toString() : "", dataFont));
+                        dataCell.setBackgroundColor(row % 2 == 0 ? evenRowColor : oddRowColor);
+                        dataCell.setBorderColor(BaseColor.BLACK);
+                        dataCell.setPadding(5);
+                        dataCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        pdfTable.addCell(dataCell);
                     }
                 }
 
                 document.add(pdfTable);
+
+                // Ajouter le numéro de page
+                document.add(new Paragraph("\n"));
+                Paragraph footer = new Paragraph("Page 1", dataFont); // Vous devrez implémenter la pagination si nécessaire
+                footer.setAlignment(Element.ALIGN_RIGHT);
+                document.add(footer);
+
                 document.close();
 
                 JOptionPane.showMessageDialog(parent,
