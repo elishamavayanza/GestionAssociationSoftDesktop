@@ -5,6 +5,8 @@ import com.association.dao.MembreDao;
 import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
+import com.association.util.ExportUtils;
+import com.association.util.PrintUtils;
 import com.association.view.components.IconManager;
 import com.association.view.components.common.AdvancedSearchDialog;
 import com.association.view.components.common.EditableTableModel;
@@ -404,8 +406,10 @@ public class MemberListPanel extends JPanel implements Observer {
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         buttonPanel.setBackground(Colors.BACKGROUND);
 
-        JButton exportButton = new JButton("Exporter", IconManager.getIcon("export.svg", 16));
-        JButton printButton = new JButton("Imprimer", IconManager.getIcon("printer.svg", 16));
+//        JButton exportButton = new JButton("Exporter", IconManager.getIcon("export.svg", 16));
+//        JButton printButton = new JButton("Imprimer", IconManager.getIcon("printer.svg", 16));
+
+        setupExportAndPrintButtons();
 
 
 // Après avoir créé les boutons
@@ -528,14 +532,13 @@ public class MemberListPanel extends JPanel implements Observer {
         buttonPanel.add(saveButton);
 
 
-        for (JButton button : new JButton[]{ exportButton, printButton, cancelButton, saveButton}) {
+        for (JButton button : new JButton[]{ cancelButton, saveButton}) {
             button.setFont(Fonts.buttonFont());
             button.setBackground(Colors.PRIMARY);
             button.setForeground(Color.WHITE);
             button.setFocusPainted(false);
         }
-        buttonPanel.add(exportButton);
-        buttonPanel.add(printButton);
+
 
         splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setLeftComponent(contentPanel); // Le panel avec la table
@@ -898,5 +901,97 @@ public class MemberListPanel extends JPanel implements Observer {
         };
         worker.execute();
     }
+    private void setupExportAndPrintButtons() {
+        // Créer le menu d'exportation
+        JPopupMenu exportMenu = new JPopupMenu();
 
+        JMenuItem excelItem = new JMenuItem("Excel");
+        excelItem.addActionListener(e -> exportToExcel());
+
+        JMenuItem pdfItem = new JMenuItem("PDF");
+        pdfItem.addActionListener(e -> exportToPDF());
+
+        exportMenu.add(excelItem);
+        exportMenu.add(pdfItem);
+
+        // Configurer le bouton d'exportation
+        JButton exportButton = new JButton("Exporter");
+        exportButton.setIcon(IconManager.getIcon("export.svg", 16));
+        exportButton.addActionListener(e -> {
+            exportMenu.show(exportButton, 0, exportButton.getHeight());
+        });
+
+        // Configurer le bouton d'impression
+        JButton printButton = new JButton("Imprimer");
+        printButton.setIcon(IconManager.getIcon("printer.svg", 16));
+        printButton.addActionListener(e -> printTable());
+
+        // Ajouter les boutons au panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(exportButton);
+        buttonPanel.add(printButton);
+
+        // Style des boutons
+        for (JButton button : new JButton[]{exportButton, printButton}) {
+            button.setFont(Fonts.buttonFont());
+            button.setBackground(Colors.PRIMARY);
+            button.setForeground(Color.WHITE);
+            button.setFocusPainted(false);
+            button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        }
+
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private void exportToExcel() {
+        try {
+            ExportUtils.exportTableToExcel(
+                    memberTable.getModel(),
+                    memberTable.getTableHeader(),
+                    "Liste des Membres",
+                    "membres_export.xlsx",
+                    parentFrame
+            );
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'export Excel: " + e.getMessage(),
+                    "Erreur d'export",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportToPDF() {
+        try {
+            ExportUtils.exportTableToPDF(
+                    memberTable.getModel(),
+                    memberTable.getTableHeader(),
+                    "Liste des Membres",
+                    "membres_export.pdf",
+                    parentFrame
+            );
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'export PDF: " + e.getMessage(),
+                    "Erreur d'export",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void printTable() {
+        try {
+            PrintUtils.printTable(
+                    memberTable,
+                    "Liste des Membres",
+                    PrintUtils.PageSize.A4,
+                    PrintUtils.Orientation.PORTRAIT,
+                    true,
+                    parentFrame
+            );
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'impression: " + e.getMessage(),
+                    "Erreur d'impression",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
 }
