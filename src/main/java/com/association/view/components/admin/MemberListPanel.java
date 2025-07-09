@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
-
+import com.association.util.ExcelImportHandler;
 public class MemberListPanel extends JPanel implements Observer {
     private final JFrame parentFrame;
     private final MembreDao membreDao;
@@ -665,7 +665,7 @@ public class MemberListPanel extends JPanel implements Observer {
         }
     }
 
-    private void loadMemberData() {
+    public void loadMemberData() {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
@@ -914,6 +914,13 @@ public class MemberListPanel extends JPanel implements Observer {
         exportMenu.add(excelItem);
         exportMenu.add(pdfItem);
 
+        JButton importButton = new JButton("Importer");
+        importButton.setIcon(IconManager.getIcon("import.svg", 16)); // Assurez-vous d'avoir cette icône
+        importButton.addActionListener(e -> {
+            ExcelImportHandler importHandler = new ExcelImportHandler(parentFrame, MemberListPanel.this);
+            importHandler.importFromExcel();
+        });
+
         // Configurer le bouton d'exportation
         JButton exportButton = new JButton("Exporter");
         exportButton.setIcon(IconManager.getIcon("export.svg", 16));
@@ -928,11 +935,11 @@ public class MemberListPanel extends JPanel implements Observer {
 
         // Ajouter les boutons au panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(importButton); // Ajout du bouton Import
         buttonPanel.add(exportButton);
         buttonPanel.add(printButton);
-
         // Style des boutons
-        for (JButton button : new JButton[]{exportButton, printButton}) {
+        for (JButton button : new JButton[]{importButton, exportButton, printButton}) {
             button.setFont(Fonts.buttonFont());
             button.setBackground(Colors.PRIMARY);
             button.setForeground(Color.WHITE);
