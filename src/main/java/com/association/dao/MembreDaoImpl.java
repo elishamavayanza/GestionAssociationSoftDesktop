@@ -430,27 +430,63 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     }
 
     @Override
+    public Map<String, Integer> getMonthlyRegistrations(int months) {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        String sql = "SELECT DATE_FORMAT(date_inscription, '%Y-%m') AS month, " +
+                "COUNT(*) AS count " +
+                "FROM membres ";
+
+        if (months > 0) {
+            sql += "WHERE date_inscription >= DATE_SUB(CURDATE(), INTERVAL ? MONTH) ";
+        }
+
+        sql += "GROUP BY DATE_FORMAT(date_inscription, '%Y-%m') " +
+                "ORDER BY month";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            if (months > 0) {
+                stmt.setInt(1, months);
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                result.put(rs.getString("month"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            logger.error("Erreur lors de la récupération des inscriptions mensuelles", e);
+        }
+        return result;
+    }
+
+    @Override
     public Map<String, Integer> getMembersByAgeGroup() {
         Map<String, Integer> result = new LinkedHashMap<>();
         String sql = """
         SELECT 
             CASE 
-                WHEN age < 20 THEN '<20'
-                WHEN age BETWEEN 20 AND 29 THEN '20-29'
-                WHEN age BETWEEN 30 AND 39 THEN '30-39'
-                WHEN age BETWEEN 40 AND 49 THEN '40-49'
-                WHEN age >= 50 THEN '50+'
+                WHEN TIMESTAMPDIFF(YEAR, date_naissance, CURDATE()) < 20 THEN '<20'
+                WHEN TIMESTAMPDIFF(YEAR, date_naissance, CURDATE()) BETWEEN 20 AND 29 THEN '20-29'
+                WHEN TIMESTAMPDIFF(YEAR, date_naissance, CURDATE()) BETWEEN 30 AND 39 THEN '30-39'
+                WHEN TIMESTAMPDIFF(YEAR, date_naissance, CURDATE()) BETWEEN 40 AND 49 THEN '40-49'
+                WHEN TIMESTAMPDIFF(YEAR, date_naissance, CURDATE()) >= 50 THEN '50+'
                 ELSE 'Inconnu'
             END AS age_group,
             COUNT(*) AS count
-        FROM (
-            SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, date_naissance)) AS age
-            FROM personnes p
-            JOIN membres m ON p.id = m.id
-            WHERE date_naissance IS NOT NULL
-        ) t
+        FROM personnes p
+        JOIN membres m ON p.id = m.id
+        WHERE date_naissance IS NOT NULL
         GROUP BY age_group
-        ORDER BY age_group""";
+        ORDER BY 
+            CASE age_group
+                WHEN '<20' THEN 1
+                WHEN '20-29' THEN 2
+                WHEN '30-39' THEN 3
+                WHEN '40-49' THEN 4
+                WHEN '50+' THEN 5
+                ELSE 6
+            END""";
 
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

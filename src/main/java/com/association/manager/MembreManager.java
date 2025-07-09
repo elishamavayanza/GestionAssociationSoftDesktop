@@ -136,5 +136,7 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
         // Implémentez cette méthode dans MembreDao
         return membreDao.getMembersByAgeGroup();
     }
-
+    public Map<String, Integer> getMonthlyRegistrations(int months) {
+        return membreDao.getMonthlyRegistrations(months);
+    }
 }

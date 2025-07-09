@@ -13,14 +13,24 @@ import com.association.view.styles.HoverButton;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.event.ChartProgressEvent;
+import org.jfree.chart.event.ChartProgressListener;
+import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
+import org.jfree.chart.labels.StandardPieToolTipGenerator;
 import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.title.LegendTitle;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
-
+import org.jfree.chart.ChartUtils;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
+import java.io.File;
+import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.Map;
 
 public class MemberStatsPanel extends JPanel {
@@ -157,33 +167,31 @@ public class MemberStatsPanel extends JPanel {
         contentPanel.add(titleLabel, BorderLayout.CENTER);
         contentPanel.add(valueLabel, BorderLayout.SOUTH);
 
+
         card.add(contentPanel, BorderLayout.CENTER);
         return card;
     }
 
     private JPanel createChartsPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        panel.setLayout(new GridLayout(1, 3, 15, 0)); // 3 colonnes au lieu de 2
         panel.setBackground(Colors.BACKGROUND);
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Graphique 1 - Répartition par statut
+        // Graphique circulaire
         JFreeChart pieChart = createPieChart();
         ChartPanel pieChartPanel = new ChartPanel(pieChart);
-        pieChartPanel.setMinimumSize(new Dimension(400, 300));
-        pieChartPanel.setPreferredSize(new Dimension(400, 400));
-        pieChartPanel.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
         panel.add(wrapChartPanel(pieChartPanel, "Répartition par Statut"));
 
-        panel.add(Box.createHorizontalStrut(15)); // Espacement entre les graphiques
-
-        // Graphique 2 - Evolution des inscriptions
-        JFreeChart lineChart = createLineChart();
+        // Graphique linéaire
+        JFreeChart lineChart = createLineChart(12);
         ChartPanel lineChartPanel = new ChartPanel(lineChart);
-        lineChartPanel.setMinimumSize(new Dimension(400, 300));
-        lineChartPanel.setPreferredSize(new Dimension(400, 400));
-        lineChartPanel.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
-        panel.add(wrapChartPanel(lineChartPanel, "Evolution des Inscriptions"));
+        panel.add(wrapChartPanel(lineChartPanel, "Évolution des Inscriptions"));
+
+        // Nouveau graphique à barres
+        JFreeChart barChart = createAgeGroupChart();
+        ChartPanel barChartPanel = new ChartPanel(barChart);
+        panel.add(wrapChartPanel(barChartPanel, "Répartition par Âge"));
 
         return panel;
     }
@@ -191,25 +199,69 @@ public class MemberStatsPanel extends JPanel {
     private JPanel wrapChartPanel(ChartPanel chartPanel, String title) {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Colors.SECONDARY, 1),
+                BorderFactory.createLineBorder(new Color(224, 224, 224), 1),
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         wrapper.setBackground(Color.WHITE);
         wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Titre
+        // Titre avec style amélioré
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        titleLabel.setForeground(new Color(66, 66, 66));
 
-        wrapper.add(titleLabel, BorderLayout.NORTH);
+        // Bouton d'export
+        JButton exportButton = new JButton("Exporter");
+        exportButton.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        exportButton.addActionListener(e -> exportChart(chartPanel.getChart()));
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        headerPanel.add(exportButton, BorderLayout.EAST);
+        headerPanel.setOpaque(false);
+
+        wrapper.add(headerPanel, BorderLayout.NORTH);
         wrapper.add(chartPanel, BorderLayout.CENTER);
 
-        // Permettre l'expansion verticale
-        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-
         return wrapper;
+    }
+
+    private void exportChart(JFreeChart chart) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Exporter le graphique");
+
+        FileNameExtensionFilter pngFilter = new FileNameExtensionFilter("PNG Image", "png");
+        FileNameExtensionFilter jpegFilter = new FileNameExtensionFilter("JPEG Image", "jpg", "jpeg");
+        fileChooser.addChoosableFileFilter(pngFilter);
+        fileChooser.addChoosableFileFilter(jpegFilter);
+        fileChooser.setFileFilter(pngFilter);
+
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            String format = ((FileNameExtensionFilter)fileChooser.getFileFilter()).getExtensions()[0];
+
+            try {
+                if ("png".equalsIgnoreCase(format)) {
+                    ChartUtils.saveChartAsPNG(fileToSave, chart, 800, 600);
+                } else if ("jpg".equalsIgnoreCase(format) || "jpeg".equalsIgnoreCase(format)) {
+                    ChartUtils.saveChartAsJPEG(fileToSave, chart, 800, 600);
+                } else {
+                    throw new IOException("Format d'image non pris en charge : " + format);
+                }
+                JOptionPane.showMessageDialog(this,
+                        "Graphique exporté avec succès!",
+                        "Export réussi",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Erreur lors de l'export: " + e.getMessage(),
+                        "Erreur",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private JFreeChart createPieChart() {
@@ -221,42 +273,109 @@ public class MemberStatsPanel extends JPanel {
         dataset.setValue("Suspendus", (Number) stats.get("suspendus"));
 
         JFreeChart chart = ChartFactory.createPieChart(
-                "",
+                "", // Titre vide car nous avons notre propre titre
                 dataset,
-                true,
-                true,
-                false
+                true, // légende
+                true, // tooltips
+                false // URLs
         );
 
-        // Personnalisation améliorée du graphique
+        // Dans createPieChart(), après avoir créé le graphique
+        chart.addProgressListener(new ChartProgressListener() {
+            @Override
+            public void chartProgress(ChartProgressEvent event) {
+                if (event.getType() == ChartProgressEvent.DRAWING_FINISHED) {
+                    PiePlot plot = (PiePlot) event.getChart().getPlot();
+                    plot.setToolTipGenerator(new StandardPieToolTipGenerator(
+                            "<html><b>{0}</b><br>Membres: {1}<br>{2}</html>",
+                            NumberFormat.getNumberInstance(),
+                            NumberFormat.getPercentInstance()
+                    ));
+                }
+            }
+        });
+
         PiePlot plot = (PiePlot) chart.getPlot();
 
-        // Couleurs plus claires et harmonieuses
-        plot.setSectionPaint("Actifs", Colors.lighter(Colors.SUCCESS, 0.3f));
-        plot.setSectionPaint("Inactifs", Colors.lighter(Colors.WARNING, 0.3f));
-        plot.setSectionPaint("Suspendus", Colors.lighter(Colors.DANGER, 0.3f));
+        // Amélioration des couleurs avec des nuances plus modernes
+        plot.setSectionPaint("Actifs", new Color(76, 175, 80)); // Vert
+        plot.setSectionPaint("Inactifs", new Color(255, 193, 7)); // Jaune
+        plot.setSectionPaint("Suspendus", new Color(244, 67, 54)); // Rouge
 
-        plot.setBackgroundPaint(Color.WHITE);
-        plot.setOutlineVisible(false);
-        plot.setLabelFont(new Font("Arial", Font.PLAIN, 12));
-        plot.setLabelBackgroundPaint(Color.WHITE);
-        plot.setLabelShadowPaint(null);
+        // Effet 3D léger
+        plot.setCircular(true);
+        plot.setInteriorGap(0.02);
+        plot.setExplodePercent("Actifs", 0.05);
+
+        // Amélioration des labels
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator(
+                "{0}: {1} ({2})",
+                NumberFormat.getNumberInstance(),
+                NumberFormat.getPercentInstance()
+        ));
+        plot.setLabelFont(new Font("SansSerif", Font.PLAIN, 12));
+        plot.setLabelBackgroundPaint(new Color(255, 255, 255, 200));
         plot.setLabelOutlinePaint(null);
-        plot.setLabelLinkPaint(Colors.TEXT_SECONDARY);
+        plot.setLabelShadowPaint(null);
 
-        // Amélioration de la légende
-        chart.getLegend().setItemFont(new Font("Arial", Font.PLAIN, 12));
-        chart.getLegend().setBackgroundPaint(Color.WHITE);
+
+
+        // Fond transparent
+        plot.setBackgroundPaint(null);
+        chart.setBackgroundPaint(null);
+
+        // Légende améliorée
+        LegendTitle legend = chart.getLegend();
+        legend.setItemFont(new Font("SansSerif", Font.PLAIN, 12));
+        legend.setBackgroundPaint(null);
 
         return chart;
     }
 
+    private JPanel createLineChartWithControls() {
+        JPanel panel = new JPanel(new BorderLayout());
 
-    private JFreeChart createLineChart() {
-        Map<String, Integer> monthlyData = membreManager.getMonthlyRegistrations();
+        // Contrôles en haut
+        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        controlsPanel.setOpaque(false);
 
+        JComboBox<String> periodCombo = new JComboBox<>(new String[]{"12 mois", "24 mois", "36 mois", "Tout"});
+        periodCombo.addActionListener(e -> {
+            String selected = (String) periodCombo.getSelectedItem();
+            int months = 0; // Tout par défaut
+            if (selected.contains("12")) months = 12;
+            else if (selected.contains("24")) months = 24;
+            else if (selected.contains("36")) months = 36;
+
+            updateLineChart(months);
+        });
+
+        controlsPanel.add(new JLabel("Période:"));
+        controlsPanel.add(periodCombo);
+
+        // Graphique - initialiser avec 12 mois par défaut
+        ChartPanel chartPanel = new ChartPanel(createLineChart(12));
+
+        panel.add(controlsPanel, BorderLayout.NORTH);
+        panel.add(chartPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void updateLineChart(int months) {
+        // Implémentez la logique pour mettre à jour le graphique
+        ChartPanel newChartPanel = new ChartPanel(createLineChart(months));
+
+        // en fonction de la période sélectionnée
+    }
+
+
+    private JFreeChart createLineChart(int months) {
+//        Map<String, Integer> monthlyData = membreManager.getMonthlyRegistrations();
+        Map<String, Integer> monthlyData = membreManager.getMonthlyRegistrations(months);
+
+//        Map<String, Integer> monthlyData = membreManager.getMonthlyRegistrations(12); // 12 mois par défaut
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-
         monthlyData.forEach((month, count) -> {
             dataset.addValue(count, "Inscriptions", month);
         });
@@ -272,22 +391,69 @@ public class MemberStatsPanel extends JPanel {
                 false
         );
 
-        // Personnalisation améliorée du graphique
         CategoryPlot plot = chart.getCategoryPlot();
+
+        // Style moderne
         plot.setBackgroundPaint(Color.WHITE);
-        plot.setRangeGridlinePaint(Colors.SECONDARY);
+        plot.setRangeGridlinePaint(new Color(230, 230, 230));
+        plot.setDomainGridlinePaint(new Color(230, 230, 230));
 
-        // Couleur de ligne plus visible
-        plot.getRenderer().setSeriesPaint(0, Colors.PRIMARY);
-        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.5f));
+        // Ligne plus épaisse et colorée
+        plot.getRenderer().setSeriesPaint(0, new Color(33, 150, 243)); // Bleu
+        plot.getRenderer().setSeriesStroke(0, new BasicStroke(3f));
+        plot.getRenderer().setSeriesShape(0, new Ellipse2D.Double(-3, -3, 6, 6));
 
-        // Amélioration des axes
-        plot.getDomainAxis().setTickLabelFont(new Font("Arial", Font.PLAIN, 10));
-        plot.getRangeAxis().setTickLabelFont(new Font("Arial", Font.PLAIN, 10));
+        // Axes améliorés
+        plot.getDomainAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
+        plot.getRangeAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
 
-        // Amélioration de la légende
-        chart.getLegend().setItemFont(new Font("Arial", Font.PLAIN, 12));
-        chart.getLegend().setBackgroundPaint(Color.WHITE);
+        // Fond transparent
+        plot.setBackgroundPaint(null);
+        chart.setBackgroundPaint(null);
+
+        // Légende améliorée
+        LegendTitle legend = chart.getLegend();
+        legend.setItemFont(new Font("SansSerif", Font.PLAIN, 12));
+        legend.setBackgroundPaint(null);
+
+        return chart;
+    }
+    private JFreeChart createAgeGroupChart() {
+        Map<String, Integer> ageData = membreManager.getMembersByAgeGroup();
+
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        ageData.forEach((ageGroup, count) -> {
+            dataset.addValue(count, "Membres", ageGroup);
+        });
+
+        JFreeChart chart = ChartFactory.createBarChart(
+                "",
+                "Tranche d'âge",
+                "Nombre de membres",
+                dataset,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                false
+        );
+
+        CategoryPlot plot = chart.getCategoryPlot();
+
+        // Améliorations visuelles
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setRangeGridlinePaint(new Color(230, 230, 230));
+        plot.setDomainGridlinePaint(new Color(230, 230, 230));
+
+        // Couleur des barres
+        plot.getRenderer().setSeriesPaint(0, new Color(63, 81, 181));
+
+        // Taille des polices
+        plot.getDomainAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
+        plot.getRangeAxis().setTickLabelFont(new Font("SansSerif", Font.PLAIN, 10));
+
+        // Transparence
+        plot.setBackgroundPaint(null);
+        chart.setBackgroundPaint(null);
 
         return chart;
     }

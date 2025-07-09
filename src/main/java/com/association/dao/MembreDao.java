@@ -18,4 +18,5 @@ public interface MembreDao extends GenericDao<Membre> {
     List<Membre> findByNameContaining(String name);
     Map<String, Integer> getMonthlyRegistrations();
     Map<String, Integer> getMembersByAgeGroup();
+    Map<String, Integer> getMonthlyRegistrations(int months);
 }
