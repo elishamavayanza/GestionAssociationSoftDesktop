@@ -1,5 +1,6 @@
 package com.association.view.components.admin;
 
+import com.association.view.components.IconManager;
 import com.association.dao.DAOFactory;
 import com.association.dao.MembreDao;
 import com.association.manager.MembreManager;
@@ -96,10 +97,11 @@ public class MemberStatsPanel extends JPanel {
         Color warningCardColor = Colors.lighter(Colors.WARNING, 0.7f);
         Color dangerCardColor = Colors.lighter(Colors.DANGER, 0.7f);
 
+        // Utilisation des icônes Material animées
         panel.add(createStatCard(
                 "Total Membres",
                 stats.get("total").toString(),
-                IconManager.getIcon("groups.svg", 30),
+                IconManager.getAnimatedMaterialIcon("groups", 30, "pulse"),
                 primaryCardColor,
                 Colors.PRIMARY
         ));
@@ -107,7 +109,7 @@ public class MemberStatsPanel extends JPanel {
         panel.add(createStatCard(
                 "Membres Actifs",
                 stats.get("actifs").toString(),
-                IconManager.getIcon("active_user.svg", 30),
+                IconManager.getAnimatedMaterialIcon("active_user", 30, "spin"),
                 successCardColor,
                 Colors.SUCCESS
         ));
@@ -115,7 +117,7 @@ public class MemberStatsPanel extends JPanel {
         panel.add(createStatCard(
                 "Membres Inactifs",
                 stats.get("inactifs").toString(),
-                IconManager.getIcon("inactive_user.svg", 30),
+                IconManager.getAnimatedMaterialIcon("inactive_user", 30, "pulse"),
                 warningCardColor,
                 Colors.WARNING
         ));
@@ -123,7 +125,7 @@ public class MemberStatsPanel extends JPanel {
         panel.add(createStatCard(
                 "Membres Suspendus",
                 stats.get("suspendus").toString(),
-                IconManager.getIcon("blocked_user.svg", 30),
+                IconManager.getAnimatedMaterialIcon("blocked_user", 30, "pulse"),
                 dangerCardColor,
                 Colors.DANGER
         ));
@@ -131,7 +133,7 @@ public class MemberStatsPanel extends JPanel {
         return panel;
     }
 
-    private JPanel createStatCard(String title, String value, Icon icon, Color bgColor, Color borderColor) {
+    private JPanel createStatCard(String title, String value, JLabel animatedIconLabel, Color bgColor, Color borderColor) {
         JPanel card = new JPanel(new BorderLayout(10, 5));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(borderColor, 1),
@@ -142,8 +144,40 @@ public class MemberStatsPanel extends JPanel {
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
         card.setMinimumSize(new Dimension(0, 140));
 
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        // Effet de survol
+        card.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                card.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(borderColor.brighter(), 2),
+                        BorderFactory.createEmptyBorder(9, 14, 9, 14)
+                ));
+                card.setBackground(Colors.lighter(bgColor, 0.9f));
+                card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+                // Démarrer l'animation au survol
+                if (animatedIconLabel.getClientProperty("animate") != null) {
+                    animatedIconLabel.putClientProperty("animate.running", true);
+                }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                card.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(borderColor, 1),
+                        BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+                card.setBackground(bgColor);
+
+                // Arrêter l'animation quand la souris quitte
+                if (animatedIconLabel.getClientProperty("animate") != null) {
+                    animatedIconLabel.putClientProperty("animate.running", false);
+                }
+            }
+        });
+
+        // Centrer l'icône animée
+        animatedIconLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(Fonts.smallBoldFont());
@@ -157,7 +191,7 @@ public class MemberStatsPanel extends JPanel {
 
         JPanel contentPanel = new JPanel(new BorderLayout(0, 5));
         contentPanel.setOpaque(false);
-        contentPanel.add(iconLabel, BorderLayout.NORTH);
+        contentPanel.add(animatedIconLabel, BorderLayout.NORTH);
         contentPanel.add(titleLabel, BorderLayout.CENTER);
         contentPanel.add(valueLabel, BorderLayout.SOUTH);
 

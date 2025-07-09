@@ -96,6 +96,116 @@ public class IconManager {
         return new ImageIcon(badgedImage);
     }
 
+    public static ImageIcon getMaterialIcon(String iconName, int size) {
+        try {
+            // Mapping des noms d'icônes personnalisés aux noms Material Icons
+            String materialIconName = mapCustomIconToMaterial(iconName);
+
+            // Chemin vers les icônes Material (doivent être dans votre resources/icons/)
+            String iconPath = "material/" + materialIconName + ".svg";
+
+            // Chargement normal de l'icône
+            ImageIcon icon = getIcon(iconPath, size);
+
+            // Si l'icône n'est pas trouvée, créer une icône de fallback
+            if (icon == null || icon.getImageLoadStatus() != MediaTracker.COMPLETE) {
+                System.err.println("Material icon not found: " + iconPath);
+                return createFallbackIcon(size, size);
+            }
+
+            return icon;
+        } catch (Exception e) {
+            System.err.println("Error loading Material icon: " + e.getMessage());
+            return createFallbackIcon(size, size);
+        }
+    }
+
+    private static String mapCustomIconToMaterial(String customName) {
+        // Mapper vos noms d'icônes personnalisés aux noms Material Icons standards
+        switch (customName) {
+            case "groups": return "groups";
+            case "active_user": return "person";
+            case "inactive_user": return "person_outline";
+            case "blocked_user": return "person_off";
+            default: return customName;
+        }
+    }
+
+    // Version animée (optionnelle)
+    public static JLabel getAnimatedMaterialIcon(String iconName, int size, String animationType) {
+        ImageIcon icon = getMaterialIcon(iconName, size);
+        return new AnimatedIconLabel(icon, animationType);
+    }
+
+    public static class AnimatedIconLabel extends JLabel {
+        private final String animationType;
+        private float angle = 0f;
+        private float scale = 1f;
+        private boolean running = true;
+        private final Timer animationTimer;
+
+        public AnimatedIconLabel(ImageIcon icon, String animationType) {
+            super(icon);
+            this.animationType = animationType;
+            setHorizontalAlignment(SwingConstants.CENTER);
+
+            // Créer le timer pour l'animation
+            animationTimer = new Timer(50, e -> {
+                if (!running) return;
+
+                switch (animationType) {
+                    case "spin":
+                        angle += 0.1f;
+                        if (angle > 2 * Math.PI) angle = 0;
+                        break;
+                    case "pulse":
+                        scale += 0.05f;
+                        if (scale > 1.2f || scale < 0.8f) scale = scale > 1.2f ? 0.8f : 1.2f;
+                        break;
+                }
+                repaint();
+            });
+            animationTimer.start();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Centrer les transformations
+            int centerX = getWidth() / 2;
+            int centerY = getHeight() / 2;
+
+            g2d.translate(centerX, centerY);
+
+            if ("spin".equals(animationType)) {
+                g2d.rotate(angle);
+            } else if ("pulse".equals(animationType)) {
+                g2d.scale(scale, scale);
+            }
+
+            g2d.translate(-centerX, -centerY);
+            super.paintComponent(g2d);
+            g2d.dispose();
+        }
+
+        public void setRunning(boolean running) {
+            this.running = running;
+            if (!running) {
+                angle = 0f;
+                scale = 1f;
+                repaint();
+            }
+        }
+
+        @Override
+        public void removeNotify() {
+            super.removeNotify();
+            animationTimer.stop(); // Arrêter l'animation quand le composant est retiré
+        }
+    }
+
     private static class BufferedImageTranscoder extends ImageTranscoder {
         private BufferedImage img;
 
