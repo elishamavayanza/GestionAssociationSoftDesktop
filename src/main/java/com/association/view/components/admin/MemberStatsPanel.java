@@ -80,6 +80,7 @@ public class MemberStatsPanel extends JPanel {
     }
 
     private JPanel createStatsCardsPanel() {
+
         JPanel panel = new JPanel(new GridLayout(1, 4, 15, 0));
         panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
         panel.setBackground(Colors.BACKGROUND);
@@ -185,6 +186,7 @@ public class MemberStatsPanel extends JPanel {
         // Graphique circulaire
         JFreeChart pieChart = createPieChart();
         ChartPanel pieChartPanel = new ChartPanel(pieChart);
+
         panel.add(wrapChartPanel(pieChartPanel, "Répartition par Statut"));
 
         // Graphique linéaire
@@ -287,7 +289,10 @@ public class MemberStatsPanel extends JPanel {
 
     private JFreeChart createPieChart() {
         Map<String, Object> stats = membreManager.getMembreStats();
+        System.out.println("Stats: " + stats);
+
         int totalMembres = ((Number) stats.get("total")).intValue();
+        System.out.println("Total membres: " + totalMembres);
 
         DefaultPieDataset dataset = new DefaultPieDataset();
         dataset.setValue("Actifs", (Number) stats.get("actifs"));
@@ -295,7 +300,7 @@ public class MemberStatsPanel extends JPanel {
         dataset.setValue("Suspendus", (Number) stats.get("suspendus"));
 
         JFreeChart chart = ChartFactory.createRingChart(
-                "", // Titre vide car nous avons notre propre titre
+                "", // Titre vide
                 dataset,
                 true, // légende
                 true, // tooltips
@@ -305,22 +310,22 @@ public class MemberStatsPanel extends JPanel {
         // Personnalisation du graphique en couronne
         RingPlot plot = (RingPlot) chart.getPlot();
 
-        // Ajout du texte personnalisé au centre (version simplifiée)
+        // Configuration du texte central
         plot.setCenterText(generateCenterText(totalMembres));
         plot.setCenterTextFont(new Font("SansSerif", Font.BOLD, 24));
         plot.setCenterTextColor(Colors.PRIMARY);
 
-        // Amélioration des couleurs avec des nuances plus modernes
-        plot.setSectionPaint("Actifs", new Color(76, 175, 80)); // Vert
-        plot.setSectionPaint("Inactifs", new Color(255, 193, 7)); // Jaune
-        plot.setSectionPaint("Suspendus", new Color(244, 67, 54)); // Rouge
-
-        // Configuration de la couronne
-        plot.setSectionDepth(0.35); // Épaisseur de la couronne
+        // Ajustez ces valeurs si nécessaire pour l'espacement
+        plot.setSectionDepth(0.35);
         plot.setInnerSeparatorExtension(0.05);
         plot.setOuterSeparatorExtension(0.05);
 
-        // Amélioration des labels
+        // Utilisation des mêmes couleurs claires que pour les cartes
+        plot.setSectionPaint("Actifs", Colors.lighter(Colors.SUCCESS, 0.7f));
+        plot.setSectionPaint("Inactifs", Colors.lighter(Colors.WARNING, 0.7f));
+        plot.setSectionPaint("Suspendus", Colors.lighter(Colors.DANGER, 0.7f));
+
+        // Labels
         plot.setLabelGenerator(new StandardPieSectionLabelGenerator(
                 "{0}: {1} ({2})",
                 NumberFormat.getNumberInstance(),
@@ -331,24 +336,24 @@ public class MemberStatsPanel extends JPanel {
         plot.setLabelOutlinePaint(null);
         plot.setLabelShadowPaint(null);
 
-        // Tooltips améliorés
+        // Tooltips
         plot.setToolTipGenerator(new StandardPieToolTipGenerator(
                 "<html><b>{0}</b><br>Membres: {1}<br>{2}</html>",
                 NumberFormat.getNumberInstance(),
                 NumberFormat.getPercentInstance()
         ));
 
-        // Fond transparent
+        // Arrière-plan
         plot.setBackgroundPaint(null);
         chart.setBackgroundPaint(null);
 
-        // Légende améliorée
+        // Légende
         LegendTitle legend = chart.getLegend();
-        legend.setItemFont(new Font("SansSerif", Font.PLAIN, 12));
         legend.setBackgroundPaint(null);
 
         return chart;
     }
+
 
     private String generateCenterText(int total) {
         return "<html><div style='text-align: center;'>"
