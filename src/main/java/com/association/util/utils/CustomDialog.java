@@ -1,5 +1,6 @@
 package com.association.util.utils;
 
+import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
 import javax.swing.*;
@@ -8,17 +9,16 @@ import java.awt.*;
 
 public class CustomDialog {
     // Icônes personnalisées pour chaque type de message
-    private static final Icon INFO_ICON = loadIcon("/icons/info.svg");
-    private static final Icon WARNING_ICON = loadIcon("/icons/warning.svg");
-    private static final Icon ERROR_ICON = loadIcon("/icons/error.svg");
-    private static final Icon QUESTION_ICON = loadIcon("/icons/question.svg");
-    private static final Icon SUCCESS_ICON = loadIcon("/icons/success.svg");
+    private static final Icon INFO_ICON = IconManager.getIcon("info.svg", 32);
+    private static final Icon WARNING_ICON = IconManager.getIcon("warning.svg", 32);
+    private static final Icon ERROR_ICON = IconManager.getIcon("error.svg", 32);
+    private static final Icon QUESTION_ICON = IconManager.getIcon("question.svg", 32);
+    private static final Icon SUCCESS_ICON = IconManager.getIcon("success.svg", 32);
 
-    // Icônes pour les boutons
-    private static final Icon YES_ICON = loadIcon("/icons/yes.svg");
-    private static final Icon NO_ICON = loadIcon("/icons/no.svg");
-    private static final Icon CANCEL_ICON = loadIcon("/icons/cancel.svg");
-    private static final Icon OK_ICON = loadIcon("/icons/ok.svg");
+    private static final Icon YES_ICON = IconManager.getIcon("yes.svg", 24);
+    private static final Icon NO_ICON = IconManager.getIcon("no.svg", 24);
+    private static final Icon CANCEL_ICON = IconManager.getIcon("cancel.svg", 24);
+    private static final Icon OK_ICON = IconManager.getIcon("ok.svg", 24);
 
     public static void customizeDialogs() {
         // Personnalisation de base pour tous les JOptionPane
@@ -136,6 +136,7 @@ public class CustomDialog {
     }
 
     private static JButton createButton(String text, Icon icon, Color bgColor) {
+
         JButton button = new JButton(text, icon);
         button.setFont(Fonts.buttonFont());
         button.setBackground(bgColor);
