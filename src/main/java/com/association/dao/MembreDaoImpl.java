@@ -411,11 +411,11 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
     public Map<String, Integer> getMonthlyRegistrations() {
         Map<String, Integer> result = new LinkedHashMap<>();
         String sql = """
-        SELECT TO_CHAR(date_inscription, 'YYYY-MM') AS month, 
-               COUNT(*) AS count 
-        FROM membres 
-        GROUP BY TO_CHAR(date_inscription, 'YYYY-MM') 
-        ORDER BY month""";
+    SELECT DATE_FORMAT(date_inscription, '%Y-%m') AS month, 
+           COUNT(*) AS count 
+    FROM membres 
+    GROUP BY DATE_FORMAT(date_inscription, '%Y-%m') 
+    ORDER BY month""";
 
         try (Connection conn = databaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
