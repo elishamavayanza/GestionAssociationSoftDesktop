@@ -3,11 +3,21 @@ package com.association.util;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.print.*;
-import java.text.MessageFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.InputStream;
+import java.io.IOException;
 
 public class PrintUtils {
     public enum PageSize { A4, LETTER }
     public enum Orientation { PORTRAIT, LANDSCAPE }
+
+    private static final String LOGO_PATH = "/images/logo.jpg";
+    private static final String LOGO_LEFT_PATH = "/images/RDC.jpg";
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm");
 
     public static void printTable(JTable table, String title, PageSize size,
                                   Orientation orientation, boolean showPrintDialog, JFrame parent) {
@@ -15,41 +25,37 @@ public class PrintUtils {
             PrinterJob job = PrinterJob.getPrinterJob();
             job.setJobName(title);
 
-            // Configurer le format de page
             PageFormat pageFormat = job.defaultPage();
             Paper paper = new Paper();
 
-            double width = 0;
-            double height = 0;
-            double margin = 18; // marge en points (1/4 inch)
+            // Configuration du format de page
+            double width = 842; // A4 par défaut (297mm en hauteur)
+            double height = 595; // (210mm en largeur)
 
-            switch (size) {
-                case A4:
-                    width = 595; // A4 en points (210mm)
-                    height = 842; // (297mm)
-                    break;
-                case LETTER:
-                    width = 612; // Letter en points (8.5 inch)
-                    height = 792; // (11 inch)
-                    break;
+            if (size == PageSize.LETTER) {
+                width = 792;
+                height = 612;
             }
 
-            if (orientation == Orientation.LANDSCAPE) {
+            if (orientation == Orientation.PORTRAIT) {
                 double temp = width;
                 width = height;
                 height = temp;
-                pageFormat.setOrientation(PageFormat.LANDSCAPE);
-            } else {
                 pageFormat.setOrientation(PageFormat.PORTRAIT);
+            } else {
+                pageFormat.setOrientation(PageFormat.LANDSCAPE);
             }
 
+            // Marges (en points) - mêmes que dans ExportUtils
+            float margin = 72; // 2.54 cm
             paper.setSize(width, height);
-            // Marges plus larges pour éviter le découpage
-            paper.setImageableArea(margin, margin, width - margin * 2, height - margin * 2);
+            paper.setImageableArea(margin, margin,
+                    width - margin * 2,
+                    height - margin * 2);
             pageFormat.setPaper(paper);
 
-            // Créer le Printable avec le titre
-            Printable printable = new TablePrintable(table, title, pageFormat);
+            // Créer le Printable avec le style du PDF
+            Printable printable = new PdfStylePrintable(table, title, pageFormat);
 
             job.setPrintable(printable, pageFormat);
 
@@ -63,141 +69,225 @@ public class PrintUtils {
         }
     }
 
-    private static class TablePrintable implements Printable {
+    private static class PdfStylePrintable implements Printable {
         private final JTable table;
         private final String title;
         private final PageFormat pageFormat;
+        private BufferedImage logoLeft;
+        private BufferedImage logoRight;
 
-        public TablePrintable(JTable table, String title, PageFormat pageFormat) {
+        public PdfStylePrintable(JTable table, String title, PageFormat pageFormat) {
             this.table = table;
             this.title = title;
             this.pageFormat = pageFormat;
+
+            // Charger les logos
+            try {
+                try (InputStream is = getClass().getResourceAsStream(LOGO_LEFT_PATH)) {
+                    if (is != null) logoLeft = ImageIO.read(is);
+                }
+                try (InputStream is = getClass().getResourceAsStream(LOGO_PATH)) {
+                    if (is != null) logoRight = ImageIO.read(is);
+                }
+            } catch (IOException e) {
+                System.err.println("Erreur de chargement des logos: " + e.getMessage());
+            }
         }
 
         @Override
         public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) {
             Graphics2D g2d = (Graphics2D) graphics;
-            g2d.setColor(Color.BLACK);
-
-            // Traduire les coordonnées pour tenir compte des marges
             g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
 
-            // Calculer la zone imprimable
+            // Zone imprimable
             double pageWidth = pageFormat.getImageableWidth();
             double pageHeight = pageFormat.getImageableHeight();
 
-            // Vérifier si le tableau est trop large
+            // Couleurs (mêmes que dans ExportUtils)
+            Color headerBgColor = new Color(51, 102, 153); // Bleu foncé
+            Color evenRowColor = new Color(240, 240, 240); // Gris clair
+
+            // ===== EN-TÊTE (identique au PDF) ===== //
+            // Logo gauche
+            if (logoLeft != null && pageIndex == 0) {
+                int logoWidth = 80;
+                int logoHeight = 50;
+                g2d.drawImage(logoLeft, 0, 0, logoWidth, logoHeight, null);
+            }
+
+            // Logo droit
+            if (logoRight != null && pageIndex == 0) {
+                int logoWidth = 80;
+                int logoHeight = 50;
+                int xPos = (int)pageWidth - logoWidth;
+                g2d.drawImage(logoRight, xPos, 0, logoWidth, logoHeight, null);
+            }
+
+            // Titre de l'association (centré)
+            int yPos = 60;
+            g2d.setFont(new Font("Helvetica", Font.BOLD, 10));
+            String associationTitle = "ASSOCIATION AVEC";
+            int titleWidth = g2d.getFontMetrics().stringWidth(associationTitle);
+            g2d.drawString(associationTitle, (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 15;
+
+            g2d.setFont(new Font("Helvetica", Font.PLAIN, 9));
+            String address = "Siège social : .................................................................";
+            titleWidth = g2d.getFontMetrics().stringWidth(address);
+            g2d.drawString(address, (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 15;
+
+            String contact = "Email : ..........................| Tél : +243...............................";
+            titleWidth = g2d.getFontMetrics().stringWidth(contact);
+            g2d.drawString(contact, (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 15;
+
+            String legal = "SIRET : .........................| RNA : ....................................";
+            titleWidth = g2d.getFontMetrics().stringWidth(legal);
+            g2d.drawString(legal, (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 30;
+
+            // Titre principal
+            g2d.setFont(new Font("Helvetica", Font.BOLD, 16));
+            g2d.setColor(Color.DARK_GRAY);
+            String mainTitle = "LISTE DES MEMBRES";
+            titleWidth = g2d.getFontMetrics().stringWidth(mainTitle);
+            g2d.drawString(mainTitle, (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 20;
+
+            g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
+            String year = "Année " + LocalDateTime.now().getYear();
+            titleWidth = g2d.getFontMetrics().stringWidth(year);
+            g2d.drawString(year, (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 30;
+
+            // Titre du document
+            g2d.setFont(new Font("Helvetica", Font.BOLD, 14));
+            g2d.setColor(Color.DARK_GRAY);
+            titleWidth = g2d.getFontMetrics().stringWidth(title.toUpperCase());
+            g2d.drawString(title.toUpperCase(), (float)(pageWidth/2 - titleWidth/2), yPos);
+            yPos += 20;
+
+            // Date d'export
+            g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
+            g2d.setColor(Color.GRAY);
+            String exportDate = "Export généré le " + LocalDateTime.now().format(DATE_FORMATTER);
+            int dateWidth = g2d.getFontMetrics().stringWidth(exportDate);
+            g2d.drawString(exportDate, (float)(pageWidth/2 - dateWidth/2), yPos);
+            yPos += 30;
+
+            // ===== TABLEAU ===== //
             int tableWidth = 0;
+            int[] colWidths = new int[table.getColumnCount()];
+
+            // Calculer les largeurs de colonnes
             for (int col = 0; col < table.getColumnCount(); col++) {
-                tableWidth += table.getColumnModel().getColumn(col).getWidth();
+                int colWidth = 0;
+                // Largeur de l'en-tête
+                String header = table.getColumnName(col);
+                if (col == 0 && "ID".equalsIgnoreCase(header)) {
+                    header = "N°"; // Remplace "ID" par "N°" comme dans ExportUtils
+                }
+                colWidth = Math.max(colWidth, g2d.getFontMetrics().stringWidth(header) + 20);
+
+                // Largeur des données
+                for (int row = 0; row < table.getRowCount(); row++) {
+                    Object value = table.getValueAt(row, col);
+                    if (col == 0 && "ID".equalsIgnoreCase(table.getColumnName(col))) {
+                        value = String.format("%02d", row + 1); // Format 01, 02, etc.
+                    }
+                    String text = (value != null) ? value.toString() : "";
+                    colWidth = Math.max(colWidth, g2d.getFontMetrics().stringWidth(text) + 10);
+                }
+
+                colWidths[col] = colWidth;
+                tableWidth += colWidth;
             }
 
-            // Si le tableau est trop large, ajuster l'échelle
+            // Ajuster l'échelle si le tableau est trop large
+            double scale = 1.0;
             if (tableWidth > pageWidth) {
-                double scale = pageWidth / tableWidth;
-                g2d.scale(scale, scale);
-                pageWidth = pageWidth / scale;
-                pageHeight = pageHeight / scale;
+                scale = pageWidth / tableWidth;
+                g2d.scale(scale, 1.0);
             }
 
-            // Dessiner le titre
-            g2d.setFont(new Font("Arial", Font.BOLD, 14));
-            FontMetrics titleMetrics = g2d.getFontMetrics();
-            int titleWidth = titleMetrics.stringWidth(title);
-            g2d.drawString(title, (float)((pageWidth - titleWidth) / 2), 20);
+            // En-têtes du tableau
+            g2d.setFont(new Font("Helvetica", Font.BOLD, 10));
+            g2d.setColor(Color.WHITE);
 
-            // Dessiner le tableau
-            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-            int rowHeight = table.getRowHeight() + 2; // Ajouter un peu d'espace
-            int headerHeight = rowHeight + 10; // Espace supplémentaire pour l'en-tête
+            int xPos = 0;
+            for (int col = 0; col < table.getColumnCount(); col++) {
+                String header = table.getColumnName(col);
+                if (col == 0 && "ID".equalsIgnoreCase(header)) {
+                    header = "N°";
+                }
 
-            int rowsPerPage = (int) Math.floor((pageHeight - 50) / rowHeight); // Réserver de l'espace pour le titre et le numéro de page
-            int totalPages = (int) Math.ceil((double) table.getRowCount() / rowsPerPage);
+                // Dessiner le fond de l'en-tête
+                g2d.setColor(headerBgColor);
+                g2d.fillRect(xPos, yPos, colWidths[col], 25);
+                g2d.setColor(Color.WHITE);
 
-            if (pageIndex >= totalPages) {
-                return NO_SUCH_PAGE;
+                // Dessiner le texte centré
+                int textWidth = g2d.getFontMetrics().stringWidth(header);
+                g2d.drawString(header, xPos + (colWidths[col] - textWidth)/2, yPos + 18);
+
+                // Dessiner les bordures
+                g2d.setColor(Color.WHITE);
+                g2d.drawRect(xPos, yPos, colWidths[col], 25);
+
+                xPos += colWidths[col];
             }
+            yPos += 25;
 
-            // Dessiner le numéro de page
-            g2d.drawString("Page " + (pageIndex + 1) + "/" + totalPages, (float)(pageWidth - 50), (float)(pageHeight - 10));
+            // Données du tableau
+            g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
 
-            // Dessiner les lignes
-            int y = 40; // Commencer après le titre
+            int rowsPerPage = (int)((pageHeight - yPos - 50) / 20); // Réserver de l'espace pour le pied de page
             int startRow = pageIndex * rowsPerPage;
             int endRow = Math.min(startRow + rowsPerPage, table.getRowCount());
 
-            // Dessiner les en-têtes de colonnes
-            int x = 0;
-            for (int col = 0; col < table.getColumnCount(); col++) {
-                int colWidth = table.getColumnModel().getColumn(col).getWidth();
-                String header = table.getColumnName(col);
-
-                // Dessiner le fond de l'en-tête
-                g2d.setColor(new Color(240, 240, 240));
-                g2d.fillRect(x, y, colWidth, headerHeight);
-                g2d.setColor(Color.BLACK);
-
-                // Dessiner le texte de l'en-tête
-                g2d.drawString(header, x + 5, y + 15);
-                g2d.drawRect(x, y, colWidth, headerHeight);
-                x += colWidth;
+            if (startRow >= table.getRowCount()) {
+                return NO_SUCH_PAGE;
             }
-            y += headerHeight;
 
-            // Dessiner les données
             for (int row = startRow; row < endRow; row++) {
-                x = 0;
+                xPos = 0;
                 for (int col = 0; col < table.getColumnCount(); col++) {
-                    int colWidth = table.getColumnModel().getColumn(col).getWidth();
                     Object value = table.getValueAt(row, col);
+                    if (col == 0 && "ID".equalsIgnoreCase(table.getColumnName(col))) {
+                        value = String.format("%02d", row + 1);
+                    }
+                    String text = (value != null) ? value.toString() : "";
 
-                    // Alterner les couleurs de fond pour une meilleure lisibilité
+                    // Alternance des couleurs de fond
                     if (row % 2 == 0) {
                         g2d.setColor(Color.WHITE);
                     } else {
-                        g2d.setColor(new Color(248, 248, 248));
+                        g2d.setColor(evenRowColor);
                     }
-                    g2d.fillRect(x, y, colWidth, rowHeight);
-                    g2d.setColor(Color.BLACK);
+                    g2d.fillRect(xPos, yPos, colWidths[col], 20);
 
-                    // Dessiner le texte (tronqué si nécessaire)
-                    String text = value != null ? value.toString() : "";
-                    FontMetrics metrics = g2d.getFontMetrics();
-                    if (metrics.stringWidth(text) > colWidth - 10) {
-                        text = truncateText(text, metrics, colWidth - 10);
-                    }
-                    g2d.drawString(text, x + 5, y + 15);
-                    g2d.drawRect(x, y, colWidth, rowHeight);
-                    x += colWidth;
+                    // Dessiner le texte
+                    g2d.setColor(Color.BLACK);
+                    g2d.drawString(text, xPos + 5, yPos + 15);
+
+                    // Bordures
+                    g2d.setColor(Color.LIGHT_GRAY);
+                    g2d.drawRect(xPos, yPos, colWidths[col], 20);
+
+                    xPos += colWidths[col];
                 }
-                y += rowHeight;
+                yPos += 20;
             }
+
+            // Pied de page (numéro de page)
+            g2d.setFont(new Font("Helvetica", Font.PLAIN, 8));
+            g2d.setColor(Color.GRAY);
+            String footer = "Page " + (pageIndex + 1);
+            int footerWidth = g2d.getFontMetrics().stringWidth(footer);
+            g2d.drawString(footer, (int)(pageWidth/2 - footerWidth/2), (int)(pageHeight - 10));
 
             return PAGE_EXISTS;
-        }
-
-        private String truncateText(String text, FontMetrics metrics, int maxWidth) {
-            if (metrics.stringWidth(text) <= maxWidth) {
-                return text;
-            }
-
-            String ellipsis = "...";
-            int ellipsisWidth = metrics.stringWidth(ellipsis);
-
-            int low = 0;
-            int high = text.length();
-
-            while (low < high) {
-                int mid = (low + high) / 2;
-                String subStr = text.substring(0, mid) + ellipsis;
-                if (metrics.stringWidth(subStr) < maxWidth) {
-                    low = mid + 1;
-                } else {
-                    high = mid;
-                }
-            }
-
-            return text.substring(0, low - 1) + ellipsis;
         }
     }
 }
