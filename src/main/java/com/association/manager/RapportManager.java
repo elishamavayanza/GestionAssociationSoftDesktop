@@ -42,6 +42,27 @@ public class RapportManager extends BaseManager<Rapport> {
         return rapport;
     }
 
+    public Rapport genererRapport(TypeRapport type, boolean includeDetails) {
+        Rapport rapport = new Rapport();
+        rapport.setType(type);
+        rapport.setDateGeneration(new Date());
+
+        switch(type) {
+            case MEMBRES:
+                rapport.setContenu("Contenu du rapport des membres..." + (includeDetails ? "\nDétails complets inclus" : ""));
+                break;
+            case FINANCIER:
+                rapport.setContenu("Contenu du rapport financier..." + (includeDetails ? "\nDétails complets inclus" : ""));
+                break;
+            // Ajoutez d'autres cas selon vos besoins
+            default:
+                rapport.setContenu("Contenu du rapport par défaut..." + (includeDetails ? "\nDétails complets inclus" : ""));
+        }
+
+        create(rapport);
+        return rapport;
+    }
+
     public List<Rapport> getRapportsByType(TypeRapport type) {
         return rapportDao.findByType(type);
     }

@@ -1,6 +1,7 @@
 package com.association.view.components.admin;
 
 import com.association.view.components.IconManager;
+import com.association.view.components.rapport.RapportPanel;
 import com.association.view.interfaces.AdminInterface;
 import com.association.view.styles.Colors;
 import com.association.view.styles.HoverButton;
@@ -117,7 +118,11 @@ public class SidePanel extends JPanel {
         gestionEmprunts.addSubMenuItem("Suivi Emprunts", "track_changes.svg");
 
         DropDownMenu rapports = new DropDownMenu("Rapports", "analytics.svg");
-        rapports.addSubMenuItem("Générer Rapport", "summarize.svg");
+        HoverButton genererRapportBtn = rapports.addSubMenuItem("Générer Rapport", "summarize.svg");
+        genererRapportBtn.setDoubleClickAction(() -> {
+            RapportPanel rapportPanel = new RapportPanel();
+            adminInterface.setContentPanel(rapportPanel);
+        });
         rapports.addSubMenuItem("Exporter Données", "cloud_download.svg");
 
         DropDownMenu administration = new DropDownMenu("Administration", "admin_panel_settings.svg");
