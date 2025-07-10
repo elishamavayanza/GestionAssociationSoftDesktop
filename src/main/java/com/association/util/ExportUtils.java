@@ -3,6 +3,7 @@ package com.association.util;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.pdf.*;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.itextpdf.text.*;
@@ -10,18 +11,18 @@ import com.itextpdf.text.*;
 import javax.swing.*;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
-import java.awt.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ExportUtils {
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-    private static final String LOGO_PATH = "/main/resources/images/logo.png"; // Chemin vers votre logo
-
+    private static final String LOGO_PATH = "/images/logo.jpg"; // Si le logo est dans src/main/resources/images
+    private static final String LOGO_LEFT_PATH = "/images/RDC.jpg"; // Chemin vers votre deuxième logo
 
     public static void exportTableToExcel(TableModel model, JTableHeader header,
                                           String title, String fileName, JFrame parent) {
@@ -221,30 +222,59 @@ public class ExportUtils {
     }
 
     private static class PdfHeaderFooter extends PdfPageEventHelper {
-        private Image logo;
+        private Image logoRight;
+        private Image logoLeft;
 
         public PdfHeaderFooter() {
             try {
-                logo = Image.getInstance(LOGO_PATH);
-                logo.scaleToFit(80, 50);
+                // Charger le logo de droite
+                try (InputStream is = getClass().getResourceAsStream(LOGO_PATH)) {
+                    if (is != null) {
+                        logoRight = Image.getInstance(IOUtils.toByteArray(is));
+                        logoRight.scaleToFit(80, 50);
+                    } else {
+                        System.err.println("Right logo not found: " + LOGO_PATH);
+                    }
+                }
+
+                // Charger le logo de gauche
+                try (InputStream is = getClass().getResourceAsStream(LOGO_LEFT_PATH)) {
+                    if (is != null) {
+                        logoLeft = Image.getInstance(IOUtils.toByteArray(is));
+                        logoLeft.scaleToFit(80, 50);
+                    } else {
+                        System.err.println("Left logo not found: " + LOGO_LEFT_PATH);
+                    }
+                }
             } catch (Exception e) {
-                logo = null;
+                System.err.println("Failed to load logos: " + e.getMessage());
+                logoRight = null;
+                logoLeft = null;
             }
         }
 
         @Override
         public void onEndPage(PdfWriter writer, Document document) {
             try {
-                // Logo en haut à droite
-                if (logo != null) {
-                    logo.setAbsolutePosition(
-                            document.right() - logo.getScaledWidth() - 36,
+                // Logo à gauche
+                if (logoLeft != null) {
+                    logoLeft.setAbsolutePosition(
+                            document.left(),
                             document.top() + 10
                     );
-                    writer.getDirectContent().addImage(logo);
+                    writer.getDirectContent().addImage(logoLeft);
                 }
 
-                // Pied de page
+                // Logo à droite
+                if (logoRight != null) {
+                    logoRight.setAbsolutePosition(
+                            document.right() - logoRight.getScaledWidth() - 36,
+                            document.top() + 10
+                    );
+                    writer.getDirectContent().addImage(logoRight);
+                }
+
+                // Pied de page (inchangé)
                 PdfContentByte cb = writer.getDirectContent();
                 Phrase footer = new Phrase(
                         "Document généré le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
