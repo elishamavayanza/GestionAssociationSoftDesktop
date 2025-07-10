@@ -40,7 +40,7 @@ public class ExportUtils {
 
                 // Style pour l'en-tête
                 CellStyle headerStyle = workbook.createCellStyle();
-                org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont(); // Notez le type complet
+                org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
                 headerFont.setBold(true);
                 headerStyle.setFont(headerFont);
                 headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
@@ -50,11 +50,15 @@ public class ExportUtils {
                 headerStyle.setBorderLeft(BorderStyle.THIN);
                 headerStyle.setBorderRight(BorderStyle.THIN);
 
-                // Créer la ligne d'en-tête
+                // Créer la ligne d'en-tête - remplacer "ID" par "N°" si c'est la première colonne
                 Row headerRow = sheet.createRow(0);
                 for (int col = 0; col < model.getColumnCount(); col++) {
+                    String columnName = model.getColumnName(col);
+                    if (col == 0 && "ID".equalsIgnoreCase(columnName)) {
+                        columnName = "N°"; // Remplace "ID" par "N°"
+                    }
                     Cell cell = headerRow.createCell(col);
-                    cell.setCellValue(model.getColumnName(col));
+                    cell.setCellValue(columnName);
                     cell.setCellStyle(headerStyle);
                 }
 
@@ -63,6 +67,12 @@ public class ExportUtils {
                     Row dataRow = sheet.createRow(row + 1);
                     for (int col = 0; col < model.getColumnCount(); col++) {
                         Object value = model.getValueAt(row, col);
+
+                        // Pour la première colonne (ID), remplacer par un numéro séquentiel formaté
+                        if (col == 0 && "ID".equalsIgnoreCase(model.getColumnName(col))) {
+                            value = String.format("%02d", row + 1); // Format 01, 02, etc.
+                        }
+
                         Cell cell = dataRow.createCell(col);
                         if (value != null) {
                             cell.setCellValue(value.toString());
@@ -101,7 +111,7 @@ public class ExportUtils {
                 file = new File(file.getAbsolutePath() + ".pdf");
             }
 
-            Document document = new Document(PageSize.A4.rotate(), 36, 36, 90, 36); // Mode paysage pour plus d'espace
+            Document document = new Document(PageSize.A4.rotate(), 36, 36, 90, 36);
             try {
                 PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(file));
                 writer.setPageEvent(new PdfHeaderFooter());
@@ -134,11 +144,15 @@ public class ExportUtils {
                 pdfTable.setSpacingAfter(10f);
 
                 // Couleurs
-                BaseColor headerBgColor = new BaseColor(51, 102, 153); // Bleu foncé
+                BaseColor headerBgColor = new BaseColor(51, 102, 153);
 
-                // En-têtes
+                // En-têtes - remplacer "ID" par "N°" si c'est la première colonne
                 for (int col = 0; col < columnCount; col++) {
-                    PdfPCell headerCell = new PdfPCell(new Phrase(model.getColumnName(col), headerFont));
+                    String columnName = model.getColumnName(col);
+                    if (col == 0 && "ID".equalsIgnoreCase(columnName)) {
+                        columnName = "N°"; // Remplace "ID" par "N°"
+                    }
+                    PdfPCell headerCell = new PdfPCell(new Phrase(columnName, headerFont));
                     headerCell.setBackgroundColor(headerBgColor);
                     headerCell.setBorderColor(BaseColor.WHITE);
                     headerCell.setPadding(5);
@@ -150,6 +164,12 @@ public class ExportUtils {
                 for (int row = 0; row < model.getRowCount(); row++) {
                     for (int col = 0; col < columnCount; col++) {
                         Object value = model.getValueAt(row, col);
+
+                        // Pour la première colonne (ID), remplacer par un numéro séquentiel formaté
+                        if (col == 0 && "ID".equalsIgnoreCase(model.getColumnName(col))) {
+                            value = String.format("%02d", row + 1); // Format 01, 02, etc.
+                        }
+
                         PdfPCell cell = new PdfPCell(new Phrase(value != null ? value.toString() : "", dataFont));
                         cell.setPadding(5);
                         cell.setBorderColor(BaseColor.LIGHT_GRAY);
