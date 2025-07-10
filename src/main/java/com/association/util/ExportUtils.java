@@ -112,7 +112,14 @@ public class ExportUtils {
                 file = new File(file.getAbsolutePath() + ".pdf");
             }
 
-            Document document = new Document(PageSize.A4.rotate(), 36, 36, 90, 36);
+            // Marges : gauche, droite, haut, bas (en points, 72 points = 1 pouce = 2.54 cm)
+            // Marges standard pour document administratif : 2.5 cm de chaque côté
+            float marginLeft = 72;    // 2.54 cm
+            float marginRight = 72;   // 2.54 cm
+            float marginTop = 72;     // 2.54 cm
+            float marginBottom = 72;  // 2.54 cm
+
+            Document document = new Document(PageSize.A4.rotate(), marginLeft, marginRight, marginTop, marginBottom);
             try {
                 PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(file));
                 writer.setPageEvent(new PdfHeaderFooter());
@@ -122,6 +129,7 @@ public class ExportUtils {
                 Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
                 Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
                 Font dataFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+                Font adminFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.BLACK);
 
                 // Titre
                 Paragraph docTitle = new Paragraph(title.toUpperCase(), titleFont);
@@ -225,56 +233,99 @@ public class ExportUtils {
         private Image logoRight;
         private Image logoLeft;
         private boolean firstPage = true;
+        private Image signatureImage;
+        private Image stampImage;
 
         public PdfHeaderFooter() {
             try {
-                // Charger le logo de droite
+                // Charger les logos
                 try (InputStream is = getClass().getResourceAsStream(LOGO_PATH)) {
-                    if (is != null) {
-                        logoRight = Image.getInstance(IOUtils.toByteArray(is));
-                        logoRight.scaleToFit(80, 50);
-                    } else {
-                        System.err.println("Right logo not found: " + LOGO_PATH);
-                    }
+                    if (is != null) logoRight = Image.getInstance(IOUtils.toByteArray(is));
+                }
+                try (InputStream is = getClass().getResourceAsStream(LOGO_LEFT_PATH)) {
+                    if (is != null) logoLeft = Image.getInstance(IOUtils.toByteArray(is));
                 }
 
-                // Charger le logo de gauche
-                try (InputStream is = getClass().getResourceAsStream(LOGO_LEFT_PATH)) {
-                    if (is != null) {
-                        logoLeft = Image.getInstance(IOUtils.toByteArray(is));
-                        logoLeft.scaleToFit(80, 50);
-                    } else {
-                        System.err.println("Left logo not found: " + LOGO_LEFT_PATH);
-                    }
+                // Charger les images de signature et cachet (si disponibles)
+                try (InputStream is = getClass().getResourceAsStream("/images/signature.png")) {
+                    if (is != null) signatureImage = Image.getInstance(IOUtils.toByteArray(is));
                 }
+                try (InputStream is = getClass().getResourceAsStream("/images/stamp.png")) {
+                    if (is != null) stampImage = Image.getInstance(IOUtils.toByteArray(is));
+                }
+
+                // Redimensionner les images
+                if (logoRight != null) logoRight.scaleToFit(80, 50);
+                if (logoLeft != null) logoLeft.scaleToFit(80, 50);
+                if (signatureImage != null) signatureImage.scaleToFit(100, 40);
+                if (stampImage != null) stampImage.scaleToFit(80, 80);
             } catch (Exception e) {
-                System.err.println("Failed to load logos: " + e.getMessage());
-                logoRight = null;
-                logoLeft = null;
+                System.err.println("Failed to load images: " + e.getMessage());
             }
         }
 
         @Override
         public void onStartPage(PdfWriter writer, Document document) {
+            PdfContentByte cb = writer.getDirectContent();
+
+            // En-tête administratif - seulement sur la première page
             if (firstPage) {
                 try {
-                    // Logo à gauche - seulement sur la première page
+                    // Logo à gauche
                     if (logoLeft != null) {
                         logoLeft.setAbsolutePosition(
                                 document.left(),
                                 document.top() + 10
                         );
-                        writer.getDirectContent().addImage(logoLeft);
+                        cb.addImage(logoLeft);
                     }
 
-                    // Logo à droite - seulement sur la première page
+                    // Logo à droite
                     if (logoRight != null) {
                         logoRight.setAbsolutePosition(
-                                document.right() - logoRight.getScaledWidth() - 36,
+                                document.right() - logoRight.getScaledWidth(),
                                 document.top() + 10
                         );
-                        writer.getDirectContent().addImage(logoRight);
+                        cb.addImage(logoRight);
                     }
+
+                    // Informations administratives
+                    float yPos = document.top() - 30; // Position sous les logos
+
+                    // Tableau pour les infos administratives
+                    PdfPTable adminTable = new PdfPTable(2);
+                    adminTable.setTotalWidth(document.right() - document.left());
+                    adminTable.setWidths(new float[]{1, 1});
+                    adminTable.setLockedWidth(true);
+
+                    // Cellule de gauche : Nom et Téléphone
+                    PdfPCell leftCell = new PdfPCell();
+                    leftCell.setBorder(Rectangle.NO_BORDER);
+
+                    Paragraph nomParagraph = new Paragraph("Nom : ________________________",
+                            FontFactory.getFont(FontFactory.HELVETICA, 10));
+                    Paragraph telParagraph = new Paragraph("Tél : ________________________",
+                            FontFactory.getFont(FontFactory.HELVETICA, 10));
+
+                    leftCell.addElement(nomParagraph);
+                    leftCell.addElement(telParagraph);
+                    adminTable.addCell(leftCell);
+
+                    // Cellule de droite : Date
+                    // Cellule de droite : Date
+                    PdfPCell rightCell = new PdfPCell();
+                    rightCell.setBorder(Rectangle.NO_BORDER);
+                    rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);  // Alignement de la cellule à droite
+
+                    Paragraph dateParagraph = new Paragraph("Date : ________________________",
+                            FontFactory.getFont(FontFactory.HELVETICA, 10));
+                    dateParagraph.setAlignment(Element.ALIGN_RIGHT);  // Alignement du texte à droite
+                    rightCell.addElement(dateParagraph);
+                    adminTable.addCell(rightCell);
+
+                    // Positionner le tableau
+                    adminTable.writeSelectedRows(0, -1, document.left(), yPos, cb);
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -284,17 +335,62 @@ public class ExportUtils {
 
         @Override
         public void onEndPage(PdfWriter writer, Document document) {
-            // Pied de page pour toutes les pages
             PdfContentByte cb = writer.getDirectContent();
+
+            // Pied de page avec signature et cachet
+            float footerY = document.bottom() - 20;
+
+            // Tableau pour le pied de page
+            PdfPTable footerTable = new PdfPTable(3);
+            footerTable.setTotalWidth(document.right() - document.left());
+            try {
+                footerTable.setWidths(new float[]{2, 1, 2});
+            } catch (DocumentException e) {
+                throw new RuntimeException(e);
+            }
+            footerTable.setLockedWidth(true);
+
+            // Cellule de gauche (vide)
+            PdfPCell leftCell = new PdfPCell();
+            leftCell.setBorder(Rectangle.NO_BORDER);
+            footerTable.addCell(leftCell);
+
+            // Cellule centrale (signature)
+            PdfPCell centerCell = new PdfPCell();
+            centerCell.setBorder(Rectangle.NO_BORDER);
+            centerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+            if (signatureImage != null) {
+                centerCell.addElement(new Chunk(signatureImage, 0, 0));
+            }
+            centerCell.addElement(new Paragraph("Signature",
+                    FontFactory.getFont(FontFactory.HELVETICA, 10)));
+            footerTable.addCell(centerCell);
+
+            // Cellule de droite (cachet)
+            PdfPCell rightCell = new PdfPCell();
+            rightCell.setBorder(Rectangle.NO_BORDER);
+            rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+            if (stampImage != null) {
+                rightCell.addElement(new Chunk(stampImage, 0, 0));
+                rightCell.addElement(new Paragraph("Cachet",
+                        FontFactory.getFont(FontFactory.HELVETICA, 10)));
+            }
+            footerTable.addCell(rightCell);
+
+            // Positionner le tableau en bas de page
+            footerTable.writeSelectedRows(0, -1, document.left(), footerY, cb);
+
+            // Numéro de page
             Phrase footer = new Phrase(
-                    "Document généré le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
-                            " - Page " + writer.getPageNumber(),
+                    "Page " + writer.getPageNumber(),
                     FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.GRAY)
             );
             ColumnText.showTextAligned(
                     cb, Element.ALIGN_CENTER, footer,
                     (document.right() - document.left()) / 2 + document.leftMargin(),
-                    document.bottom() - 20, 0
+                    document.bottom() - 10, 0
             );
         }
     }
