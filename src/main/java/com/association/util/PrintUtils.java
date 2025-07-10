@@ -107,74 +107,77 @@ public class PrintUtils {
             Color headerBgColor = new Color(51, 102, 153); // Bleu foncé
             Color evenRowColor = new Color(240, 240, 240); // Gris clair
 
-            // ===== EN-TÊTE (identique au PDF) ===== //
-            // Logo gauche
-            if (logoLeft != null && pageIndex == 0) {
-                int logoWidth = 80;
-                int logoHeight = 50;
-                g2d.drawImage(logoLeft, 0, 0, logoWidth, logoHeight, null);
+            int yPos = 0;
+
+            // ===== EN-TÊTE (uniquement sur la première page) ===== //
+            if (pageIndex == 0) {
+                // Logo gauche
+                if (logoLeft != null) {
+                    int logoWidth = 80;
+                    int logoHeight = 50;
+                    g2d.drawImage(logoLeft, 0, yPos, logoWidth, logoHeight, null);
+                }
+
+                // Logo droit
+                if (logoRight != null) {
+                    int logoWidth = 80;
+                    int logoHeight = 50;
+                    int xPos = (int)pageWidth - logoWidth;
+                    g2d.drawImage(logoRight, xPos, yPos, logoWidth, logoHeight, null);
+                }
+
+                yPos = 60; // Position verticale après les logos
+
+                // Titre principal "ASSOCIATION AVEC"
+                g2d.setFont(new Font("Helvetica", Font.BOLD, 10));
+                String associationTitle = "ASSOCIATION AVEC";
+                int titleWidth = g2d.getFontMetrics().stringWidth(associationTitle);
+                g2d.drawString(associationTitle, (float)(pageWidth/2 - titleWidth/2), yPos);
+                yPos += 15;
+
+                // Informations
+                g2d.setFont(new Font("Helvetica", Font.PLAIN, 9));
+                String address = "Siège social : .................................................................";
+                titleWidth = g2d.getFontMetrics().stringWidth(address);
+                g2d.drawString(address, (float)(pageWidth/2 - titleWidth/2), yPos);
+                yPos += 15;
+
+                String contact = "Email : ..........................| Tél : +243...............................";
+                titleWidth = g2d.getFontMetrics().stringWidth(contact);
+                g2d.drawString(contact, (float)(pageWidth/2 - titleWidth/2), yPos);
+                yPos += 15;
+
+                String legal = "SIRET : .........................| RNA : ....................................";
+                titleWidth = g2d.getFontMetrics().stringWidth(legal);
+                g2d.drawString(legal, (float)(pageWidth/2 - titleWidth/2), yPos);
+                yPos += 20;
+
+                // Année
+                g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
+                String year = "Année " + LocalDateTime.now().getYear();
+                titleWidth = g2d.getFontMetrics().stringWidth(year);
+                g2d.drawString(year, (float)(pageWidth/2 - titleWidth/2), yPos);
+                yPos += 30;
+
+                // Titre du document
+                g2d.setFont(new Font("Helvetica", Font.BOLD, 14));
+                g2d.setColor(Color.DARK_GRAY);
+                titleWidth = g2d.getFontMetrics().stringWidth(title.toUpperCase());
+                g2d.drawString(title.toUpperCase(), (float)(pageWidth/2 - titleWidth/2), yPos);
+                yPos += 20;
+
+                // Date d'export
+                g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
+                g2d.setColor(Color.GRAY);
+                String exportDate = "Export généré le " + LocalDateTime.now().format(DATE_FORMATTER);
+                int dateWidth = g2d.getFontMetrics().stringWidth(exportDate);
+                g2d.drawString(exportDate, (float)(pageWidth/2 - dateWidth/2), yPos);
+                yPos += 30;
+            } else {
+                // Pour les autres pages, on commence plus haut
+                yPos = 30;
             }
 
-            // Logo droit
-            if (logoRight != null && pageIndex == 0) {
-                int logoWidth = 80;
-                int logoHeight = 50;
-                int xPos = (int)pageWidth - logoWidth;
-                g2d.drawImage(logoRight, xPos, 0, logoWidth, logoHeight, null);
-            }
-
-            // Titre de l'association (centré)
-            int yPos = 60;
-            g2d.setFont(new Font("Helvetica", Font.BOLD, 10));
-            String associationTitle = "ASSOCIATION AVEC";
-            int titleWidth = g2d.getFontMetrics().stringWidth(associationTitle);
-            g2d.drawString(associationTitle, (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 15;
-
-            g2d.setFont(new Font("Helvetica", Font.PLAIN, 9));
-            String address = "Siège social : .................................................................";
-            titleWidth = g2d.getFontMetrics().stringWidth(address);
-            g2d.drawString(address, (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 15;
-
-            String contact = "Email : ..........................| Tél : +243...............................";
-            titleWidth = g2d.getFontMetrics().stringWidth(contact);
-            g2d.drawString(contact, (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 15;
-
-            String legal = "SIRET : .........................| RNA : ....................................";
-            titleWidth = g2d.getFontMetrics().stringWidth(legal);
-            g2d.drawString(legal, (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 30;
-
-            // Titre principal
-            g2d.setFont(new Font("Helvetica", Font.BOLD, 16));
-            g2d.setColor(Color.DARK_GRAY);
-            String mainTitle = "LISTE DES MEMBRES";
-            titleWidth = g2d.getFontMetrics().stringWidth(mainTitle);
-            g2d.drawString(mainTitle, (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 20;
-
-            g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
-            String year = "Année " + LocalDateTime.now().getYear();
-            titleWidth = g2d.getFontMetrics().stringWidth(year);
-            g2d.drawString(year, (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 30;
-
-            // Titre du document
-            g2d.setFont(new Font("Helvetica", Font.BOLD, 14));
-            g2d.setColor(Color.DARK_GRAY);
-            titleWidth = g2d.getFontMetrics().stringWidth(title.toUpperCase());
-            g2d.drawString(title.toUpperCase(), (float)(pageWidth/2 - titleWidth/2), yPos);
-            yPos += 20;
-
-            // Date d'export
-            g2d.setFont(new Font("Helvetica", Font.PLAIN, 10));
-            g2d.setColor(Color.GRAY);
-            String exportDate = "Export généré le " + LocalDateTime.now().format(DATE_FORMATTER);
-            int dateWidth = g2d.getFontMetrics().stringWidth(exportDate);
-            g2d.drawString(exportDate, (float)(pageWidth/2 - dateWidth/2), yPos);
-            yPos += 30;
 
             // ===== TABLEAU ===== //
             int tableWidth = 0;
