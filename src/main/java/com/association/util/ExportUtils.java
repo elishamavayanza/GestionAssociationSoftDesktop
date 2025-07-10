@@ -1,12 +1,11 @@
 package com.association.util;
 
 import com.itextpdf.text.Font;
-import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.pdf.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
 
 import javax.swing.*;
 import javax.swing.table.JTableHeader;
@@ -21,6 +20,8 @@ import java.time.format.DateTimeFormatter;
 public class ExportUtils {
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final String LOGO_PATH = "/main/resources/images/logo.png"; // Chemin vers votre logo
+
 
     public static void exportTableToExcel(TableModel model, JTableHeader header,
                                           String title, String fileName, JFrame parent) {
@@ -100,64 +101,71 @@ public class ExportUtils {
                 file = new File(file.getAbsolutePath() + ".pdf");
             }
 
-            Document document = new Document();
+            Document document = new Document(PageSize.A4.rotate(), 36, 36, 90, 36); // Mode paysage pour plus d'espace
             try {
-                PdfWriter.getInstance(document, new FileOutputStream(file));
+                PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(file));
+                writer.setPageEvent(new PdfHeaderFooter());
                 document.open();
 
-                // Ajouter le titre avec style similaire à PrintUtils
-                Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
-                Paragraph docTitle = new Paragraph(title, titleFont);
+                // Polices
+                Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
+                Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
+                Font dataFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+                // Titre
+                Paragraph docTitle = new Paragraph(title.toUpperCase(), titleFont);
                 docTitle.setAlignment(Element.ALIGN_CENTER);
-                docTitle.setSpacingAfter(20f);
+                docTitle.setSpacingAfter(10f);
                 document.add(docTitle);
 
-                // Créer la table PDF avec des styles similaires à PrintUtils
-                PdfPTable pdfTable = new PdfPTable(model.getColumnCount());
+                // Date d'export
+                Paragraph dateInfo = new Paragraph(
+                        "Export généré le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")),
+                        FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.GRAY));
+                dateInfo.setAlignment(Element.ALIGN_CENTER);
+                dateInfo.setSpacingAfter(20f);
+                document.add(dateInfo);
+
+                // Création de la table PDF
+                int columnCount = model.getColumnCount();
+                PdfPTable pdfTable = new PdfPTable(columnCount);
                 pdfTable.setWidthPercentage(100);
                 pdfTable.setSpacingBefore(10f);
                 pdfTable.setSpacingAfter(10f);
 
-                // Style pour l'en-tête (similaire à PrintUtils)
-                Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-                Font dataFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
-
                 // Couleurs
-                BaseColor headerBgColor = new BaseColor(240, 240, 240);
-                BaseColor evenRowColor = new BaseColor(255, 255, 255);
-                BaseColor oddRowColor = new BaseColor(248, 248, 248);
+                BaseColor headerBgColor = new BaseColor(51, 102, 153); // Bleu foncé
 
-                // Ajouter les en-têtes avec style
-                for (int col = 0; col < model.getColumnCount(); col++) {
+                // En-têtes
+                for (int col = 0; col < columnCount; col++) {
                     PdfPCell headerCell = new PdfPCell(new Phrase(model.getColumnName(col), headerFont));
                     headerCell.setBackgroundColor(headerBgColor);
-                    headerCell.setBorderColor(BaseColor.BLACK);
+                    headerCell.setBorderColor(BaseColor.WHITE);
                     headerCell.setPadding(5);
-                    headerCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+                    headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
                     pdfTable.addCell(headerCell);
                 }
 
-                // Ajouter les données avec alternance de couleurs
+                // Données
                 for (int row = 0; row < model.getRowCount(); row++) {
-                    for (int col = 0; col < model.getColumnCount(); col++) {
+                    for (int col = 0; col < columnCount; col++) {
                         Object value = model.getValueAt(row, col);
-                        PdfPCell dataCell = new PdfPCell(new Phrase(value != null ? value.toString() : "", dataFont));
-                        dataCell.setBackgroundColor(row % 2 == 0 ? evenRowColor : oddRowColor);
-                        dataCell.setBorderColor(BaseColor.BLACK);
-                        dataCell.setPadding(5);
-                        dataCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-                        pdfTable.addCell(dataCell);
+                        PdfPCell cell = new PdfPCell(new Phrase(value != null ? value.toString() : "", dataFont));
+                        cell.setPadding(5);
+                        cell.setBorderColor(BaseColor.LIGHT_GRAY);
+
+                        // Alternance des couleurs de fond
+                        if (row % 2 == 0) {
+                            cell.setBackgroundColor(BaseColor.WHITE);
+                        } else {
+                            cell.setBackgroundColor(new BaseColor(240, 240, 240));
+                        }
+
+                        pdfTable.addCell(cell);
                     }
                 }
 
                 document.add(pdfTable);
-
-                // Ajouter le numéro de page
-                document.add(new Paragraph("\n"));
-                Paragraph footer = new Paragraph("Page 1", dataFont); // Vous devrez implémenter la pagination si nécessaire
-                footer.setAlignment(Element.ALIGN_RIGHT);
-                document.add(footer);
-
                 document.close();
 
                 JOptionPane.showMessageDialog(parent,
@@ -165,6 +173,71 @@ public class ExportUtils {
                         "Export réussi", JOptionPane.INFORMATION_MESSAGE);
             } catch (DocumentException | IOException e) {
                 showExportError(parent, "PDF", e);
+            }
+        }
+    }
+
+    private static boolean hasIdColumn(TableModel model) {
+        for (int i = 0; i < model.getColumnCount(); i++) {
+            if ("ID".equalsIgnoreCase(model.getColumnName(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void styleHeaderCell(PdfPCell cell, BaseColor bgColor) {
+        cell.setBackgroundColor(bgColor);
+        cell.setBorderColor(BaseColor.WHITE);
+        cell.setPadding(5);
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+    }
+
+    private static void styleDataCell(PdfPCell cell, BaseColor bgColor) {
+        cell.setBackgroundColor(bgColor);
+        cell.setBorderColor(BaseColor.LIGHT_GRAY);
+        cell.setPadding(5);
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+    }
+
+    private static class PdfHeaderFooter extends PdfPageEventHelper {
+        private Image logo;
+
+        public PdfHeaderFooter() {
+            try {
+                logo = Image.getInstance(LOGO_PATH);
+                logo.scaleToFit(80, 50);
+            } catch (Exception e) {
+                logo = null;
+            }
+        }
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            try {
+                // Logo en haut à droite
+                if (logo != null) {
+                    logo.setAbsolutePosition(
+                            document.right() - logo.getScaledWidth() - 36,
+                            document.top() + 10
+                    );
+                    writer.getDirectContent().addImage(logo);
+                }
+
+                // Pied de page
+                PdfContentByte cb = writer.getDirectContent();
+                Phrase footer = new Phrase(
+                        "Document généré le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
+                                " - Page " + writer.getPageNumber(),
+                        FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.GRAY)
+                );
+                ColumnText.showTextAligned(
+                        cb, Element.ALIGN_CENTER, footer,
+                        (document.right() - document.left()) / 2 + document.leftMargin(),
+                        document.bottom() - 20, 0
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
