@@ -134,11 +134,11 @@ public class ExportUtils {
                 associationHeaderTable.setHorizontalAlignment(Element.ALIGN_CENTER);
 
                 Paragraph associationInfo = new Paragraph();
-                associationInfo.add(new Phrase("ASSOCIATION [NOM]\n", headerFontBold));
-                associationInfo.add(new Phrase("Siège social : [Adresse]\n", headerFontRegular));
-                associationInfo.add(new Phrase("Email : contact@association.org | Tél : +33 1 23 45 67 89\n", headerFontRegular));
-                associationInfo.add(new Phrase("SIRET : 123 456 789 00010 | RNA : W123456789\n\n", headerFontRegular));
-                associationInfo.add(new Phrase("LISTE DES MEMBRES ACTIFS\n", headerFontBold));
+                associationInfo.add(new Phrase("ASSOCIATION AVEC\n\n", headerFontBold));
+                associationInfo.add(new Phrase("Siège social : .................................................................\n", headerFontRegular));
+                associationInfo.add(new Phrase("Email : ..........................| Tél : +243...............................\n", headerFontRegular));
+                associationInfo.add(new Phrase("SIRET : .........................| RNA : ....................................\n\n", headerFontRegular));
+                associationInfo.add(new Phrase("LISTE DES MEMBRES \n", headerFontBold));
                 associationInfo.add(new Phrase("Année " + LocalDateTime.now().getYear(), headerFontRegular));
                 associationInfo.setAlignment(Element.ALIGN_CENTER);
 
@@ -313,18 +313,18 @@ public class ExportUtils {
                     }
 
                     // Ajouter le titre "LISTE DES MEMBRES" entre les deux logos
-                    Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
-                    float titleY = document.top() + 30; // Ajustez cette valeur pour aligner verticalement avec les logos
-                    float titleX = (document.right() - document.left()) / 2 + document.leftMargin();
-
-                    ColumnText.showTextAligned(
-                            cb,
-                            Element.ALIGN_CENTER,
-                            new Phrase("AVEC", titleFont),
-                            titleX,
-                            titleY,
-                            0
-                    );
+//                    Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
+//                    float titleY = document.top() + 30; // Ajustez cette valeur pour aligner verticalement avec les logos
+//                    float titleX = (document.right() - document.left()) / 2 + document.leftMargin();
+//
+//                    ColumnText.showTextAligned(
+//                            cb,
+//                            Element.ALIGN_CENTER,
+//                            new Phrase("AVEC", titleFont),
+//                            titleX,
+//                            titleY,
+//                            0
+//                    );
 
                     // Informations administratives
                     float yPos = document.top() - 30; // Position sous les logos et le titre
