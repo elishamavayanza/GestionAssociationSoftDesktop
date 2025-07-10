@@ -71,11 +71,7 @@ public class CustomDialog {
     }
 
     public static int showCustomConfirmDialog(Component parent, String message, String title, int optionType) {
-        // Associer les valeurs aux boutons
-        final Object YES_VALUE = "YES";
-        final Object NO_VALUE = "NO";
-        final Object CANCEL_VALUE = "CANCEL";
-
+        // Créer des boutons personnalisés avec icônes
         JButton yesButton = createButton("Oui", YES_ICON, Colors.SUCCESS);
         JButton noButton = createButton("Non", NO_ICON, Colors.DANGER);
         JButton cancelButton = createButton("Annuler", CANCEL_ICON, Colors.WARNING);
@@ -87,51 +83,61 @@ public class CustomDialog {
             options = new Object[]{yesButton, noButton, cancelButton};
         }
 
+        // Créer le panneau de message
         JPanel messagePanel = createMessagePanel(message);
+
+        // Créer le JOptionPane personnalisé
         JOptionPane pane = new JOptionPane(
                 messagePanel,
                 JOptionPane.QUESTION_MESSAGE,
-                JOptionPane.DEFAULT_OPTION,
+                optionType,
                 QUESTION_ICON,
                 options,
-                yesButton
+                yesButton // Définir yesButton comme valeur par défaut
         );
 
+        // Créer et configurer la boîte de dialogue
         JDialog dialog = pane.createDialog(parent, title);
         dialog.getContentPane().setBackground(Colors.UNREAD_NOTIFICATION);
 
-// Ajout des listeners AVEC SET DE VALEURS CLAIRES
+        // Ajouter les ActionListeners aux boutons
         yesButton.addActionListener(e -> {
-            pane.setValue(YES_VALUE);
+            pane.setValue(JOptionPane.YES_OPTION);
             dialog.dispose();
         });
+
         noButton.addActionListener(e -> {
-            pane.setValue(NO_VALUE);
+            pane.setValue(JOptionPane.NO_OPTION);
             dialog.dispose();
         });
-        if (cancelButton != null) {
+
+        if (optionType != JOptionPane.YES_NO_OPTION) {
             cancelButton.addActionListener(e -> {
-                pane.setValue(CANCEL_VALUE);
+                pane.setValue(JOptionPane.CANCEL_OPTION);
                 dialog.dispose();
             });
         }
 
+        // Ajouter un listener pour la touche Enter
+        dialog.getRootPane().setDefaultButton(yesButton);
+
         dialog.setVisible(true);
+        dialog.dispose(); // Assurez-vous que la boîte de dialogue est bien fermée
+
         Object selectedValue = pane.getValue();
 
-        if (selectedValue == null || selectedValue.equals(JOptionPane.UNINITIALIZED_VALUE)) {
+        if (selectedValue == null) {
             return JOptionPane.CLOSED_OPTION;
         }
 
-// Retour clair basé sur valeurs
-        if (YES_VALUE.equals(selectedValue)) {
+        // Retourner la valeur correspondante
+        if (selectedValue.equals(JOptionPane.YES_OPTION) || selectedValue.equals(yesButton)) {
             return JOptionPane.YES_OPTION;
-        } else if (NO_VALUE.equals(selectedValue)) {
+        } else if (selectedValue.equals(JOptionPane.NO_OPTION) || selectedValue.equals(noButton)) {
             return JOptionPane.NO_OPTION;
-        } else if (CANCEL_VALUE.equals(selectedValue)) {
+        } else {
             return JOptionPane.CANCEL_OPTION;
         }
-        return JOptionPane.CLOSED_OPTION;
     }
 
     private static JButton createButton(String text, Icon icon, Color bgColor) {
