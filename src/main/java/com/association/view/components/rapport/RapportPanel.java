@@ -8,6 +8,8 @@ import com.association.model.enums.TypeRapport;
 import com.association.util.file.FileExportUtil;
 import com.association.util.file.FileType;
 import com.association.view.components.IconManager;
+import com.association.view.styles.Colors;
+import com.association.view.styles.Fonts;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -148,22 +150,30 @@ public class RapportPanel extends JPanel {
 
         // Bouton Générer
         generateButton = new JButton("Générer");
+        styleButton(generateButton, Colors.CURRENT_PRIMARY, Color.WHITE);
+
         generateButton.setIcon(IconManager.getIcon("generate.svg", 16));
         buttonPanel.add(generateButton);
 
         // Bouton Effacer
         clearButton = new JButton("Effacer");
+        styleButton(clearButton, Colors.CURRENT_PRIMARY, Color.WHITE);
+
         clearButton.setIcon(IconManager.getIcon("clear.svg", 16));
         buttonPanel.add(clearButton);
 
         // Bouton Export PDF
         exportPdfButton = new JButton("PDF");
+        styleButton(exportPdfButton, Colors.CURRENT_PRIMARY, Color.WHITE);
+
         exportPdfButton.setIcon(IconManager.getIcon("pdf.svg", 16));
         exportPdfButton.setEnabled(false);
         buttonPanel.add(exportPdfButton);
 
         // Bouton Export Excel
         exportExcelButton = new JButton("Excel");
+        styleButton(exportExcelButton, Colors.CURRENT_PRIMARY, Color.WHITE);
+
         exportExcelButton.setIcon(IconManager.getIcon("excel.svg", 16));
         exportExcelButton.setEnabled(false);
         buttonPanel.add(exportExcelButton);
@@ -174,6 +184,8 @@ public class RapportPanel extends JPanel {
         statusLabel = new JLabel(" ");
         statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
         panel.add(statusLabel, BorderLayout.SOUTH);
+
+
 
         return panel;
     }
@@ -305,5 +317,14 @@ public class RapportPanel extends JPanel {
      */
     public void cleanup() {
         executorService.shutdown();
+    }
+
+    public static void styleButton(JButton button, Color background, Color foreground) {
+        button.setBackground(background);
+        button.setForeground(foreground);
+        button.setFont(Fonts.buttonFont());
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 }
