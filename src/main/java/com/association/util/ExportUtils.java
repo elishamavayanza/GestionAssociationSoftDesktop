@@ -224,6 +224,7 @@ public class ExportUtils {
     private static class PdfHeaderFooter extends PdfPageEventHelper {
         private Image logoRight;
         private Image logoLeft;
+        private boolean firstPage = true;
 
         public PdfHeaderFooter() {
             try {
@@ -254,41 +255,47 @@ public class ExportUtils {
         }
 
         @Override
-        public void onEndPage(PdfWriter writer, Document document) {
-            try {
-                // Logo à gauche
-                if (logoLeft != null) {
-                    logoLeft.setAbsolutePosition(
-                            document.left(),
-                            document.top() + 10
-                    );
-                    writer.getDirectContent().addImage(logoLeft);
-                }
+        public void onStartPage(PdfWriter writer, Document document) {
+            if (firstPage) {
+                try {
+                    // Logo à gauche - seulement sur la première page
+                    if (logoLeft != null) {
+                        logoLeft.setAbsolutePosition(
+                                document.left(),
+                                document.top() + 10
+                        );
+                        writer.getDirectContent().addImage(logoLeft);
+                    }
 
-                // Logo à droite
-                if (logoRight != null) {
-                    logoRight.setAbsolutePosition(
-                            document.right() - logoRight.getScaledWidth() - 36,
-                            document.top() + 10
-                    );
-                    writer.getDirectContent().addImage(logoRight);
+                    // Logo à droite - seulement sur la première page
+                    if (logoRight != null) {
+                        logoRight.setAbsolutePosition(
+                                document.right() - logoRight.getScaledWidth() - 36,
+                                document.top() + 10
+                        );
+                        writer.getDirectContent().addImage(logoRight);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-                // Pied de page (inchangé)
-                PdfContentByte cb = writer.getDirectContent();
-                Phrase footer = new Phrase(
-                        "Document généré le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
-                                " - Page " + writer.getPageNumber(),
-                        FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.GRAY)
-                );
-                ColumnText.showTextAligned(
-                        cb, Element.ALIGN_CENTER, footer,
-                        (document.right() - document.left()) / 2 + document.leftMargin(),
-                        document.bottom() - 20, 0
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
+                firstPage = false;
             }
+        }
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            // Pied de page pour toutes les pages
+            PdfContentByte cb = writer.getDirectContent();
+            Phrase footer = new Phrase(
+                    "Document généré le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
+                            " - Page " + writer.getPageNumber(),
+                    FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.GRAY)
+            );
+            ColumnText.showTextAligned(
+                    cb, Element.ALIGN_CENTER, footer,
+                    (document.right() - document.left()) / 2 + document.leftMargin(),
+                    document.bottom() - 20, 0
+            );
         }
     }
 
