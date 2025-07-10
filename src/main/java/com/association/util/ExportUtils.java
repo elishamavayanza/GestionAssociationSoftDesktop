@@ -125,6 +125,29 @@ public class ExportUtils {
                 writer.setPageEvent(new PdfHeaderFooter());
                 document.open();
 
+                // ========= NOUVEL EN-TÊTE ========= //
+                Font headerFontBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+                Font headerFontRegular = FontFactory.getFont(FontFactory.HELVETICA, 9);
+
+                PdfPTable associationHeaderTable = new PdfPTable(1);
+                associationHeaderTable.setWidthPercentage(80);
+                associationHeaderTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+                Paragraph associationInfo = new Paragraph();
+                associationInfo.add(new Phrase("ASSOCIATION [NOM]\n", headerFontBold));
+                associationInfo.add(new Phrase("Siège social : [Adresse]\n", headerFontRegular));
+                associationInfo.add(new Phrase("Email : contact@association.org | Tél : +33 1 23 45 67 89\n", headerFontRegular));
+                associationInfo.add(new Phrase("SIRET : 123 456 789 00010 | RNA : W123456789\n\n", headerFontRegular));
+                associationInfo.add(new Phrase("LISTE DES MEMBRES ACTIFS\n", headerFontBold));
+                associationInfo.add(new Phrase("Année " + LocalDateTime.now().getYear(), headerFontRegular));
+                associationInfo.setAlignment(Element.ALIGN_CENTER);
+
+                PdfPCell headerCells = new PdfPCell(associationInfo);
+                headerCells.setBorder(Rectangle.NO_BORDER);
+                associationHeaderTable.addCell(headerCells);
+
+                document.add(associationHeaderTable);
+
                 // Polices
                 Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
                 Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
@@ -289,8 +312,22 @@ public class ExportUtils {
                         cb.addImage(logoRight);
                     }
 
+                    // Ajouter le titre "LISTE DES MEMBRES" entre les deux logos
+                    Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
+                    float titleY = document.top() + 30; // Ajustez cette valeur pour aligner verticalement avec les logos
+                    float titleX = (document.right() - document.left()) / 2 + document.leftMargin();
+
+                    ColumnText.showTextAligned(
+                            cb,
+                            Element.ALIGN_CENTER,
+                            new Phrase("AVEC", titleFont),
+                            titleX,
+                            titleY,
+                            0
+                    );
+
                     // Informations administratives
-                    float yPos = document.top() - 30; // Position sous les logos
+                    float yPos = document.top() - 30; // Position sous les logos et le titre
 
                     // Tableau pour les infos administratives
                     PdfPTable adminTable = new PdfPTable(2);
@@ -302,26 +339,12 @@ public class ExportUtils {
                     PdfPCell leftCell = new PdfPCell();
                     leftCell.setBorder(Rectangle.NO_BORDER);
 
-                    Paragraph nomParagraph = new Paragraph("Nom : ________________________",
-                            FontFactory.getFont(FontFactory.HELVETICA, 10));
-                    Paragraph telParagraph = new Paragraph("Tél : ________________________",
-                            FontFactory.getFont(FontFactory.HELVETICA, 10));
 
-                    leftCell.addElement(nomParagraph);
-                    leftCell.addElement(telParagraph);
-                    adminTable.addCell(leftCell);
-
-                    // Cellule de droite : Date
                     // Cellule de droite : Date
                     PdfPCell rightCell = new PdfPCell();
                     rightCell.setBorder(Rectangle.NO_BORDER);
-                    rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);  // Alignement de la cellule à droite
+                    rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-                    Paragraph dateParagraph = new Paragraph("Date : ________________________",
-                            FontFactory.getFont(FontFactory.HELVETICA, 10));
-                    dateParagraph.setAlignment(Element.ALIGN_RIGHT);  // Alignement du texte à droite
-                    rightCell.addElement(dateParagraph);
-                    adminTable.addCell(rightCell);
 
                     // Positionner le tableau
                     adminTable.writeSelectedRows(0, -1, document.left(), yPos, cb);
