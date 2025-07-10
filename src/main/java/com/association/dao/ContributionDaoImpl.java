@@ -288,6 +288,7 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
         }
     }
 
+
     @Override
     public boolean delete(Long id) {
         Optional<Contribution> contributionOpt = findById(id);

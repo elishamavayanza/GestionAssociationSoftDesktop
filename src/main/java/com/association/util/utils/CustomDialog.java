@@ -71,7 +71,11 @@ public class CustomDialog {
     }
 
     public static int showCustomConfirmDialog(Component parent, String message, String title, int optionType) {
-        // Créer des boutons personnalisés avec icônes
+        // Associer les valeurs aux boutons
+        final Object YES_VALUE = "YES";
+        final Object NO_VALUE = "NO";
+        final Object CANCEL_VALUE = "CANCEL";
+
         JButton yesButton = createButton("Oui", YES_ICON, Colors.SUCCESS);
         JButton noButton = createButton("Non", NO_ICON, Colors.DANGER);
         JButton cancelButton = createButton("Annuler", CANCEL_ICON, Colors.WARNING);
@@ -83,37 +87,31 @@ public class CustomDialog {
             options = new Object[]{yesButton, noButton, cancelButton};
         }
 
-        // Créer le panneau de message
         JPanel messagePanel = createMessagePanel(message);
-
-        // Créer le JOptionPane personnalisé
         JOptionPane pane = new JOptionPane(
                 messagePanel,
                 JOptionPane.QUESTION_MESSAGE,
-                optionType,
+                JOptionPane.DEFAULT_OPTION,
                 QUESTION_ICON,
                 options,
-                options[0]
+                yesButton
         );
 
-        // Créer et configurer la boîte de dialogue
         JDialog dialog = pane.createDialog(parent, title);
         dialog.getContentPane().setBackground(Colors.UNREAD_NOTIFICATION);
 
-        // Ajouter les ActionListeners aux boutons
+// Ajout des listeners AVEC SET DE VALEURS CLAIRES
         yesButton.addActionListener(e -> {
-            pane.setValue(JOptionPane.YES_OPTION);
+            pane.setValue(YES_VALUE);
             dialog.dispose();
         });
-
         noButton.addActionListener(e -> {
-            pane.setValue(JOptionPane.NO_OPTION);
+            pane.setValue(NO_VALUE);
             dialog.dispose();
         });
-
         if (cancelButton != null) {
             cancelButton.addActionListener(e -> {
-                pane.setValue(JOptionPane.CANCEL_OPTION);
+                pane.setValue(CANCEL_VALUE);
                 dialog.dispose();
             });
         }
@@ -125,14 +123,15 @@ public class CustomDialog {
             return JOptionPane.CLOSED_OPTION;
         }
 
-        // Retourner la valeur correspondante
-        if (selectedValue.equals(yesButton)) {
+// Retour clair basé sur valeurs
+        if (YES_VALUE.equals(selectedValue)) {
             return JOptionPane.YES_OPTION;
-        } else if (selectedValue.equals(noButton)) {
+        } else if (NO_VALUE.equals(selectedValue)) {
             return JOptionPane.NO_OPTION;
-        } else {
+        } else if (CANCEL_VALUE.equals(selectedValue)) {
             return JOptionPane.CANCEL_OPTION;
         }
+        return JOptionPane.CLOSED_OPTION;
     }
 
     private static JButton createButton(String text, Icon icon, Color bgColor) {
