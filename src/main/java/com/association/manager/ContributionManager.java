@@ -2,6 +2,7 @@ package com.association.manager;
 
 import com.association.dao.ContributionDao;
 
+import com.association.model.Membre;
 import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import org.slf4j.Logger;
@@ -9,10 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -128,6 +127,35 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
 
             // Nettoyage ou mise à jour si nécessaire
         }
+    }
+
+    public Map<String, Object> getContributionStats() {
+        return contributionDao.getContributionStats();
+    }
+
+    public Map<TypeContribution, BigDecimal> getContributionsByType() {
+        return contributionDao.getContributionsByType();
+    }
+
+    public Map<String, BigDecimal> getMonthlyContributions(int months) {
+        return contributionDao.getMonthlyContributions(months);
+    }
+
+    public Map<String, BigDecimal> getTopContributors(int limit) {
+        // Implémentation existante ou à adapter
+        Map<String, BigDecimal> topContributors = new LinkedHashMap<>();
+        List<Membre> membres = contributionDao.findTopContributors(
+                Date.from(LocalDate.now().minusYears(1).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                new Date(),
+                limit
+        );
+
+        for (Membre membre : membres) {
+            BigDecimal total = contributionDao.calculerTotalContributionsMembre(membre.getId());
+            topContributors.put(membre.getNom(), total);
+        }
+
+        return topContributors;
     }
 
 }

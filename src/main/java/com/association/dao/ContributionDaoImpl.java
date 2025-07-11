@@ -5,10 +5,8 @@ import com.association.model.enums.TypeContribution;
 import com.association.model.transaction.Contribution;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Date;
-import java.util.List;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -140,11 +138,11 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
     @Override
     public List<Membre> findTopContributors(Date startDate, Date endDate, int limit) {
         List<Membre> membres = new ArrayList<>();
-        String sql = "SELECT m.* FROM membres m " +
-                "JOIN transactions t ON m.id = t.membre_id " +
+        String sql = "SELECT v.* FROM vue_membres_complets v " +
+                "JOIN transactions t ON v.id = t.membre_id " +
                 "WHERE t.transaction_type = 'CONTRIBUTION' " +
                 "AND t.date_transaction BETWEEN ? AND ? " +
-                "GROUP BY m.id " +
+                "GROUP BY v.id, v.nom, v.contact, v.photo_path, v.date_inscription, v.statut, v.date_creation " +
                 "ORDER BY SUM(t.montant) DESC " +
                 "LIMIT ?";
         try (Connection conn = databaseConfig.getConnection();
@@ -355,7 +353,101 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
         return contributions;
     }
 
+    @Override
+    public Map<String, Object> getContributionStats() {
+        Map<String, Object> stats = new HashMap<>();
 
+        String sql = "SELECT " +
+                "COALESCE(SUM(transactions.montant), 0) as total, " +
+                "COALESCE(AVG(transactions.montant), 0) as average, " +
+                "(SELECT COALESCE(SUM(t2.montant), 0) FROM transactions t2 " +
+                "WHERE t2.transaction_type = 'CONTRIBUTION' " +
+                "AND YEAR(t2.date_transaction) = YEAR(CURRENT_DATE)) as annualTotal, " +
+                "(SELECT p.nom FROM personnes p " +
+                "JOIN membres m ON p.id = m.id " +
+                "JOIN transactions t3 ON m.id = t3.membre_id " +
+                "WHERE t3.transaction_type = 'CONTRIBUTION' " +
+                "GROUP BY m.id, p.nom ORDER BY SUM(t3.montant) DESC LIMIT 1) as topContributor " +
+                "FROM transactions " +
+                "WHERE transactions.transaction_type = 'CONTRIBUTION'";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            if (rs.next()) {
+                stats.put("total", rs.getBigDecimal("total"));
+                stats.put("monthlyAverage", rs.getBigDecimal("average"));
+                stats.put("annualTotal", rs.getBigDecimal("annualTotal"));
+                stats.put("topContributor", rs.getString("topContributor"));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Erreur lors du calcul des statistiques des contributions", e);
+            // Valeurs par défaut en cas d'erreur
+            stats.put("total", BigDecimal.ZERO);
+            stats.put("monthlyAverage", BigDecimal.ZERO);
+            stats.put("annualTotal", BigDecimal.ZERO);
+            stats.put("topContributor", "N/A");
+        }
+
+        return stats;
+    }
+
+    @Override
+    public Map<TypeContribution, BigDecimal> getContributionsByType() {
+        Map<TypeContribution, BigDecimal> typeStats = new EnumMap<>(TypeContribution.class);
+
+        String sql = "SELECT c.type_contribution, SUM(t.montant) as total " +
+                "FROM contributions c " +
+                "JOIN transactions t ON c.id = t.id " +
+                "WHERE t.transaction_type = 'CONTRIBUTION' " +
+                "GROUP BY c.type_contribution";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                TypeContribution type = TypeContribution.valueOf(rs.getString("type_contribution"));
+                BigDecimal total = rs.getBigDecimal("total");
+                typeStats.put(type, total);
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Erreur lors de la récupération des contributions par type", e);
+        }
+
+        return typeStats;
+    }
+
+    @Override
+    public Map<String, BigDecimal> getMonthlyContributions(int months) {
+        Map<String, BigDecimal> monthlyData = new LinkedHashMap<>();
+
+        String sql = "SELECT DATE_FORMAT(t.date_transaction, '%Y-%m') as month, " +
+                "SUM(t.montant) as total " +
+                "FROM transactions t " +
+                "WHERE t.transaction_type = 'CONTRIBUTION' " +
+                "AND t.date_transaction >= DATE_SUB(CURRENT_DATE, INTERVAL ? MONTH) " +
+                "GROUP BY month " +
+                "ORDER BY month";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, months);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String month = rs.getString("month");
+                BigDecimal total = rs.getBigDecimal("total");
+                monthlyData.put(month, total);
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Erreur lors de la récupération des contributions mensuelles", e);
+        }
+
+        return monthlyData;
+    }
 
     @Override
     public boolean saveAll(Iterable<Contribution> entities) {

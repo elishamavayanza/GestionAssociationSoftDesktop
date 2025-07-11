@@ -6,6 +6,7 @@ import com.association.model.transaction.Contribution;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ContributionDao extends GenericDao<Contribution> {
@@ -17,4 +18,7 @@ public interface ContributionDao extends GenericDao<Contribution> {
     List<Contribution> findByMembreAndType(Long membreId, TypeContribution type);
     Optional<Contribution> findById(Long id);
 
+    Map<String, Object> getContributionStats();
+    Map<TypeContribution, BigDecimal> getContributionsByType();
+    Map<String, BigDecimal> getMonthlyContributions(int months);
 }

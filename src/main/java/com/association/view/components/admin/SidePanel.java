@@ -107,15 +107,16 @@ public class SidePanel extends JPanel {
         });
 
         DropDownMenu gestionContributions = new DropDownMenu("Gestion Contributions", "payments.svg");
-        gestionContributions.addSubMenuItem("Enregistrer Contribution", "attach_money.svg");
-        gestionContributions.addSubMenuItem("Historique Contributions", "acute.svg");
-        gestionContributions.addSubMenuItem("Rapports Contributions", "finance.svg");
+        HoverButton rapportsContributionsBtn = gestionContributions.addSubMenuItem("Rapports Contributions", "finance.svg");
+        rapportsContributionsBtn.setDoubleClickAction(() -> {
+            ContributionStatsPanel statsPanel = new ContributionStatsPanel();
+            adminInterface.setContentPanel(statsPanel);
+        });
+
 
         DropDownMenu gestionEmprunts = new DropDownMenu("Gestion Emprunts", "account_balance.svg");
-        gestionEmprunts.addSubMenuItem("Demander Emprunt", "request_quote.svg");
-        gestionEmprunts.addSubMenuItem("Approuver Emprunt", "approval.svg");
-        gestionEmprunts.addSubMenuItem("Remboursements", "paid.svg");
-        gestionEmprunts.addSubMenuItem("Suivi Emprunts", "track_changes.svg");
+        gestionEmprunts.addSubMenuItem("Rapport Emprunt", "finance.svg");
+
 
         DropDownMenu rapports = new DropDownMenu("Rapports", "analytics.svg");
         HoverButton genererRapportBtn = rapports.addSubMenuItem("Générer Rapport", "summarize.svg");
