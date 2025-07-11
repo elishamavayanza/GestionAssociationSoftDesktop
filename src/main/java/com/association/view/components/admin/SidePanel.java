@@ -115,8 +115,11 @@ public class SidePanel extends JPanel {
 
 
         DropDownMenu gestionEmprunts = new DropDownMenu("Gestion Emprunts", "account_balance.svg");
-        gestionEmprunts.addSubMenuItem("Rapport Emprunt", "finance.svg");
-
+        HoverButton rapportEmpruntBtn = gestionEmprunts.addSubMenuItem("Rapport Emprunt", "finance.svg");
+        rapportEmpruntBtn.setDoubleClickAction(() -> {
+            EmpruntStatsPanel empruntStatsPanel = new EmpruntStatsPanel();
+            adminInterface.setContentPanel(empruntStatsPanel);
+        });
 
         DropDownMenu rapports = new DropDownMenu("Rapports", "analytics.svg");
         HoverButton genererRapportBtn = rapports.addSubMenuItem("Générer Rapport", "summarize.svg");
@@ -124,7 +127,6 @@ public class SidePanel extends JPanel {
             RapportPanel rapportPanel = new RapportPanel();
             adminInterface.setContentPanel(rapportPanel);
         });
-        rapports.addSubMenuItem("Exporter Données", "cloud_download.svg");
 
         DropDownMenu administration = new DropDownMenu("Administration", "admin_panel_settings.svg");
         administration.addSubMenuItem("Gestion Utilisateurs", "manage_accounts.svg");

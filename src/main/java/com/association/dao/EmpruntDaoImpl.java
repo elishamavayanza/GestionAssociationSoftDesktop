@@ -511,6 +511,105 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     }
 
     @Override
+    public int countAllEmprunts() {
+        String sql = "SELECT COUNT(*) FROM emprunts";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
+    public int countEmpruntsByStatut(StatutEmprunt statut) {
+        String sql = "SELECT COUNT(*) FROM emprunts WHERE statut = ?";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, statut.name());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
+    public int countEmpruntsEnRetard() {
+        String sql = "SELECT COUNT(*) FROM emprunts e " +
+                "WHERE e.statut = 'EN_COURS' " +
+                "AND e.date_remboursement < CURRENT_DATE";
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
+    public Map<String, Integer> getMonthlyEmprunts(int months) {
+        Map<String, Integer> monthlyEmprunts = new LinkedHashMap<>();
+        String sql = "SELECT DATE_FORMAT(t.date_transaction, '%Y-%m') as month, COUNT(*) as count " +
+                "FROM emprunts e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "WHERE t.date_transaction >= DATE_SUB(CURRENT_DATE, INTERVAL ? MONTH) " +
+                "GROUP BY DATE_FORMAT(t.date_transaction, '%Y-%m') " +
+                "ORDER BY month";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, months);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    monthlyEmprunts.put(rs.getString("month"), rs.getInt("count"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return monthlyEmprunts;
+    }
+
+    @Override
+    public Map<StatutEmprunt, BigDecimal> getAmountsByStatus() {
+        Map<StatutEmprunt, BigDecimal> amountsByStatus = new EnumMap<>(StatutEmprunt.class);
+        String sql = "SELECT e.statut, SUM(t.montant) as total " +
+                "FROM emprunts e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "GROUP BY e.statut";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                try {
+                    StatutEmprunt statut = StatutEmprunt.valueOf(rs.getString("statut"));
+                    BigDecimal total = rs.getBigDecimal("total");
+                    amountsByStatus.put(statut, total != null ? total : BigDecimal.ZERO);
+                } catch (IllegalArgumentException e) {
+                    // Ignorer les statuts inconnus
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return amountsByStatus;
+    }
+
+    @Override
     public boolean update(Emprunt t) { return false; }
     @Override
     public boolean delete(Long id) { return false; }

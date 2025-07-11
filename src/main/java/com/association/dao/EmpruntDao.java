@@ -21,4 +21,10 @@ public interface EmpruntDao extends GenericDao<Emprunt> {
     List<Emprunt> findArchivedByMembre(Long membreId);
     @Override
     List<Emprunt> findAll();
+
+    int countAllEmprunts();
+    int countEmpruntsByStatut(StatutEmprunt statut);
+    int countEmpruntsEnRetard();
+    Map<String, Integer> getMonthlyEmprunts(int months);
+    Map<StatutEmprunt, BigDecimal> getAmountsByStatus();
     }

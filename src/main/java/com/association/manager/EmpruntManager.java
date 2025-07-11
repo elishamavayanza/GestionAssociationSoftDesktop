@@ -136,4 +136,24 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
         }
     }
 
+    public Map<String, Object> getEmpruntStats() {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Récupération des statistiques depuis le DAO
+        stats.put("total", empruntDao.countAllEmprunts());
+        stats.put("actifs", empruntDao.countEmpruntsByStatut(StatutEmprunt.EN_COURS));
+        stats.put("retard", empruntDao.countEmpruntsEnRetard());
+        stats.put("rembourses", empruntDao.countEmpruntsByStatut(StatutEmprunt.REMBOURSE));
+
+        return stats;
+    }
+
+    public Map<String, Integer> getMonthlyEmprunts(int months) {
+        return empruntDao.getMonthlyEmprunts(months);
+    }
+
+    public Map<StatutEmprunt, BigDecimal> getAmountsByStatus() {
+        return empruntDao.getAmountsByStatus();
+    }
+
 }
