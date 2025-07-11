@@ -149,7 +149,7 @@ public class RapportPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
 
         // Bouton Générer
-        generateButton = new JButton("Générer");
+        generateButton = new JButton("Générer mon rapport de membre");
         styleButton(generateButton, Colors.CURRENT_PRIMARY, Color.WHITE);
 
         generateButton.setIcon(IconManager.getIcon("generate.svg", 16));
@@ -195,10 +195,58 @@ public class RapportPanel extends JPanel {
      * Configure les écouteurs d'événements
      */
     private void setupListeners() {
-        generateButton.addActionListener(e -> generateReport());
+        generateButton.addActionListener(e -> {
+            TypeRapport selectedType = (TypeRapport) typeRapportCombo.getSelectedItem();
+            JOptionPane.showMessageDialog(this,
+                    "Génération du rapport " + selectedType.toString().toLowerCase() + " en cours...",
+                    "Génération de rapport",
+                    JOptionPane.INFORMATION_MESSAGE);
+            generateReport();
+        });
         clearButton.addActionListener(e -> clearReport());
         exportPdfButton.addActionListener(e -> exportReport(FileType.PDF));
         exportExcelButton.addActionListener(e -> exportReport(FileType.EXCEL));
+
+        // Ajoutez l'écouteur pour le combo box
+        typeRapportCombo.addActionListener(e -> {
+            if (e.getSource() == typeRapportCombo) {
+                handleReportTypeChange();
+            }
+        });
+    }
+
+    private void handleReportTypeChange() {
+        TypeRapport selectedType = (TypeRapport) typeRapportCombo.getSelectedItem();
+
+        // Mettre à jour le texte du bouton Générer
+        generateButton.setText("Générer mon rapport " + selectedType.toString().toLowerCase());
+
+        // Réinitialiser le contenu et désactiver les boutons d'export
+        rapportContentArea.setText("");
+        exportPdfButton.setEnabled(false);
+        exportExcelButton.setEnabled(false);
+
+        switch (selectedType) {
+            case MEMBRES:
+                includeDetailsCheckbox.setSelected(true);
+                includeDetailsCheckbox.setEnabled(true);
+                statusLabel.setText("Prêt à générer mon rapport sur les membres");
+                break;
+            case FINANCIER:
+                includeDetailsCheckbox.setSelected(false);
+                includeDetailsCheckbox.setEnabled(false);
+                statusLabel.setText("Générer un rapport financier");
+                break;
+            case MEMBRE_CONTRIBUTION_EMPRUNT:
+                includeDetailsCheckbox.setSelected(true);
+                includeDetailsCheckbox.setEnabled(true);
+                statusLabel.setText("Générer un rapport détaillé membre/contribution/emprunt");
+                break;
+            default:
+                includeDetailsCheckbox.setSelected(true);
+                includeDetailsCheckbox.setEnabled(true);
+                statusLabel.setText("Sélectionnez un type de rapport");
+        }
     }
 
     /**
@@ -206,23 +254,29 @@ public class RapportPanel extends JPanel {
      */
     private void generateReport() {
         setBusyState(true);
-        statusLabel.setText("Génération du rapport en cours...");
+        statusLabel.setText("Génération de mon rapport en cours...");  // Message personnalisé
 
         executorService.execute(() -> {
             try {
                 TypeRapport selectedType = (TypeRapport) typeRapportCombo.getSelectedItem();
                 boolean includeDetails = includeDetailsCheckbox.isSelected();
 
-                Rapport rapport = rapportManager.genererRapport(selectedType, includeDetails);
+                // Générer un vrai rapport selon le type sélectionné
+                Rapport rapport;
+                if (selectedType == TypeRapport.MEMBRES) {
+                    rapport = rapportManager.genererRapportMembres();  // Utilise la méthode spécifique
+                } else {
+                    rapport = rapportManager.genererRapport(selectedType, includeDetails);
+                }
 
                 SwingUtilities.invokeLater(() -> {
                     if (rapport != null) {
                         rapportContentArea.setText(formatRapportContent(rapport));
                         exportPdfButton.setEnabled(true);
                         exportExcelButton.setEnabled(true);
-                        statusLabel.setText("Rapport généré le " + DATE_FORMAT.format(rapport.getDateGeneration()));
+                        statusLabel.setText("Mon rapport généré le " + DATE_FORMAT.format(rapport.getDateGeneration()));
                     } else {
-                        statusLabel.setText("Erreur lors de la génération du rapport");
+                        statusLabel.setText("Erreur lors de la génération de mon rapport");
                     }
                     setBusyState(false);
                 });
@@ -293,10 +347,20 @@ public class RapportPanel extends JPanel {
      */
     private String formatRapportContent(Rapport rapport) {
         StringBuilder sb = new StringBuilder();
-        sb.append("=== RAPPORT D'ASSOCIATION ===\n");
+        sb.append("=== MON RAPPORT PERSONNALISÉ ===\n\n");
         sb.append("Type: ").append(rapport.getType()).append("\n");
-        sb.append("Date: ").append(DATE_FORMAT.format(rapport.getDateGeneration())).append("\n\n");
+        sb.append("Date de génération: ").append(DATE_FORMAT.format(rapport.getDateGeneration())).append("\n\n");
+
+        // Ajoute une ligne de séparation
+        sb.append("----------------------------------------\n\n");
+
+        // Contenu du rapport
         sb.append(rapport.getContenu());
+
+        // Ajoute un pied de page
+        sb.append("\n\n----------------------------------------\n");
+        sb.append("Rapport généré par l'Association - Tous droits réservés");
+
         return sb.toString();
     }
 
