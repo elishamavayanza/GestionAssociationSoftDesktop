@@ -2,10 +2,8 @@ package com.association.model.enums;
 
 public enum TypeRapport {
     MEMBRES("Rapport des membres"),
-    FINANCIER("Rapport financier"),
-    ACTIVITES("Rapport des activités"),
     EMPRUNT ("Rapport des emprunt"),
-    MEMBRE_CONTRIBUTION_EMPRUNT("Rapport détaillé membre/contribution/emprunt");
+    CONTRIBUTION("Rapport contribution");
 
     private final String libelle;
 

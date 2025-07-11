@@ -229,12 +229,8 @@ public class RapportPanel extends JPanel {
                 includeDetailsCheckbox.setEnabled(true);
                 statusLabel.setText("Prêt à générer mon rapport sur les membres");
                 break;
-            case FINANCIER:
-                includeDetailsCheckbox.setSelected(false);
-                includeDetailsCheckbox.setEnabled(false);
-                statusLabel.setText("Générer un rapport financier");
-                break;
-            case MEMBRE_CONTRIBUTION_EMPRUNT:
+
+            case CONTRIBUTION:
                 includeDetailsCheckbox.setSelected(true);
                 includeDetailsCheckbox.setEnabled(true);
                 statusLabel.setText("Générer un rapport détaillé membre/contribution/emprunt");
@@ -266,7 +262,7 @@ public class RapportPanel extends JPanel {
                 Rapport rapport;
                 if (selectedType == TypeRapport.MEMBRES) {
                     rapport = rapportManager.genererRapportMembres();
-                } else if (selectedType == TypeRapport.MEMBRE_CONTRIBUTION_EMPRUNT) {
+                } else if (selectedType == TypeRapport.CONTRIBUTION) {
                     rapport = rapportManager.genererRapportMembreContributionEmprunt(includeDetails);
                 } else if (selectedType == TypeRapport.EMPRUNT) {
                     rapport = rapportManager.genererRapportEmprunts();

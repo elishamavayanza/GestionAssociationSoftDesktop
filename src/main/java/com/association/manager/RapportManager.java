@@ -196,7 +196,6 @@ public class RapportManager extends BaseManager<Rapport> {
 
         // Créer et retourner le rapport
         Rapport rapport = new Rapport();
-        rapport.setType(TypeRapport.FINANCIER);
         rapport.setContenu(contenu.toString());
         rapport.setDateGeneration(new Date());
         create(rapport);
@@ -349,7 +348,6 @@ public class RapportManager extends BaseManager<Rapport> {
 
         // Créer et retourner le rapport
         Rapport rapport = new Rapport();
-        rapport.setType(TypeRapport.FINANCIER);
         rapport.setContenu(contenu.toString());
         rapport.setDateGeneration(new Date());
         create(rapport);
@@ -376,10 +374,6 @@ public class RapportManager extends BaseManager<Rapport> {
             case MEMBRES:
                 rapport.setContenu("Contenu du rapport des membres..." + (includeDetails ? "\nDétails complets inclus" : ""));
                 break;
-            case FINANCIER:
-                rapport.setContenu("Contenu du rapport financier..." + (includeDetails ? "\nDétails complets inclus" : ""));
-                break;
-            // Ajoutez d'autres cas selon vos besoins
             default:
                 rapport.setContenu("Contenu du rapport par défaut..." + (includeDetails ? "\nDétails complets inclus" : ""));
         }
@@ -405,6 +399,8 @@ public class RapportManager extends BaseManager<Rapport> {
         // Implémentation de l'export Excel
         return new File("rapport.xlsx");
     }
+
+
 
     public Rapport genererRapportMembreContributionEmprunt(boolean includeDetails) {
         // Récupérer les données nécessaires
@@ -445,31 +441,33 @@ public class RapportManager extends BaseManager<Rapport> {
             }
 
             // Emprunts du membre (à implémenter si vous avez cette fonctionnalité)
-        /*
-        List<Emprunt> emprunts = empruntDao.findByMembreId(membre.getId());
-        contenu.append("\nEMPRUNTS:\n");
-        contenu.append(String.format("Total: %d\n", emprunts.size()));
 
-        if (includeDetails && !emprunts.isEmpty()) {
-            contenu.append("Détails:\n");
-            for (Emprunt e : emprunts) {
-                contenu.append(String.format("- %s: %s\n",
-                    dateFormat.format(e.getDateEmprunt()),
-                    e.getDescription()));
-            }
-        }
-        */
+//        List<Emprunt> emprunts = empruntDao.findByMembreId(membre.getId());
+//        contenu.append("\nEMPRUNTS:\n");
+//        contenu.append(String.format("Total: %d\n", emprunts.size()));
+//
+//        if (includeDetails && !emprunts.isEmpty()) {
+//            contenu.append("Détails:\n");
+//            for (Emprunt e : emprunts) {
+//                contenu.append(String.format("- %s: %s\n",
+//                    dateFormat.format(e.getDateEmprunt()),
+//                    e.getDescription()));
+//            }
+//        }
+
 
             contenu.append("\n----------------------------------------\n\n");
         }
 
         // Créer et retourner le rapport
         Rapport rapport = new Rapport();
-        rapport.setType(TypeRapport.MEMBRE_CONTRIBUTION_EMPRUNT);
+        rapport.setType(TypeRapport.CONTRIBUTION);
         rapport.setContenu(contenu.toString());
         rapport.setDateGeneration(new Date());
         create(rapport);
 
         return rapport;
     }
+
+
 }
