@@ -44,7 +44,8 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
     @Override
     public List<Contribution> findByMembre(Long membreId) {
         List<Contribution> contributions = new ArrayList<>();
-        String sql = "SELECT c.* FROM contributions c " +
+        String sql = "SELECT c.*, t.date_transaction, t.montant, t.description, t.membre_id " +
+                "FROM contributions c " +
                 "JOIN transactions t ON c.id = t.id " +
                 "WHERE t.membre_id = ?";
         try (Connection conn = databaseConfig.getConnection();

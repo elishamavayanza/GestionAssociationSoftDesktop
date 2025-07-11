@@ -218,10 +218,7 @@ public class RapportPanel extends JPanel {
     private void handleReportTypeChange() {
         TypeRapport selectedType = (TypeRapport) typeRapportCombo.getSelectedItem();
 
-        // Mettre à jour le texte du bouton Générer
         generateButton.setText("Générer mon rapport " + selectedType.toString().toLowerCase());
-
-        // Réinitialiser le contenu et désactiver les boutons d'export
         rapportContentArea.setText("");
         exportPdfButton.setEnabled(false);
         exportExcelButton.setEnabled(false);
@@ -254,17 +251,18 @@ public class RapportPanel extends JPanel {
      */
     private void generateReport() {
         setBusyState(true);
-        statusLabel.setText("Génération de mon rapport en cours...");  // Message personnalisé
+        statusLabel.setText("Génération de mon rapport en cours...");
 
         executorService.execute(() -> {
             try {
                 TypeRapport selectedType = (TypeRapport) typeRapportCombo.getSelectedItem();
                 boolean includeDetails = includeDetailsCheckbox.isSelected();
 
-                // Générer un vrai rapport selon le type sélectionné
                 Rapport rapport;
                 if (selectedType == TypeRapport.MEMBRES) {
-                    rapport = rapportManager.genererRapportMembres();  // Utilise la méthode spécifique
+                    rapport = rapportManager.genererRapportMembres();
+                } else if (selectedType == TypeRapport.MEMBRE_CONTRIBUTION_EMPRUNT) {
+                    rapport = rapportManager.genererRapportMembreContributionEmprunt(includeDetails);
                 } else {
                     rapport = rapportManager.genererRapport(selectedType, includeDetails);
                 }
