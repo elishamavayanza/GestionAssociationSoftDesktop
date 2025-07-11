@@ -120,7 +120,7 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     public List<Emprunt> findByMembre(Long membreId) {
         List<Emprunt> emprunts = new ArrayList<>();
         String sql = "SELECT e.id, e.montant_rembourse, e.date_remboursement, e.statut, " +
-                "t.montant, t.date_transaction, t.description, " +
+                "t.id as transaction_id, t.montant, t.date_transaction, t.description, t.membre_id, " + // Ajout de t.membre_id
                 "ent.date_creation as ent_date_creation " +
                 "FROM emprunts e " +
                 "JOIN transactions t ON e.id = t.id " +
