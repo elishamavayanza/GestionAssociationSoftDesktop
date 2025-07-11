@@ -15,8 +15,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class ExportUtils {
     private static final DateTimeFormatter DATE_FORMATTER =
@@ -252,6 +254,8 @@ public class ExportUtils {
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
     }
 
+
+
     private static class PdfHeaderFooter extends PdfPageEventHelper {
         private Image logoRight;
         private Image logoLeft;
@@ -428,4 +432,94 @@ public class ExportUtils {
                 "Erreur lors de l'export " + format + ":\n" + e.getMessage(),
                 "Erreur d'export", JOptionPane.ERROR_MESSAGE);
     }
+
+    //=======================================================================================
+
+    public static String exportToPDF(String content, String baseFileName) throws IOException, DocumentException {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setSelectedFile(new File(generateFileName(baseFileName, "pdf")));
+
+        if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".pdf")) {
+                file = new File(file.getAbsolutePath() + ".pdf");
+            }
+
+            Document document = new Document();
+            PdfWriter.getInstance(document, new FileOutputStream(file));
+            document.open();
+
+            // Style du document
+            Font titleFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD);
+            Font contentFont = new Font(Font.FontFamily.COURIER, 12);
+
+            // Ajouter le titre
+            Paragraph title = new Paragraph("Rapport Exporté\n\n", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
+
+            // Ajouter la date
+            Paragraph date = new Paragraph(
+                    "Généré le: " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date()) + "\n\n",
+                    contentFont);
+            date.setAlignment(Element.ALIGN_RIGHT);
+            document.add(date);
+
+            // Ajouter le contenu
+            Paragraph body = new Paragraph(content, contentFont);
+            document.add(body);
+
+            document.close();
+            return file.getAbsolutePath();
+        }
+        return null;
+    }
+
+    public static String exportToExcel(String content, String baseFileName) throws IOException {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setSelectedFile(new File(generateFileName(baseFileName, "xlsx")));
+
+        if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".xlsx")) {
+                file = new File(file.getAbsolutePath() + ".xlsx");
+            }
+
+            try (Workbook workbook = new XSSFWorkbook()) {
+                Sheet sheet = workbook.createSheet("Rapport");
+
+                // Style pour les en-têtes - Utilisation des classes POI seulement
+                CellStyle headerStyle = workbook.createCellStyle();
+                org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont(); // Notez le package complet
+                headerFont.setBold(true);
+                headerStyle.setFont(headerFont);
+
+                // Créer les lignes à partir du contenu
+                String[] lines = content.split("\n");
+                for (int i = 0; i < lines.length; i++) {
+                    Row row = sheet.createRow(i);
+                    Cell cell = row.createCell(0);
+                    cell.setCellValue(lines[i]);
+
+                    // Appliquer le style aux en-têtes
+                    if (lines[i].startsWith("===") || lines[i].startsWith("STATISTIQUES") ||
+                            lines[i].startsWith("INSCRIPTIONS") || lines[i].startsWith("REPARTITION")) {
+                        cell.setCellStyle(headerStyle);
+                    }
+                }
+
+                // Auto-size la colonne
+                sheet.autoSizeColumn(0);
+
+                // Écrire le fichier
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    workbook.write(out);
+                }
+
+                return file.getAbsolutePath();
+            }
+        }
+        return null;
+    }
+
 }

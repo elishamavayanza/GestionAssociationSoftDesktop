@@ -10,16 +10,21 @@ import com.association.util.file.FileType;
 import com.association.view.components.IconManager;
 import com.association.view.styles.Colors;
 import com.association.view.styles.Fonts;
+import com.association.util.ExportUtils;
+
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 
 /**
  * Panel pour la génération et l'export de rapports
@@ -305,18 +310,45 @@ public class RapportPanel extends JPanel {
                 String fileName = "rapport_" + typeRapportCombo.getSelectedItem() + "_" +
                         new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 
-                // Simulation de progression
+                // Simulation de progression (à remplacer par la progression réelle)
                 for (int i = 0; i <= 100; i += 10) {
                     final int progress = i;
                     SwingUtilities.invokeLater(() -> progressBar.setValue(progress));
                     Thread.sleep(200);
                 }
 
-                boolean success = FileExportUtil.exportContent(content, fileName, fileType);
+                boolean success;
+                String filePath;
+
+                if (fileType == FileType.PDF) {
+                    filePath = ExportUtils.exportToPDF(content, fileName);
+                    success = filePath != null;
+                } else {
+                    filePath = ExportUtils.exportToExcel(content, fileName);
+                    success = filePath != null;
+                }
 
                 SwingUtilities.invokeLater(() -> {
                     if (success) {
-                        statusLabel.setText("Export " + fileType + " terminé avec succès");
+                        statusLabel.setText("Export " + fileType + " terminé: " + filePath);
+                        // Ouvrir le fichier après export si l'utilisateur le souhaite
+                        int option = JOptionPane.showConfirmDialog(
+                                RapportPanel.this,
+                                "Export réussi! Voulez-vous ouvrir le fichier?",
+                                "Export terminé",
+                                JOptionPane.YES_NO_OPTION);
+
+                        if (option == JOptionPane.YES_OPTION) {
+                            try {
+                                Desktop.getDesktop().open(new File(filePath));
+                            } catch (IOException ex) {
+                                JOptionPane.showMessageDialog(
+                                        RapportPanel.this,
+                                        "Impossible d'ouvrir le fichier: " + ex.getMessage(),
+                                        "Erreur",
+                                        JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
                     } else {
                         statusLabel.setText("Échec de l'export " + fileType);
                     }
@@ -328,11 +360,15 @@ public class RapportPanel extends JPanel {
                     statusLabel.setText("Erreur d'export: " + ex.getMessage());
                     progressBar.setVisible(false);
                     setBusyState(false);
+                    JOptionPane.showMessageDialog(
+                            RapportPanel.this,
+                            "Erreur lors de l'export: " + ex.getMessage(),
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
                 });
             }
         });
     }
-
     /**
      * Efface le rapport actuel
      */
@@ -348,19 +384,44 @@ public class RapportPanel extends JPanel {
      */
     private String formatRapportContent(Rapport rapport) {
         StringBuilder sb = new StringBuilder();
-        sb.append("=== MON RAPPORT PERSONNALISÉ ===\n\n");
-        sb.append("Type: ").append(rapport.getType()).append("\n");
-        sb.append("Date de génération: ").append(DATE_FORMAT.format(rapport.getDateGeneration())).append("\n\n");
 
-        // Ajoute une ligne de séparation
-        sb.append("----------------------------------------\n\n");
+        // En-tête officiel
+        sb.append("═════════════════════════════════════════════════════════════════════════════\n");
+        sb.append("                            RAPPORT OFFICIEL - MEMBRES                       \n");
+        sb.append("─────────────────────────────────────────────────────────────────────────────\n");
+        sb.append(String.format("           Type: %-36s      \n", rapport.getType()));
+        sb.append(String.format("           Date: %-36s      \n", DATE_FORMAT.format(rapport.getDateGeneration())));
+        sb.append("═════════════════════════════════════════════════════════════════════════════\n\n");
 
-        // Contenu du rapport
-        sb.append(rapport.getContenu());
+        // Séparateur stylisé
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
 
-        // Ajoute un pied de page
-        sb.append("\n\n----------------------------------------\n");
-        sb.append("Rapport généré par l'Association - Tous droits réservés");
+        // Contenu du rapport avec mise en forme améliorée
+        String[] lines = rapport.getContenu().split("\n");
+        for (String line : lines) {
+            if (line.startsWith("===") || line.startsWith("---")) {
+                // Ignorer les anciens séparateurs
+                continue;
+            } else if (line.startsWith("STATISTIQUES") ||
+                    line.startsWith("INSCRIPTIONS") ||
+                    line.startsWith("REPARTITION") ||
+                    line.startsWith("LISTE")) {
+                // Titres de sections
+                sb.append("\n◆ ").append(line).append("\n");
+                sb.append("────────────────────────────────────────────────────────────────────\n");
+            } else if (line.trim().isEmpty()) {
+                // Lignes vides
+                sb.append("\n");
+            } else {
+                // Contenu normal
+                sb.append("  ").append(line).append("\n");
+            }
+        }
+
+        // Pied de page officiel
+        sb.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        sb.append("Rapport généré par le Système de Gestion d'Association\n");
+        sb.append("© ").append(new SimpleDateFormat("yyyy").format(new Date())).append(" - Tous droits réservés\n");
 
         return sb.toString();
     }
