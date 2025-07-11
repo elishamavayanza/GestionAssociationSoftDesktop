@@ -355,6 +355,8 @@ class ContributionDaoImpl extends GenericDaoImpl<Contribution> implements Contri
         return contributions;
     }
 
+
+
     @Override
     public boolean saveAll(Iterable<Contribution> entities) {
         // Implémentation optionnelle pour sauvegarder plusieurs entités

@@ -114,6 +114,8 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
 
 
 
+
+
     @Override
     public void update(Observable o, Object arg) {
         if (arg instanceof Membre) {

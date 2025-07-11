@@ -1,19 +1,19 @@
 package com.association.manager;
 
-import com.association.dao.ContributionDao;
-import com.association.dao.DAOFactory;
-import com.association.dao.MembreDao;
-import com.association.dao.RapportDao;
+import com.association.dao.*;
 import com.association.model.Membre;
 import com.association.model.Rapport;
+import com.association.model.enums.StatutEmprunt;
 import com.association.model.enums.TypeContribution;
 import com.association.model.enums.TypeRapport;
 import com.association.model.transaction.Contribution;
+import com.association.model.transaction.Emprunt;
 
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RapportManager extends BaseManager<Rapport> {
     private final RapportDao rapportDao;
@@ -209,13 +209,163 @@ public class RapportManager extends BaseManager<Rapport> {
     }
 
     public Rapport genererRapportEmprunts() {
+        // Récupérer les données nécessaires
+        EmpruntDao empruntDao = DAOFactory.getInstance(EmpruntDao.class);
+        MembreDao membreDao = DAOFactory.getInstance(MembreDao.class);
+
+
+        // Statistiques globales
+        List<Emprunt> tousEmprunts = empruntDao.findAll();
+        BigDecimal totalEmprunts = tousEmprunts.stream()
+                .map(Emprunt::getMontant)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalRembourse = tousEmprunts.stream()
+                .map(Emprunt::getMontantRembourse)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalRestant = totalEmprunts.subtract(totalRembourse);
+
+        // Statistiques par statut
+        Map<StatutEmprunt, Long> nombreEmpruntsParStatut = tousEmprunts.stream()
+                .collect(Collectors.groupingBy(Emprunt::getStatut, Collectors.counting()));
+        Map<StatutEmprunt, BigDecimal> montantEmpruntsParStatut = tousEmprunts.stream()
+                .collect(Collectors.groupingBy(Emprunt::getStatut,
+                        Collectors.reducing(BigDecimal.ZERO, Emprunt::getMontant, BigDecimal::add)));
+
+        // Emprunts en retard
+        List<Emprunt> empruntsEnRetard = empruntDao.findByStatut(StatutEmprunt.EN_RETARD);
+        BigDecimal totalEnRetard = empruntsEnRetard.stream()
+                .map(Emprunt::calculerSoldeRestant)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Meilleurs emprunteurs (par montant emprunté) - avec gestion des membres null
+        Map<Membre, BigDecimal> empruntsParMembre = tousEmprunts.stream()
+                .filter(e -> e.getMembre() != null)
+                .collect(Collectors.groupingBy(
+                        Emprunt::getMembre,
+                        Collectors.reducing(BigDecimal.ZERO, Emprunt::getMontant, BigDecimal::add)
+                ));
+
+        // Construire le contenu du rapport
+        StringBuilder contenu = new StringBuilder();
+        contenu.append("=== RAPPORT DES EMPRUNTS ===\n\n");
+
+        // Section Statistiques générales
+        contenu.append("STATISTIQUES GENERALES\n");
+        contenu.append("----------------------\n");
+        contenu.append(String.format("Nombre total d'emprunts: %d\n", tousEmprunts.size()));
+        contenu.append(String.format("Montant total emprunté: %s\n", formatMontant(totalEmprunts)));
+        contenu.append(String.format("Montant total remboursé: %s (%.1f%%)\n",
+                formatMontant(totalRembourse),
+                totalEmprunts.doubleValue() > 0 ?
+                        (totalRembourse.doubleValue() * 100 / totalEmprunts.doubleValue()) : 0));
+        contenu.append(String.format("Montant restant à rembourser: %s\n", formatMontant(totalRestant)));
+        contenu.append("\n");
+
+        // Section Répartition par statut
+        contenu.append("REPARTITION PAR STATUT\n");
+        contenu.append("----------------------\n");
+        for (StatutEmprunt statut : StatutEmprunt.values()) {
+            long nombre = nombreEmpruntsParStatut.getOrDefault(statut, 0L);
+            BigDecimal montant = montantEmpruntsParStatut.getOrDefault(statut, BigDecimal.ZERO);
+            contenu.append(String.format("- %s: %d emprunts (%s, %.1f%%)\n",
+                    statut, nombre, formatMontant(montant),
+                    totalEmprunts.doubleValue() > 0 ?
+                            (montant.doubleValue() * 100 / totalEmprunts.doubleValue()) : 0));
+        }
+        contenu.append("\n");
+
+        // Section Emprunts en retard
+        contenu.append("EMPRUNTS EN RETARD\n");
+        contenu.append("------------------\n");
+        contenu.append(String.format("Nombre d'emprunts en retard: %d\n", empruntsEnRetard.size()));
+        contenu.append(String.format("Montant total en retard: %s\n", formatMontant(totalEnRetard)));
+        if (!empruntsEnRetard.isEmpty()) {
+            contenu.append("Détails des emprunts en retard:\n");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            for (Emprunt emprunt : empruntsEnRetard) {
+                String nomMembre = emprunt.getMembre() != null ? emprunt.getMembre().getNom() : "Membre inconnu";
+                contenu.append(String.format("- %s (ID: %d)\n",
+                        nomMembre, emprunt.getId()));
+                contenu.append(String.format("  Montant initial: %s | Remboursé: %s\n",
+                        formatMontant(emprunt.getMontant()),
+                        formatMontant(emprunt.getMontantRembourse())));
+
+                // Gestion de date de remboursement null
+                String dateRemboursementStr = emprunt.getDateRemboursement() != null ?
+                        dateFormat.format(emprunt.getDateRemboursement()) : "Non spécifiée";
+                contenu.append(String.format("  Date remboursement prévue: %s\n", dateRemboursementStr));
+
+                contenu.append(String.format("  Jours de retard: %d\n",
+                        calculerJoursRetard(emprunt)));
+                contenu.append("\n");
+            }
+        }
+        contenu.append("\n");
+
+        // Section Top emprunteurs
+        contenu.append("TOP 10 DES EMPRUNTEURS (par montant emprunté)\n");
+        contenu.append("--------------------------------------------\n");
+        empruntsParMembre.entrySet().stream()
+                .sorted(Map.Entry.<Membre, BigDecimal>comparingByValue().reversed())
+                .limit(10)
+                .forEach(entry -> {
+                    Membre membre = entry.getKey();
+                    BigDecimal montant = entry.getValue();
+                    contenu.append(String.format("- %s: %s\n",
+                            membre.getNom(), formatMontant(montant)));
+                });
+        contenu.append("\n");
+
+        // Section Derniers emprunts
+        contenu.append("DERNIERS EMPRUNTS\n");
+        contenu.append("----------------\n");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        tousEmprunts.stream()
+                .sorted((e1, e2) -> {
+                    // Gestion des dates de transaction null
+                    Date date1 = e1.getDateTransaction() != null ? e1.getDateTransaction() : new Date(0);
+                    Date date2 = e2.getDateTransaction() != null ? e2.getDateTransaction() : new Date(0);
+                    return date2.compareTo(date1);
+                })
+                .limit(10)
+                .forEach(emprunt -> {
+                    String nomMembre = emprunt.getMembre() != null ? emprunt.getMembre().getNom() : "Membre inconnu";
+                    contenu.append(String.format("- %s (ID: %d)\n",
+                            nomMembre, emprunt.getId()));
+                    contenu.append(String.format("  Montant: %s | Statut: %s\n",
+                            formatMontant(emprunt.getMontant()),
+                            emprunt.getStatut()));
+
+                    // Gestion des dates null
+                    String dateTransactionStr = emprunt.getDateTransaction() != null ?
+                            dateFormat.format(emprunt.getDateTransaction()) : "Non spécifiée";
+                    String dateRemboursementStr = emprunt.getDateRemboursement() != null ?
+                            dateFormat.format(emprunt.getDateRemboursement()) : "Non spécifiée";
+
+                    contenu.append(String.format("  Date emprunt: %s | Date remboursement: %s\n",
+                            dateTransactionStr, dateRemboursementStr));
+                    contenu.append("\n");
+                });
+
+        // Créer et retourner le rapport
         Rapport rapport = new Rapport();
         rapport.setType(TypeRapport.FINANCIER);
-        rapport.setContenu("Contenu du rapport des emprunts...");
+        rapport.setContenu(contenu.toString());
         rapport.setDateGeneration(new Date());
         create(rapport);
+
         return rapport;
     }
+
+    // Modifier également la méthode calculerJoursRetard pour gérer les dates null
+    private int calculerJoursRetard(Emprunt emprunt) {
+        if (emprunt.getStatut() != StatutEmprunt.EN_RETARD || emprunt.getDateRemboursement() == null) {
+            return 0;
+        }
+        long diff = new Date().getTime() - emprunt.getDateRemboursement().getTime();
+        return (int) (diff / (1000 * 60 * 60 * 24));
+    }
+
 
     public Rapport genererRapport(TypeRapport type, boolean includeDetails) {
         Rapport rapport = new Rapport();

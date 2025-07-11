@@ -1,5 +1,6 @@
 package com.association.dao;
 
+import com.association.model.Membre;
 import com.association.model.transaction.Emprunt;
 import com.association.model.enums.StatutEmprunt;
 import java.math.BigDecimal;
@@ -15,21 +16,113 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
     @Override
     protected Emprunt mapResultSetToEntity(ResultSet rs) throws SQLException {
         Emprunt emprunt = new Emprunt();
+
+        // ID - toujours présent
         emprunt.setId(rs.getLong("id"));
-        emprunt.setDateCreation(rs.getTimestamp("date_creation"));
-        emprunt.setDateTransaction(rs.getTimestamp("date_transaction"));
-        emprunt.setMontant(rs.getBigDecimal("montant"));
-        emprunt.setDescription(rs.getString("description"));
-        emprunt.setMontantRembourse(rs.getBigDecimal("montant_rembourse"));
-        emprunt.setDateRemboursement(rs.getDate("date_remboursement"));
-        emprunt.setStatut(StatutEmprunt.valueOf(rs.getString("statut")));
+
+        Long membreId = rs.getLong("membre_id");
+        if (!rs.wasNull() && membreId > 0) {
+            MembreDao membreDao = DAOFactory.getInstance(MembreDao.class);
+            Optional<Membre> membre = membreDao.findById(membreId);
+            membre.ifPresent(emprunt::setMembre);
+        }
+
+        // Dates avec gestion des alias
+        emprunt.setDateCreation(getTimestampFromResultSet(rs,
+                "ent.date_creation", "date_creation", "e.date_creation", "entities.date_creation"));
+        emprunt.setDateTransaction(getTimestampFromResultSet(rs,
+                "t.date_transaction", "date_transaction", "transactions.date_transaction"));
+
+        // Montants avec gestion des alias
+        emprunt.setMontant(getBigDecimalFromResultSet(rs,
+                "t.montant", "montant", "transactions.montant"));
+        emprunt.setMontantRembourse(getBigDecimalFromResultSet(rs,
+                "e.montant_rembourse", "montant_rembourse", "emprunts.montant_rembourse"));
+
+        // Description avec gestion des alias
+        emprunt.setDescription(getStringFromResultSet(rs,
+                "t.description", "description", "transactions.description"));
+
+        // Date de remboursement avec gestion des alias
+        emprunt.setDateRemboursement(getDateFromResultSet(rs,
+                "e.date_remboursement", "date_remboursement", "emprunts.date_remboursement"));
+
+        // Statut avec valeur par défaut
+        try {
+            String statutStr = getStringFromResultSet(rs,
+                    "e.statut", "statut", "emprunts.statut");
+            emprunt.setStatut(statutStr != null ? StatutEmprunt.valueOf(statutStr) : StatutEmprunt.EN_COURS);
+        } catch (IllegalArgumentException e) {
+            emprunt.setStatut(StatutEmprunt.EN_COURS);
+        }
+
         return emprunt;
+    }
+
+    // Méthodes utilitaires pour gérer les différents types de données
+    private Timestamp getTimestampFromResultSet(ResultSet rs, String... columnNames) throws SQLException {
+        for (String columnName : columnNames) {
+            try {
+                Timestamp value = rs.getTimestamp(columnName);
+                if (value != null) {
+                    return value;
+                }
+            } catch (SQLException e) {
+                // Passer au nom suivant
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal getBigDecimalFromResultSet(ResultSet rs, String... columnNames) throws SQLException {
+        for (String columnName : columnNames) {
+            try {
+                BigDecimal value = rs.getBigDecimal(columnName);
+                if (value != null) {
+                    return value;
+                }
+            } catch (SQLException e) {
+                // Passer au nom suivant
+            }
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private String getStringFromResultSet(ResultSet rs, String... columnNames) throws SQLException {
+        for (String columnName : columnNames) {
+            try {
+                String value = rs.getString(columnName);
+                if (value != null) {
+                    return value;
+                }
+            } catch (SQLException e) {
+                // Passer au nom suivant
+            }
+        }
+        return null;
+    }
+
+    private Date getDateFromResultSet(ResultSet rs, String... columnNames) throws SQLException {
+        for (String columnName : columnNames) {
+            try {
+                Date value = rs.getDate(columnName);
+                if (value != null) {
+                    return value;
+                }
+            } catch (SQLException e) {
+                // Passer au nom suivant
+            }
+        }
+        return null;
     }
 
     @Override
     public List<Emprunt> findByMembre(Long membreId) {
         List<Emprunt> emprunts = new ArrayList<>();
-        String sql = "SELECT e.*, t.*, ent.date_creation FROM emprunts e " +
+        String sql = "SELECT e.id, e.montant_rembourse, e.date_remboursement, e.statut, " +
+                "t.montant, t.date_transaction, t.description, " +
+                "ent.date_creation as ent_date_creation " +
+                "FROM emprunts e " +
                 "JOIN transactions t ON e.id = t.id " +
                 "JOIN entities ent ON t.id = ent.id " +
                 "WHERE t.membre_id = ?";
@@ -386,6 +479,28 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, membreId);
             ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                emprunts.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return emprunts;
+    }
+
+    @Override
+    public List<Emprunt> findAll() {
+        List<Emprunt> emprunts = new ArrayList<>();
+        String sql = "SELECT e.id, e.montant_rembourse, e.date_remboursement, e.statut, " +
+                "t.montant, t.date_transaction, t.description, t.membre_id, " +
+                "ent.date_creation as ent_date_creation " +
+                "FROM emprunts e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "JOIN entities ent ON t.id = ent.id";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 emprunts.add(mapResultSetToEntity(rs));
             }

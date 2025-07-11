@@ -61,6 +61,8 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
         return empruntDao.verifierEligibiliteDetail(membreId);
     }
 
+
+
     // Dans EmpruntManager.java
     public boolean effectuerRemboursement(Long empruntId, BigDecimal montant) {
         return empruntDao.findById(empruntId)
