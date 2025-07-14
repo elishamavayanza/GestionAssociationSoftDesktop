@@ -15,6 +15,7 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYAreaRenderer;
 import org.jfree.data.time.Month;
@@ -28,6 +29,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Map;
 
 public class DashboardPanel extends JPanel {
@@ -219,6 +222,7 @@ public class DashboardPanel extends JPanel {
     }
 
     private JPanel createAreaChartPanel() {
+
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
@@ -259,63 +263,127 @@ public class DashboardPanel extends JPanel {
     }
 
     private JFreeChart createAreaChart() {
-        // Création des séries temporelles
-        TimeSeries contributionsSeries = new TimeSeries("Contributions");
+        TimeSeries contributionsSeries = new TimeSeries("Contributions (FCFA)");
         TimeSeries membresSeries = new TimeSeries("Membres");
         TimeSeries empruntsSeries = new TimeSeries("Emprunts");
 
-        // Remplissage des données (exemple avec 12 derniers mois)
-        Map<String, BigDecimal> monthlyContribs = contributionManager.getMonthlyContributions(12);
-        Map<String, Integer> monthlyMembres = membreManager.getMonthlyRegistrations(12);
-        Map<String, Integer> monthlyEmprunts = empruntManager.getMonthlyEmprunts(12);
+        // Récupérer et ajouter les données
+        addDataToSeries(contributionsSeries, contributionManager.getMonthlyContributions(12), "Contributions");
+        addDataToSeries(membresSeries, membreManager.getMonthlyRegistrations(12), "Members");
+        addDataToSeries(empruntsSeries, empruntManager.getMonthlyEmprunts(12), "Loans");
 
-        monthlyContribs.forEach((month, amount) ->
-                contributionsSeries.add(new Month(Integer.parseInt(month.split("-")[1]),
-                                Integer.parseInt(month.split("-")[0])),
-                        amount.doubleValue()));
+        // Créer des datasets séparés pour chaque axe
+        TimeSeriesCollection datasetContributions = new TimeSeriesCollection();
+        datasetContributions.addSeries(contributionsSeries);
 
-        monthlyMembres.forEach((month, count) ->
-                membresSeries.add(new Month(Integer.parseInt(month.split("-")[1]),
-                                Integer.parseInt(month.split("-")[0])),
-                        count.doubleValue()));
+        TimeSeriesCollection datasetOthers = new TimeSeriesCollection();
+        datasetOthers.addSeries(membresSeries);
+        datasetOthers.addSeries(empruntsSeries);
 
-        monthlyEmprunts.forEach((month, count) ->
-                empruntsSeries.add(new Month(Integer.parseInt(month.split("-")[1]),
-                                Integer.parseInt(month.split("-")[0])),
-                        count.doubleValue()));
-
-        TimeSeriesCollection dataset = new TimeSeriesCollection();
-        dataset.addSeries(contributionsSeries);
-        dataset.addSeries(membresSeries);
-        dataset.addSeries(empruntsSeries);
-
-        // Création du graphique
         JFreeChart chart = ChartFactory.createTimeSeriesChart(
-                "", // titre
-                "Mois", // axe x
-                "Quantité", // axe y
-                dataset, // données
-                true, // légende
-                true, // infobulles
-                false // urls
+                "",
+                "Mois",
+                "Valeurs",
+                datasetContributions, // Dataset principal (contributions)
+                true,
+                true,
+                false
         );
 
-        // Personnalisation du graphique
         XYPlot plot = chart.getXYPlot();
         plot.setBackgroundPaint(Color.WHITE);
         plot.setDomainGridlinePaint(new Color(230, 230, 230));
         plot.setRangeGridlinePaint(new Color(230, 230, 230));
 
-        XYAreaRenderer renderer = new XYAreaRenderer();
-        renderer.setSeriesPaint(0, new Color(63, 81, 181, 150)); // Contributions - bleu
-        renderer.setSeriesPaint(1, new Color(76, 175, 80, 150));  // Membres - vert
-        renderer.setSeriesPaint(2, new Color(255, 152, 0, 150));  // Emprunts - orange
-        plot.setRenderer(renderer);
+        // Configurer le second axe Y pour les petites valeurs
+        NumberAxis axis2 = new NumberAxis("Membres/Emprunts");
+        plot.setRangeAxis(1, axis2);
+        plot.setDataset(1, datasetOthers);
 
+        // Associer les séries aux axes
+        plot.mapDatasetToRangeAxis(0, 0); // Contributions sur axe principal
+        plot.mapDatasetToRangeAxis(1, 1); // Membres et emprunts sur second axe
+
+        // Personnalisation des rendus
+        XYAreaRenderer renderer1 = new XYAreaRenderer();
+        renderer1.setSeriesPaint(0, new Color(63, 81, 181)); // Bleu pour contributions
+        plot.setRenderer(0, renderer1);
+
+        XYAreaRenderer renderer2 = new XYAreaRenderer();
+        renderer2.setSeriesPaint(0, new Color(76, 175, 80)); // Vert pour membres
+        renderer2.setSeriesPaint(1, new Color(255, 152, 0)); // Orange pour emprunts
+        plot.setRenderer(1, renderer2);
+
+        // Améliorer l'axe des dates
         DateAxis axis = (DateAxis) plot.getDomainAxis();
-        axis.setDateFormatOverride(new SimpleDateFormat("MMM yyyy"));
+        axis.setDateFormatOverride(new SimpleDateFormat("MMM yyyy", Locale.FRENCH));
+        axis.setVerticalTickLabels(true);
+
+        // Configurer les axes Y
+        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        rangeAxis.setAutoRangeIncludesZero(false);
+
+        NumberAxis rangeAxis2 = (NumberAxis) plot.getRangeAxis(1);
+        rangeAxis2.setAutoRangeIncludesZero(false);
 
         return chart;
+    }
+
+    private void addDataToSeries(TimeSeries series, Map<String, ?> data, String seriesName) {
+
+        System.out.println("=== Données pour " + seriesName + " ===");
+        if (data == null) {
+            System.out.println("Aucune donnée (data est null)");
+        } else {
+            System.out.println("Nombre d'entrées: " + data.size());
+            data.forEach((k, v) -> System.out.println(k + " => " + v));
+        }
+        System.out.println("Adding data for " + seriesName);
+        if (data == null || data.isEmpty()) {
+            System.err.println("Aucune donnée disponible pour " + seriesName);
+            // Ajouter un point zéro pour assurer la visibilité
+            int year = LocalDate.now().getYear();
+            int month = LocalDate.now().getMonthValue();
+            series.add(new Month(month, year), 0);
+            return;
+        }
+
+        data.forEach((monthStr, value) -> {
+            try {
+                String[] parts = monthStr.split("-");
+                if (parts.length != 2) {
+                    System.err.println("Format de mois invalide: " + monthStr);
+                    return;
+                }
+
+                int year = Integer.parseInt(parts[0]);
+                int month = Integer.parseInt(parts[1]);
+
+                double val = 0;
+                if (value instanceof BigDecimal) {
+                    val = ((BigDecimal)value).doubleValue();
+                } else if (value instanceof Number) {
+                    val = ((Number)value).doubleValue();
+                }
+
+                // Supprimez la multiplication par 1000 ou ajustez le facteur
+                System.out.printf("Adding %s: %s = %.2f%n", seriesName, monthStr, val);
+
+                series.add(new Month(month, year), val);
+            } catch (Exception e) {
+                System.err.println("Error adding data point for " + seriesName + ", month: " + monthStr);
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private TimeSeries createDemoSeries() {
+        System.out.println("Creating demo data series");
+        TimeSeries demoSeries = new TimeSeries("Demo Data");
+        for (int i = 1; i <= 12; i++) {
+            demoSeries.add(new Month(i, 2023), 100 + (i * 10));
+        }
+        return demoSeries;
     }
 
     private JPanel createEssentialInfoPanel() {

@@ -140,16 +140,12 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
                     contribution.getMembre().getId(),
                     contribution.getMontant());
 
-            // Exemple d'actions possibles:
-            // - Mettre à jour des statistiques en cache
-            // - Notifier d'autres composants du système
-            // - Vérifier des règles métier
+
 
         } else if (arg instanceof Long) {
             Long contributionId = (Long) arg;
             logger.info("Contribution supprimée reçue par l'observateur - ID: {}", contributionId);
 
-            // Nettoyage ou mise à jour si nécessaire
         }
     }
 
