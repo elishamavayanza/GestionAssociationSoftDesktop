@@ -1,6 +1,8 @@
 package com.association.dao;
 
 import com.association.model.access.Utilisateur;
+
+import java.util.List;
 import java.util.Optional;
 
 public interface UtilisateurDao extends GenericDao<Utilisateur> {
@@ -9,4 +11,6 @@ public interface UtilisateurDao extends GenericDao<Utilisateur> {
     Optional<Utilisateur> findByUsername(String username); // Ajouté
     boolean update(Utilisateur utilisateur); // Pour mettre à jour les tentatives de connexion
     String getAvatarPath(Long userId);
+    List<Utilisateur> findByUsernameContaining(String usernamePart); // Ajoutez cette ligne
+
 }

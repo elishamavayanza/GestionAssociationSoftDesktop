@@ -1,5 +1,6 @@
 package com.association.view.components.admin;
 
+import com.association.dao.UtilisateurDaoImpl;
 import com.association.view.components.IconManager;
 import com.association.view.components.rapport.RapportPanel;
 import com.association.view.interfaces.AdminInterface;
@@ -129,7 +130,13 @@ public class SidePanel extends JPanel {
         });
 
         DropDownMenu administration = new DropDownMenu("Administration", "admin_panel_settings.svg");
-        administration.addSubMenuItem("Gestion Utilisateurs", "manage_accounts.svg");
+        HoverButton gestionUtilisateursBtn = administration.addSubMenuItem("Gestion Utilisateurs", "manage_accounts.svg");
+        gestionUtilisateursBtn.setDoubleClickAction(() -> {
+            // Créer une instance de UtilisateurDaoImpl (vous devrez peut-être l'injecter)
+            UtilisateursPanel utilisateursPanel = new UtilisateursPanel(parentFrame);
+            adminInterface.setContentPanel(utilisateursPanel);
+        });
+
         administration.addSubMenuItem("Paramètres Système", "tune.svg");
 
         // Dans createSidePanelContent():
