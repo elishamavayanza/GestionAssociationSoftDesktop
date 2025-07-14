@@ -27,4 +27,5 @@ public interface EmpruntDao extends GenericDao<Emprunt> {
     int countEmpruntsEnRetard();
     Map<String, Integer> getMonthlyEmprunts(int months);
     Map<StatutEmprunt, BigDecimal> getAmountsByStatus();
+    Map<String, String> getLateLoans(int limit);
     }

@@ -139,6 +139,35 @@ class EmpruntDaoImpl extends GenericDaoImpl<Emprunt> implements EmpruntDao {
         return emprunts;
     }
 
+    // Dans EmpruntDaoImpl.java
+    @Override
+    public Map<String, String> getLateLoans(int limit) {
+        Map<String, String> lateLoans = new LinkedHashMap<>();
+        String sql = "SELECT v.nom, e.id, DATEDIFF(CURRENT_DATE, e.date_remboursement) as jours_retard " +
+                "FROM emprunts e " +
+                "JOIN transactions t ON e.id = t.id " +
+                "JOIN vue_membres_complets v ON t.membre_id = v.id " +
+                "WHERE e.statut = 'EN_COURS' " +
+                "AND e.date_remboursement < CURRENT_DATE " +
+                "ORDER BY jours_retard DESC " +
+                "LIMIT ?";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, limit);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String key = rs.getString("nom"); // Utilisation seulement du nom
+                String value = "Emprunt #" + rs.getLong("id") + " (" + rs.getInt("jours_retard") + " jours de retard)";
+                lateLoans.put(key, value);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lateLoans;
+    }
+
     @Override
     public List<Emprunt> findByStatut(StatutEmprunt statut) {
         List<Emprunt> emprunts = new ArrayList<>();

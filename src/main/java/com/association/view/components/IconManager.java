@@ -234,6 +234,8 @@ public class IconManager {
         button.setContentAreaFilled(false);
         return button;
     }
+
+
     public static class NotificationIconLabel extends JLabel {
         private float pulseScale = 1.0f;
         private boolean pulseGrowing = true;

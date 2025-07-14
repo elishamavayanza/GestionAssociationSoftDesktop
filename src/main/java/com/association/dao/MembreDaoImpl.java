@@ -4,6 +4,7 @@ import com.association.manager.dto.MembreSearchCriteria;
 import com.association.model.Membre;
 import com.association.model.enums.StatutMembre;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
 
@@ -500,4 +501,59 @@ class MembreDaoImpl extends GenericDaoImpl<Membre> implements MembreDao {
         return result;
     }
 
+    @Override
+    public Map<String, List<Membre>> getLatestRegistrationsGroupedByDate(int limit) {
+        Map<String, List<Membre>> result = new LinkedHashMap<>();
+        String sql = """
+        SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, 
+               m.date_inscription, m.statut 
+        FROM membres m 
+        JOIN personnes p ON m.id = p.id 
+        JOIN entities e ON m.id = e.id
+        ORDER BY m.date_inscription DESC 
+        LIMIT ?""";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, limit);
+            ResultSet rs = stmt.executeQuery();
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+            while (rs.next()) {
+                Membre membre = mapResultSetToEntity(rs);
+                String dateKey = dateFormat.format(membre.getDateInscription());
+
+                result.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(membre);
+            }
+        } catch (SQLException e) {
+            logger.error("Erreur lors de la récupération des dernières inscriptions", e);
+        }
+        return result;
+    }
+    @Override
+    public List<Membre> getLatestRegistrations(int limit) {
+        List<Membre> membres = new ArrayList<>();
+        String sql = """
+        SELECT e.id, e.date_creation, p.nom, p.contact, p.photo_path, 
+               m.date_inscription, m.statut 
+        FROM membres m 
+        JOIN personnes p ON m.id = p.id 
+        JOIN entities e ON m.id = e.id
+        ORDER BY m.date_inscription DESC 
+        LIMIT ?""";
+
+        try (Connection conn = databaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, limit);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                membres.add(mapResultSetToEntity(rs));
+            }
+        } catch (SQLException e) {
+            logger.error("Erreur lors de la récupération des dernières inscriptions", e);
+        }
+        return membres;
+    }
 }

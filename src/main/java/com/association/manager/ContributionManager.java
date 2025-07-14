@@ -47,6 +47,30 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
         return false;
     }
 
+    public Map<String, BigDecimal> getRecentContributions(int limit) {
+        List<Contribution> contributions = contributionDao.getRecentContributions(limit);
+        Map<String, BigDecimal> recentContribs = new LinkedHashMap<>();
+
+        for (Contribution contrib : contributions) {
+            String key = contrib.getMembre().getNom() + " - " + contrib.getTypeContribution();
+            recentContribs.put(key, contrib.getMontant());
+        }
+
+        return recentContribs;
+    }
+
+    public Map<String, Object> getContributionStats() {
+        Map<String, Object> stats = contributionDao.getContributionStats();
+
+        // Assurer que toutes les clés ont des valeurs non nulles
+        stats.putIfAbsent("total", BigDecimal.ZERO);
+        stats.putIfAbsent("monthlyAverage", BigDecimal.ZERO);
+        stats.putIfAbsent("annualTotal", BigDecimal.ZERO);
+        stats.putIfAbsent("topContributor", "N/A");
+        stats.putIfAbsent("monthly", BigDecimal.ZERO); // Ajout de la clé manquante
+
+        return stats;
+    }
 
     public boolean enregistrerContribution(Long membreId, BigDecimal montant, LocalDate dateContribution, String typeContribution) {
         return membreManager.findById(membreId).map(membre -> {
@@ -127,10 +151,6 @@ public class ContributionManager extends BaseManager<Contribution> implements Ob
 
             // Nettoyage ou mise à jour si nécessaire
         }
-    }
-
-    public Map<String, Object> getContributionStats() {
-        return contributionDao.getContributionStats();
     }
 
     public Map<TypeContribution, BigDecimal> getContributionsByType() {

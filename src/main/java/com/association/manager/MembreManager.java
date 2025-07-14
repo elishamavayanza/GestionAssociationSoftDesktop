@@ -27,6 +27,7 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
         membreDao.addObserver(this);
     }
 
+
     public boolean ajouterMembre(String nom, String contact, byte[] photo, Date dateInscription, StatutMembre statut) {
         logger.debug("Tentative d'ajout d'un membre avec photo: {} bytes", photo != null ? photo.length : 0);
 
@@ -69,6 +70,12 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
         }
     }
 
+    public Map<String, List<Membre>> getLatestRegistrationsGroupedByDate(int limit) {
+        return membreDao.getLatestRegistrationsGroupedByDate(limit);
+    }
+    public List<Membre> getLatestRegistrations(int limit) {
+        return membreDao.getLatestRegistrations(limit);
+    }
     public boolean modifierMembre(Long id, String nom, String contact) {
         return membreDao.findById(id).map(membre -> {
             membre.setNom(nom);
@@ -141,4 +148,5 @@ public class MembreManager extends BaseManager<Membre> implements Observer {
     public Map<String, Integer> getMonthlyRegistrations(int months) {
         return membreDao.getMonthlyRegistrations(months);
     }
+
 }

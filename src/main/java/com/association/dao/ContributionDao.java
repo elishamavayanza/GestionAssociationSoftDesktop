@@ -21,4 +21,6 @@ public interface ContributionDao extends GenericDao<Contribution> {
     Map<String, Object> getContributionStats();
     Map<TypeContribution, BigDecimal> getContributionsByType();
     Map<String, BigDecimal> getMonthlyContributions(int months);
+    List<Contribution> getRecentContributions(int limit);
+
 }

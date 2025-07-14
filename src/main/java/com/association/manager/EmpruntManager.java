@@ -139,11 +139,17 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
     public Map<String, Object> getEmpruntStats() {
         Map<String, Object> stats = new HashMap<>();
 
-        // Récupération des statistiques depuis le DAO
+        // Remplacer par vos vraies statistiques
         stats.put("total", empruntDao.countAllEmprunts());
         stats.put("actifs", empruntDao.countEmpruntsByStatut(StatutEmprunt.EN_COURS));
         stats.put("retard", empruntDao.countEmpruntsEnRetard());
         stats.put("rembourses", empruntDao.countEmpruntsByStatut(StatutEmprunt.REMBOURSE));
+
+        // Assurer que toutes les clés ont des valeurs non nulles
+        stats.putIfAbsent("total", 0);
+        stats.putIfAbsent("actifs", 0);
+        stats.putIfAbsent("retard", 0);
+        stats.putIfAbsent("rembourses", 0);
 
         return stats;
     }
@@ -155,5 +161,8 @@ public class EmpruntManager extends BaseManager<Emprunt> implements Observer {
     public Map<StatutEmprunt, BigDecimal> getAmountsByStatus() {
         return empruntDao.getAmountsByStatus();
     }
-
+    // Dans EmpruntManager.java
+    public Map<String, String> getLateLoans(int limit) {
+        return empruntDao.getLateLoans(limit);
+    }
 }

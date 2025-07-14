@@ -19,5 +19,8 @@ public interface MembreDao extends GenericDao<Membre> {
     Map<String, Integer> getMonthlyRegistrations();
     Map<String, Integer> getMembersByAgeGroup();
     Map<String, Integer> getMonthlyRegistrations(int months);
+    Map<String, List<Membre>> getLatestRegistrationsGroupedByDate(int limit);
+    List<Membre> getLatestRegistrations(int limit);
+
 
 }
